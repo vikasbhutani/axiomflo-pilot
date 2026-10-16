@@ -129,7 +129,7 @@ The functions in `src/services/mockService.ts` (`getOverview`, `getUsage`, `getT
 - [x] **Milestone 1:** app shell, typed mock dataset, shared calculations, Overview page, tests
 - [x] **Milestone 2:** Usage Explorer and request detail drawer
 - [x] **Milestone 3:** Teams & Users, AI Providers, Settings (with demo reset)
-- [ ] Milestone 4: Monthly Showback and CSV export
+- [x] **Milestone 4:** Monthly Showback, report preview and role-scoped CSV export
 - [ ] Milestone 5: AI Cost Assistant
 - [ ] Milestone 6: responsive and accessibility polish, remaining tests
 

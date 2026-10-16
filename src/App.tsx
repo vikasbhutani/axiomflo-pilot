@@ -5,6 +5,7 @@ import { UsageExplorerPage } from './pages/UsageExplorerPage';
 import { TeamsPage } from './pages/TeamsPage';
 import { ProvidersPage } from './pages/ProvidersPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { ShowbackPage } from './pages/ShowbackPage';
 import { UpcomingPage } from './pages/UpcomingPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
@@ -16,17 +17,7 @@ export function App() {
         <Route path="usage" element={<UsageExplorerPage />} />
         <Route path="teams" element={<TeamsPage />} />
         <Route path="providers" element={<ProvidersPage />} />
-        <Route
-          path="showback"
-          element={
-            <UpcomingPage
-              title="Monthly Showback"
-              milestone="milestone 4"
-              summary="A monthly review of allocated AI usage costs. It is not an invoice and does not initiate payment."
-              features={['Team and provider allocation', 'Reconciliation status and unresolved requests', 'Role-scoped CSV export built from the same calculations as the Overview']}
-            />
-          }
-        />
+        <Route path="showback" element={<ShowbackPage />} />
         <Route
           path="assistant"
           element={
