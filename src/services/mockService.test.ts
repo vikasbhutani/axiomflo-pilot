@@ -73,8 +73,8 @@ describe('role-scoped data filtering', () => {
   it('hides provider configuration from Individual Users', async () => {
     const o = buildOverview({ period: '2026-09' }, individual);
     expect(o.connections.every((c) => c.connection.configSummary === '')).toBe(true);
-    await expect(getProviderConnections(individual)).rejects.toThrow(/Company Admins/);
-    await expect(getProviderConnections(admin)).resolves.toHaveLength(2);
+    await expect(getProviderConnections('2026-09', individual)).rejects.toThrow(/Company Admins/);
+    await expect(getProviderConnections('2026-09', admin)).resolves.toHaveLength(2);
   });
 
   it('unknown users see nothing', () => {

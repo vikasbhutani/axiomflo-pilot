@@ -8,6 +8,7 @@
  */
 import type {
   Application,
+  AuditEvent,
   Company,
   CostStatus,
   Department,
@@ -100,7 +101,11 @@ export const providerConnections: ProviderConnection[] = [
     displayName: 'Acme Vertex AI (demo)',
     status: 'connected_demo',
     lastSimulatedTestAt: '2026-09-29T23:15:00Z',
-    configSummary: 'Project acme-ai-pilot-demo · australia-southeast1 · service account ••••@acme-ai-pilot-demo',
+    lastSimulatedTestResult: 'success',
+    configSummary: '',
+    projectId: 'acme-ai-pilot-demo',
+    region: 'australia-southeast1',
+    identitySummary: 'Service account axiomflo-reader@acme-ai-pilot-demo (placeholder)',
   },
   {
     id: 'conn-anthropic',
@@ -108,8 +113,18 @@ export const providerConnections: ProviderConnection[] = [
     displayName: 'Acme Anthropic (demo)',
     status: 'connected_demo',
     lastSimulatedTestAt: '2026-09-28T22:40:00Z',
-    configSummary: 'API key sk-ant-••••••••demo (sample, not a real key)',
+    lastSimulatedTestResult: 'success',
+    configSummary: '',
+    maskedCredential: 'sk-ant-••••••••demo',
+    notes: 'Sample connection for the pilot workspace.',
   },
+];
+
+/** Seed audit events for the demo workspace. */
+export const seedAuditEvents: AuditEvent[] = [
+  { id: 'audit-seed-3', at: '2026-09-29T23:15:00Z', actorName: 'Maya Chen', action: 'Connection test (simulated)', detail: 'Gemini on Vertex AI test succeeded.' },
+  { id: 'audit-seed-2', at: '2026-09-28T22:40:00Z', actorName: 'Maya Chen', action: 'Connection test (simulated)', detail: 'Anthropic test succeeded.' },
+  { id: 'audit-seed-1', at: '2026-07-28T00:00:00Z', actorName: 'Maya Chen', action: 'Workspace created', detail: 'Acme Innovation demo workspace with teams ENG-PLATFORM and ENG-PRODUCT.' },
 ];
 
 // ---------------------------------------------------------------------------

@@ -11,7 +11,7 @@ import { InfoTooltip } from '../components/ui/InfoTooltip';
 import { EmptyState, ErrorState, Skeleton } from '../components/ui/States';
 import { useDemo } from '../context/DemoContext';
 import { useAsync } from '../hooks/useAsync';
-import { getOverview, lookups, type OverviewData } from '../services/mockService';
+import { getOverview, getLookups, type OverviewData } from '../services/mockService';
 import { can } from '../lib/permissions';
 import { glossary } from '../lib/glossary';
 import { safeRatio, type CostSummary } from '../lib/calculations';
@@ -29,7 +29,7 @@ function usageLink(filters: OverviewData['filters'], extra: Record<string, strin
 }
 
 export function OverviewPage() {
-  const { userContext, period } = useDemo();
+  const { userContext, period, dataVersion } = useDemo();
   const [params, setParams] = useSearchParams();
   const isAdmin = can(userContext, 'view_all_teams');
   const teamId = isAdmin ? params.get('team') ?? 'all' : 'all';
@@ -42,7 +42,7 @@ export function OverviewPage() {
     setParams(next, { replace: true });
   };
 
-  const state = useAsync(() => getOverview({ period, teamId, providerId }, userContext), [period, teamId, providerId, userContext.userId, userContext.role]);
+  const state = useAsync(() => getOverview({ period, teamId, providerId }, userContext), [period, teamId, providerId, userContext.userId, userContext.role, dataVersion]);
 
   return (
     <>
@@ -61,7 +61,7 @@ export function OverviewPage() {
                 label="Team"
                 value={teamId}
                 onChange={(v) => setFilter('team', v)}
-                options={[{ value: 'all', label: 'All teams' }, ...lookups.teams.map((t) => ({ value: t.id, label: `${t.name} (${t.code})` }))]}
+                options={[{ value: 'all', label: 'All teams' }, ...getLookups().teams.map((t) => ({ value: t.id, label: `${t.name} (${t.code})` }))]}
                 className="w-full sm:w-64"
               />
             )}
@@ -69,7 +69,7 @@ export function OverviewPage() {
               label="Provider"
               value={providerId}
               onChange={(v) => setFilter('provider', v)}
-              options={[{ value: 'all', label: 'All providers' }, ...lookups.providers.map((p) => ({ value: p.id, label: p.name }))]}
+              options={[{ value: 'all', label: 'All providers' }, ...getLookups().providers.map((p) => ({ value: p.id, label: p.name }))]}
               className="w-full sm:w-52"
             />
           </>

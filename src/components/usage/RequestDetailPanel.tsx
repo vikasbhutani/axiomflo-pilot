@@ -27,8 +27,8 @@ function formatPreciseAmount(value: number) {
 }
 
 export function RequestDetailPanel({ requestId }: { requestId: string }) {
-  const { userContext } = useDemo();
-  const state = useAsync(() => getRequestDetail(requestId, userContext), [requestId, userContext.userId, userContext.role]);
+  const { userContext, dataVersion } = useDemo();
+  const state = useAsync(() => getRequestDetail(requestId, userContext), [requestId, userContext.userId, userContext.role, dataVersion]);
 
   if (state.status === 'error') return <ErrorState message={state.error.message} />;
   if (state.status === 'loading' || !state.data) return <LoadingState label="Loading request…" />;
