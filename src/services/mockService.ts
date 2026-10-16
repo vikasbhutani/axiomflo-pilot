@@ -10,6 +10,7 @@ import { applications, DEMO_PERSONAS, DEMO_REPORTING_DATE, department, models, p
 import { currentTeams, currentUsers, demoStore, newAuditEvent } from '../data/demoStore';
 import { costBreakdown, pricingVersionFor, summarize, summarizeBy, type CostBreakdown, type CostSummary } from '../lib/calculations';
 import { periodBounds, toLocalDate } from '../lib/format';
+import { toCsv } from '../lib/csv';
 import { can, scopeUsageRecords, visibleTeamIds } from '../lib/permissions';
 import type {
   AuditEvent,
@@ -726,4 +727,147 @@ export function resetDemoWorkspace(): Promise<void> {
 /** Lookups shared by filter controls. Read at call time so renamed teams show up. */
 export function getLookups() {
   return { teams: currentTeams(), providers, models, pricingVersions };
+}
+
+// ---------------------------------------------------------------------------
+// Monthly showback (explains allocated costs; not an invoice, no payment)
+// ---------------------------------------------------------------------------
+
+export interface ShowbackFilters {
+  teamId?: string;
+  providerId?: ProviderId | 'all';
+}
+
+export interface ShowbackTeamRow {
+  teamId: string;
+  name: string;
+  code: string;
+  summary: CostSummary;
+  byProvider: Record<ProviderId, CostSummary>;
+}
+
+export interface ShowbackProviderRow {
+  providerId: ProviderId;
+  name: string;
+  summary: CostSummary;
+}
+
+export interface MonthlyShowback {
+  month: PeriodKey;
+  startDate: string;
+  endDate: string;
+  currency: 'AUD';
+  timezone: string;
+  companyName: string;
+  scopeDescription: string;
+  isCompanyWide: boolean;
+  filters: ShowbackFilters;
+  summary: CostSummary;
+  teams: ShowbackTeamRow[];
+  providers: ShowbackProviderRow[];
+  /** Requests whose cost can't be calculated, newest first. */
+  unresolved: CostedUsageRecord[];
+  /** Fixed demo reporting date, so the report doesn't drift with the real clock. */
+  asOfDate: string;
+}
+
+function showbackRecords(month: PeriodKey, filters: ShowbackFilters, context: UserContext): CostedUsageRecord[] {
+  const teamId = can(context, 'view_all_teams') ? filters.teamId ?? 'all' : 'all';
+  return selectRecords({ period: month, teamId, providerId: filters.providerId ?? 'all' }, context);
+}
+
+export function buildMonthlyShowback(month: PeriodKey, filters: ShowbackFilters, context: UserContext): MonthlyShowback {
+  const records = showbackRecords(month, filters, context);
+  const [startDate, endDate] = periodBounds(month);
+  const isAdmin = can(context, 'export_company_showback');
+  const teamFilter = isAdmin ? filters.teamId ?? 'all' : 'all';
+  const providerFilter = filters.providerId ?? 'all';
+  const allTeams = currentTeams();
+  const allowedTeamIds = visibleTeamIds(context, currentUsers(), allTeams.map((t) => t.id));
+  const shownProviders = providers.filter((p) => providerFilter === 'all' || p.id === providerFilter);
+
+  const teams: ShowbackTeamRow[] = allTeams
+    .filter((t) => allowedTeamIds.includes(t.id) && (teamFilter === 'all' || t.id === teamFilter))
+    .map((t) => {
+      const teamRecords = records.filter((r) => r.teamId === t.id);
+      const byProvider = Object.fromEntries(providers.map((p) => [p.id, summarize(teamRecords.filter((r) => r.providerId === p.id))])) as Record<ProviderId, CostSummary>;
+      return { teamId: t.id, name: t.name, code: t.code, summary: summarize(teamRecords), byProvider };
+    });
+
+  const user = getCurrentUser(context);
+  const team = allTeams.find((t) => t.id === user?.teamId);
+  const scopeParts = isAdmin
+    ? [teamFilter === 'all' ? `All teams in ${department.name}` : allTeams.find((t) => t.id === teamFilter)?.name ?? 'Selected team']
+    : [`${user?.name ?? 'Your'} requests in ${team?.name ?? 'your team'}`];
+  if (providerFilter !== 'all') scopeParts.push(providers.find((p) => p.id === providerFilter)?.name ?? providerFilter);
+
+  return {
+    month,
+    startDate,
+    endDate,
+    currency: 'AUD',
+    timezone: 'Australia/Sydney',
+    companyName: demoStore.get().companyName,
+    scopeDescription: scopeParts.join(' · '),
+    isCompanyWide: isAdmin && teamFilter === 'all' && providerFilter === 'all',
+    filters: { teamId: teamFilter, providerId: providerFilter },
+    summary: summarize(records),
+    teams,
+    providers: shownProviders.map((p) => ({ providerId: p.id, name: p.name, summary: summarize(records.filter((r) => r.providerId === p.id)) })),
+    unresolved: records.filter((r) => r.estimatedCost === null).sort((a, b) => b.timestamp.localeCompare(a.timestamp)),
+    asOfDate: DEMO_REPORTING_DATE,
+  };
+}
+
+export function getMonthlyShowback(month: PeriodKey, filters: ShowbackFilters, context: UserContext): Promise<MonthlyShowback> {
+  return act(() => buildMonthlyShowback(month, filters, context));
+}
+
+export const SHOWBACK_CSV_HEADER = [
+  'request_id',
+  'timestamp_utc',
+  'local_date_australia_sydney',
+  'user_or_application',
+  'team_name',
+  'team_code',
+  'provider',
+  'model',
+  'input_tokens',
+  'output_tokens',
+  'estimated_cost',
+  'currency',
+  'cost_status',
+  'request_status',
+  'pricing_version',
+];
+
+/**
+ * Request-level showback CSV for the month and filters, limited to what the
+ * caller may see. Costs come from the shared calculations; unavailable costs
+ * are left blank (never 0) and marked by cost_status.
+ */
+export function buildShowbackCsv(month: PeriodKey, filters: ShowbackFilters, context: UserContext): { filename: string; csv: string; rowCount: number } {
+  const records = showbackRecords(month, filters, context).sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+  const rows = records.map((r) => [
+    r.id,
+    r.timestamp,
+    r.localDate,
+    r.principalName,
+    r.teamName,
+    r.teamCode,
+    r.providerName,
+    r.modelName,
+    r.inputTokens,
+    r.outputTokens,
+    // 8 decimals keeps row-level rounding far below a cent when summed.
+    r.estimatedCost === null ? null : r.estimatedCost.toFixed(8),
+    'AUD',
+    r.costStatus,
+    r.requestStatus,
+    r.pricingVersionId,
+  ]);
+  const isAdmin = can(context, 'export_company_showback');
+  const scope = isAdmin ? (filters.teamId && filters.teamId !== 'all' ? currentTeams().find((t) => t.id === filters.teamId)?.code.toLowerCase() ?? 'team' : 'company') : 'my-requests';
+  const provider = filters.providerId && filters.providerId !== 'all' ? `-${filters.providerId}` : '';
+  return { filename: `axiomflo-showback-${month}-${scope}${provider}-sample.csv`, csv: toCsv(SHOWBACK_CSV_HEADER, rows), rowCount: rows.length };
 }
