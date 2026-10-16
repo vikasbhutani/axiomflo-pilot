@@ -103,6 +103,8 @@ Admin changes in the demo (team names, invitations, team moves, suspensions, pro
 - **Provider connections:** shown as “Connected — demo”. Nothing is actually connected. “Simulate connection test” lets you pick a success or failure outcome; no provider is contacted. The Anthropic API-key field is a disabled, masked sample, and no credential is ever entered or stored.
 - **Admin actions:** invitations send no email, suspensions revoke nothing, and every change is recorded in a simulated audit log under Settings.
 - **Reconciliation:** “Reconciled (sample)” and “Estimated” states are sample data. No provider billing records are compared.
+- **Showback:** explains allocated costs. It is not an invoice, takes no payment and posts nothing to finance systems. The CSV is built in your browser from the same role-scoped records.
+- **AI Cost Assistant:** answers come from fixed rules over the sample data, not a live AI model. It supports the suggested questions (plus unavailable-cost questions), is read-only, only uses data the current role may see, and explains its scope instead of guessing.
 - **Costs:** `(input tokens × input rate per million + output tokens × output rate per million) ÷ 1,000,000`, using illustrative rates. Requests with missing usage show “Not available” and are counted separately as unresolved, never as $0. Failed requests are costed from whatever usage was measured.
 
 ## Project structure
@@ -118,11 +120,11 @@ src/
   pages/        One component per screen
 ```
 
-All totals (cards, charts, tables, and later the showback CSV and assistant) come from one module, `src/lib/calculations.ts`, so they always agree.
+All totals (cards, charts, tables, the showback CSV and assistant answers) come from one module, `src/lib/calculations.ts`, so they always agree.
 
 ## Where a backend will connect later
 
-The functions in `src/services/mockService.ts` (`getOverview`, `getUsage`, `getTeams`, `getProviderConnections`, and later `getMonthlyShowback` and `getAssistantResponse`) are the seam. Each one returns a Promise, so replacing its body with an HTTP call to a future API should not require page changes. When that happens, role checks, cost calculation and credential handling belong on the server.
+The functions in `src/services/mockService.ts` (`getOverview`, `getUsage`, `getTeams`, `getProviderConnections`, `getMonthlyShowback`) and `getAssistantResponse` in `src/services/assistantService.ts` are the seam. The assistant uses fixed keyword rules, not a live AI model; a real one would sit behind the same function and must only receive data the signed-in user may see. Each one returns a Promise, so replacing its body with an HTTP call to a future API should not require page changes. When that happens, role checks, cost calculation and credential handling belong on the server.
 
 ## Build progress
 
@@ -130,7 +132,7 @@ The functions in `src/services/mockService.ts` (`getOverview`, `getUsage`, `getT
 - [x] **Milestone 2:** Usage Explorer and request detail drawer
 - [x] **Milestone 3:** Teams & Users, AI Providers, Settings (with demo reset)
 - [x] **Milestone 4:** Monthly Showback, report preview and role-scoped CSV export
-- [ ] Milestone 5: AI Cost Assistant
+- [x] **Milestone 5:** AI Cost Assistant (deterministic, read-only, role-scoped answers)
 - [ ] Milestone 6: responsive and accessibility polish, remaining tests
 
 Screens not built yet show a short “planned for milestone N” page so navigation never dead-ends.
