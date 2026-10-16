@@ -13,6 +13,15 @@ interface AuthContextValue {
   clearSignInError: () => void;
   /** Opens the Google popup. Call it directly from a click handler, or browsers may block the popup. */
   signIn: (options?: { selectAccount?: boolean }) => void;
+  signInWithEmail: (email: string, password: string) => void;
+  /** Creates an email/password account; Firebase then emails a verification link. */
+  signUpWithEmail: (email: string, password: string, displayName?: string) => void;
+  /** Sends a reset link. Rejects with a friendly SignInError. */
+  sendPasswordReset: (email: string) => Promise<void>;
+  /** Re-sends the verification link. Rejects with a friendly SignInError. */
+  resendVerification: () => Promise<void>;
+  /** Re-reads the account after the person clicks the link. Resolves true once verified. */
+  checkVerification: () => Promise<boolean>;
   signOut: () => Promise<void>;
   /** Asks the membership service again after a failed lookup. */
   retryMembership: () => void;
@@ -80,7 +89,13 @@ export function AuthProvider({
       if (user) {
         explicitSignOut.current = false;
         setSignInError(null);
-        void loadMembership(user);
+        if (user.emailVerified) {
+          void loadMembership(user);
+        } else {
+          // An unconfirmed email could belong to someone else, so no membership is looked up yet.
+          lookupId.current++;
+          setState({ status: 'verification_required', user });
+        }
       } else {
         lookupId.current++;
         setState({ status: 'signed_out', reason: explicitSignOut.current ? 'signed_out' : undefined });
@@ -88,15 +103,15 @@ export function AuthProvider({
     });
   }, [client, loadMembership]);
 
-  const signIn = useCallback(
-    (options?: { selectAccount?: boolean }) => {
+  /** Runs one sign-in attempt at a time and turns failures into friendly messages. */
+  const runSignIn = useCallback(
+    (attempt: (client: AuthClient) => Promise<void>) => {
       if (!client || signingInRef.current) return;
       signingInRef.current = true;
       setSigningIn(true);
       setSignInError(null);
-      // No `await` before this call: the popup must open in the same click.
-      client
-        .signInWithGoogle(options)
+      // No `await` before this call: Google's popup must open in the same click.
+      attempt(client)
         .catch((error: unknown) => setSignInError(describeSignInError(error)))
         .finally(() => {
           signingInRef.current = false;
@@ -105,6 +120,45 @@ export function AuthProvider({
     },
     [client],
   );
+
+  const signIn = useCallback((options?: { selectAccount?: boolean }) => runSignIn((c) => c.signInWithGoogle(options)), [runSignIn]);
+  const signInWithEmail = useCallback((email: string, password: string) => runSignIn((c) => c.signInWithEmail(email, password)), [runSignIn]);
+  const signUpWithEmail = useCallback(
+    (email: string, password: string, displayName?: string) => runSignIn((c) => c.signUpWithEmail(email, password, displayName)),
+    [runSignIn],
+  );
+
+  const sendPasswordReset = useCallback(
+    async (email: string) => {
+      if (!client) return;
+      try {
+        await client.sendPasswordReset(email);
+      } catch (error) {
+        // "No such account" is not revealed, so nobody can probe which emails are registered.
+        if ((error as { code?: unknown })?.code === 'auth/user-not-found') return;
+        throw describeSignInError(error);
+      }
+    },
+    [client],
+  );
+
+  const resendVerification = useCallback(async () => {
+    if (!client) return;
+    try {
+      await client.sendVerificationEmail();
+    } catch (error) {
+      throw describeSignInError(error);
+    }
+  }, [client]);
+
+  const checkVerification = useCallback(async () => {
+    if (!client) return false;
+    const user = await client.reloadUser();
+    if (!user?.emailVerified) return false;
+    currentUser.current = user;
+    void loadMembership(user);
+    return true;
+  }, [client, loadMembership]);
 
   const signOut = useCallback(async () => {
     if (!client) return;
@@ -124,8 +178,22 @@ export function AuthProvider({
   const getIdToken = useCallback(async () => (client ? client.getIdToken() : null), [client]);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ state, signingIn, signInError, clearSignInError: () => setSignInError(null), signIn, signOut, retryMembership, getIdToken }),
-    [state, signingIn, signInError, signIn, signOut, retryMembership, getIdToken],
+    () => ({
+      state,
+      signingIn,
+      signInError,
+      clearSignInError: () => setSignInError(null),
+      signIn,
+      signInWithEmail,
+      signUpWithEmail,
+      sendPasswordReset,
+      resendVerification,
+      checkVerification,
+      signOut,
+      retryMembership,
+      getIdToken,
+    }),
+    [state, signingIn, signInError, signIn, signInWithEmail, signUpWithEmail, sendPasswordReset, resendVerification, checkVerification, signOut, retryMembership, getIdToken],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

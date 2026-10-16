@@ -4,10 +4,11 @@ import { FlaskConical } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
 import { useDemoSession } from '../../auth/demoSession';
 import { AuthLayout, SetupRequiredNotice, SignInMessage } from '../../components/auth/AuthLayout';
+import { EmailPasswordForm, OrDivider } from '../../components/auth/EmailPasswordForm';
 import { GoogleButton } from '../../components/auth/GoogleButton';
 
-/** Shared body of /login and /signup. Both start the same Google sign-in flow. */
-export function AuthEntry({ title, description, buttonLabel, children, footer }: { title: string; description: string; buttonLabel: string; children?: ReactNode; footer: ReactNode }) {
+/** Shared body of /login and /signup: Google, or email and password. */
+export function AuthEntry({ mode, title, description, buttonLabel, children, footer }: { mode: 'login' | 'signup'; title: string; description: string; buttonLabel: string; children?: ReactNode; footer: ReactNode }) {
   const { state, signIn, signingIn, signInError } = useAuth();
   const missing = state.status === 'config_missing' ? state.missing : null;
 
@@ -16,6 +17,8 @@ export function AuthEntry({ title, description, buttonLabel, children, footer }:
       {missing && <SetupRequiredNotice missing={missing} />}
       {children}
       <GoogleButton label={buttonLabel} onClick={() => signIn()} busy={signingIn} disabled={!!missing} />
+      <OrDivider />
+      <EmailPasswordForm mode={mode} disabled={!!missing} />
       <SignInMessage error={signInError} />
       <p className="mt-6 text-center text-sm text-slate-600">{footer}</p>
       <DemoEntry />

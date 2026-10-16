@@ -11,6 +11,11 @@ export type SignInErrorKind =
   | 'network'
   | 'provider_disabled'
   | 'configuration'
+  | 'auth_not_set_up'
+  | 'invalid_credentials'
+  | 'email_in_use'
+  | 'weak_password'
+  | 'invalid_email'
   | 'too_many_requests'
   | 'user_disabled'
   | 'unknown';
@@ -39,17 +44,33 @@ export function describeSignInError(error: unknown, hostname: string = window.lo
     case 'auth/unauthorized-domain':
       return {
         kind: 'unauthorized_domain',
-        message: `Google sign-in isn’t enabled for this web address (${hostname}) yet. An administrator needs to add it to the authorized domains in Firebase Authentication.`,
+        message: `Sign-in isn’t enabled for this web address (${hostname}) yet. An administrator needs to add it to the authorized domains in Firebase Authentication.`,
       };
     case 'auth/network-request-failed':
     case 'auth/timeout':
       return { kind: 'network', message: 'We couldn’t reach Google. Check your internet connection and try again.' };
     case 'auth/operation-not-allowed':
-      return { kind: 'provider_disabled', message: 'Google sign-in hasn’t been turned on for AxiomFlo yet. An administrator needs to enable the Google provider in Firebase Authentication.' };
+      return { kind: 'provider_disabled', message: 'This sign-in method hasn’t been turned on for AxiomFlo yet. An administrator needs to enable it under Authentication → Sign-in method in the Firebase console.' };
+    case 'auth/configuration-not-found':
+      return { kind: 'auth_not_set_up', message: 'Firebase Authentication isn’t set up for this project yet. An administrator needs to open Authentication in the Firebase console and click Get started.' };
+    case 'auth/invalid-credential':
+    case 'auth/invalid-login-credentials':
+    case 'auth/wrong-password':
+    case 'auth/user-not-found':
+      return { kind: 'invalid_credentials', message: 'That email and password don’t match an AxiomFlo account. Check them and try again, or reset your password.' };
+    case 'auth/email-already-in-use':
+      return { kind: 'email_in_use', message: 'An account already exists for this email. Log in instead, or use “Continue with Google” if you signed up with Google.' };
+    case 'auth/weak-password':
+    case 'auth/password-does-not-meet-requirements':
+      return { kind: 'weak_password', message: 'Choose a stronger password: at least 8 characters.' };
+    case 'auth/invalid-email':
+    case 'auth/missing-email':
+      return { kind: 'invalid_email', message: 'Enter a valid email address.' };
+    case 'auth/missing-password':
+      return { kind: 'invalid_credentials', message: 'Enter your password.' };
     case 'auth/invalid-api-key':
     case 'auth/api-key-not-valid':
     case 'auth/api-key-not-valid.-please-pass-a-valid-api-key.':
-    case 'auth/configuration-not-found':
     case 'auth/app-not-authorized':
     case 'auth/invalid-app-id':
       return { kind: 'configuration', message: 'AxiomFlo’s sign-in settings don’t match the Firebase project. An administrator needs to check the Firebase configuration values.' };
@@ -58,6 +79,6 @@ export function describeSignInError(error: unknown, hostname: string = window.lo
     case 'auth/user-disabled':
       return { kind: 'user_disabled', message: 'This account has been disabled for AxiomFlo sign-in. Contact your AxiomFlo administrator.' };
     default:
-      return { kind: 'unknown', message: 'Something went wrong while signing in with Google. Please try again.' };
+      return { kind: 'unknown', message: 'Something went wrong while signing in. Please try again.' };
   }
 }

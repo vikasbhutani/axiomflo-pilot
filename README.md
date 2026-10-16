@@ -2,7 +2,7 @@
 
 A frontend-only prototype of **AxiomFlo**, an enterprise AI cost management platform, set up as a demo workspace for one pilot company (Acme Innovation). It shows which team is using AI, which provider and model they use, what that usage is estimated to cost, and how monthly totals map back to individual requests.
 
-> **All reporting data here is sample data.** There is no backend, no billing and no calls to any AI provider. Google sign-in is real once you set it up (see [Google sign-in setup](#google-sign-in-setup)), but it doesn't unlock any company data yet. Model names and prices are illustrative and are **not** current provider pricing.
+> **All reporting data here is sample data.** There is no backend, no billing and no calls to any AI provider. Sign-in (Google or email) is real once you set it up (see [Sign-in setup](#sign-in-setup-google-and-email)), but it doesn't unlock any company data yet. Model names and prices are illustrative and are **not** current provider pricing.
 
 ## Run it locally
 
@@ -19,7 +19,7 @@ npm install
 npm run dev
 ```
 
-Open the address it prints (usually http://localhost:5173). You'll see the sign-in page; click **Explore the demo workspace** to open the sample data, or follow [Google sign-in setup](#google-sign-in-setup) to sign in with Google. The page reloads automatically when you edit files. Press `Ctrl + C` in the terminal to stop it.
+Open the address it prints (usually http://localhost:5173). You'll see the sign-in page; click **Explore the demo workspace** to open the sample data, or follow [Sign-in setup](#sign-in-setup-google-and-email) to sign in. The page reloads automatically when you edit files. Press `Ctrl + C` in the terminal to stop it.
 
 Other useful commands:
 
@@ -95,14 +95,14 @@ docker run --rm -p 8080:8080 axiomflo-pilot
 
 Then open http://localhost:8080.
 
-## Google sign-in setup
+## Sign-in setup (Google and email)
 
-AxiomFlo can sign people in with their Google account using **Firebase Authentication**. Two ideas are kept apart:
+AxiomFlo signs people in with **Firebase Authentication**, using either their **Google account** or an **email and password**. Memberships are stored in **Cloud Firestore**. Two ideas are kept apart:
 
-- **Google identity** answers *who is this person?* Google and Firebase confirm it.
-- **AxiomFlo membership** answers *which company, teams and role may they see?* Only a trusted backend may answer this. Signing in never creates a membership, and nobody becomes an administrator by signing up first.
+- **Identity** answers *who is this person?* Google or Firebase confirms it. Email/password accounts must click a confirmation link before anything else happens.
+- **AxiomFlo membership** answers *which company, teams and role may they see?* It comes from a Firestore document that only an administrator can create, at `memberships/{user ID}`. Signing in never creates a membership, and nobody becomes an administrator by signing up first.
 
-There is no membership backend yet, so **everyone who signs in sees "Access pending"**. That is intentional, not a bug. The sample-data demo is still available through **Explore the demo workspace** on the sign-in page and is always labelled "Demo workspace — sample data".
+Until you add a membership document for someone, **they see "Access pending"** after signing in. That is intentional, not a bug. The sample-data demo is still available through **Explore the demo workspace** on the sign-in page and is always labelled "Demo workspace — sample data".
 
 Nothing below is done automatically. Each step is something you do in your own Google Cloud / Firebase account.
 
@@ -123,10 +123,15 @@ Adding Firebase turns on a few Google APIs in the project (for example the Ident
 3. Give it a nickname such as `AxiomFlo web`. Leave **Firebase Hosting** unticked, because the app is hosted on Cloud Run.
 4. Click **Register app**. Firebase shows a `firebaseConfig` block; keep that page open for step 4.
 
-### 3. Turn on Google as a sign-in provider
+### 3. Turn on Google and email/password sign-in
 
-1. In the Firebase console, open **Authentication** (under Build) and click **Get started** if you haven't used it before.
+1. In the Firebase console, open **Authentication** (under Build) and click **Get started** if you haven't used it before. **Don't skip this:** until it's done, every sign-in shows "Firebase Authentication isn't set up for this project yet" (Google's error code is `CONFIGURATION_NOT_FOUND`).
 2. Open the **Sign-in method** tab, choose **Google**, switch it to **Enabled**, pick a support email, and click **Save**.
+3. Still on **Sign-in method**, click **Add new provider**, choose **Email/Password**, switch on the first **Enable** toggle (leave "Email link (passwordless sign-in)" off), and click **Save**.
+
+Firebase sends the confirmation and password-reset emails itself. You can change their wording under **Authentication → Templates**.
+
+Firebase links accounts by email: if someone signs up with email and password and later uses Google with the same address, Google takes over that account. If they used Google first, creating a password account with the same email shows "An account already exists for this email".
 
 AxiomFlo only asks Google for the person's basic profile and email address. It never requests Drive, Gmail, Calendar or other access, and people type their Google password into Google's own window, never into AxiomFlo.
 
@@ -180,24 +185,39 @@ Open http://localhost:5173. You'll land on the sign-in page.
 ### 8. Try sign-up, sign-in, refresh and sign-out
 
 1. Click **Sign up** (or **Continue with Google** on the sign-in page) and choose a Google account in the window that opens.
-2. You should arrive at **Access pending**, showing your name and email.
+2. You should arrive at **Access pending**, showing your name, email and AxiomFlo user ID.
 3. Refresh the page. You should stay signed in on **Access pending**: Firebase restores the session itself (it stores it in the browser's IndexedDB; AxiomFlo never stores tokens).
 4. Click **Use another Google account** to see Google's account chooser.
 5. Click **Sign out**. You return to the sign-in page; refreshing keeps you signed out.
 6. Start sign-in and close the Google window. You should see a calm "Sign-in was cancelled" note.
+7. On **Sign up**, create an email/password account. You should see **Confirm your email**. Open the link Firebase emails you, then click **I've confirmed my email**: you move on to **Access pending**.
+8. On **Log in**, click **Forgot password?** and send yourself a reset link.
+
+### Set up Firestore for memberships
+
+1. In the Firebase console, open **Firestore Database** (under Build) and click **Create database**. Choose **Standard edition** if asked, a location close to your users (for example `asia-southeast1`, Singapore; it can't be changed later), and **Start in production mode**. Firestore has a free daily quota; check the [Firebase pricing page](https://firebase.google.com/pricing) if you expect heavy use.
+2. Open the **Rules** tab, replace everything with the contents of [`firestore.rules`](firestore.rules) from this repo, and click **Publish**. These rules let a signed-in person with a confirmed email read **only their own** membership and stop anyone writing memberships from the browser.
+3. To give someone access, open the **Data** tab and click **Start collection** (or open the existing `memberships` collection). Use:
+   - **Collection ID:** `memberships`
+   - **Document ID:** the person's AxiomFlo user ID, shown on their **Access pending** screen
+   - **Fields:** `companyId` (string, for example `acme`), `companyName` (string, for example `Acme Innovation`), `role` (string: `company_admin` or `individual_user`), `teamIds` (array of strings), `status` (string: `active`, `pending` or `suspended`)
+4. Ask the person to refresh AxiomFlo. With `status` = `active` they reach the workspace, with `suspended` they see **Access denied**, and with `pending` they stay on **Access pending**.
+
+Create your own membership first this way, as `company_admin`.
 
 ### 9. Why a signed-in person sees "Access pending"
 
-Signing in only proves who someone is. Access to company data needs an **active AxiomFlo membership** from a trusted backend, and that backend doesn't exist yet, so `src/auth/membershipService.ts` returns "no membership" for everyone. Memberships are never taken from the demo role switcher, URL parameters, browser storage or an email domain. A suspended membership leads to **Access denied** instead.
+Signing in only proves who someone is. Access to company data needs an **active AxiomFlo membership**, which only exists once an administrator creates the person's document in Firestore (see "Set up Firestore for memberships"). Memberships are never taken from the demo role switcher, URL parameters, browser storage or an email domain. A suspended membership leads to **Access denied** instead.
 
 ### 10. What's needed before real company data is shown
 
-The frontend is ready to plug into a backend, but these pieces still have to be built:
+Memberships now come from Firestore, protected by `firestore.rules`. What's still missing is **real reporting data**:
 
-1. **A backend API** (for example a second Cloud Run service) that verifies every request's Firebase ID token with the **Firebase Admin SDK** on the server. The Admin SDK never goes in this frontend.
-2. **A protected membership store** (for example Cloud SQL, or Firestore with security rules that block all client writes) with `userId` (Firebase UID), `companyId`, `role` (`company_admin` or `individual_user`), `teamIds` and `status` (`active`, `pending` or `suspended`). Only administrators, through the backend, can change it. Create the first admin yourself, directly in that store.
-3. **A membership endpoint**, `GET /v1/me/membership`, that returns the membership for the verified token's UID (404 when there is none). Then set `VITE_API_BASE_URL` to the backend's `https://` address and rebuild; the app switches to `createHttpMembershipService` automatically.
-4. **Real reporting endpoints** that check company and team membership on every request. Hiding pages in the browser is not security on its own. Until those exist, approved members see a "reporting data isn't connected yet" notice instead of sample data.
+1. **Where the usage and cost data lives**, for example Firestore collections under each company, or a backend API (a second Cloud Run service) that verifies every request's Firebase ID token with the **Firebase Admin SDK**. The Admin SDK never goes in this frontend.
+2. **Security on every read.** If reporting data goes in Firestore, its rules must check the reader's membership (company, team and role) for every document. If it goes behind an API, the API checks membership on every request.
+3. **Optional:** if you later prefer a backend for memberships too, `GET /v1/me/membership` returning the membership for the verified token's UID (404 when there is none), then set `VITE_API_BASE_URL`; the app switches to `createHttpMembershipService` automatically.
+
+Hiding pages in the browser is not security on its own. Hiding pages in the browser is not security on its own. Until those exist, approved members see a "reporting data isn't connected yet" notice instead of sample data.
 
 `src/auth/api.ts` has a small helper that sends the signed-in user's ID token as an `Authorization: Bearer` header over HTTPS. It never puts tokens in URLs and never logs them.
 
@@ -207,12 +227,13 @@ The frontend is ready to plug into a backend, but these pieces still have to be 
 | --- | --- |
 | `VITE_DEMO_MODE` | Set to `disabled` to remove "Explore the demo workspace". The demo is on by default so the current site keeps working. |
 | `VITE_TERMS_URL`, `VITE_PRIVACY_URL` | Links to your published Terms of Service and Privacy Policy (`https://`). These pages don't exist yet, so the sign-in pages mark them as "setup required". AxiomFlo doesn't include any policy text. |
-| `VITE_API_BASE_URL` | The future backend's address. Leave empty until it exists. |
+| `VITE_API_BASE_URL` | Optional backend address. When set, memberships come from that API instead of Firestore. Leave empty for now. |
 
 ### Where the code lives
 
-- `src/auth/`: Firebase sign-in (`firebaseClient.ts`), the `AuthProvider` / `useAuth` state (`AuthContext.tsx`), membership (`membershipService.ts`), route guards (`guards.tsx`), safe return-to links (`redirects.ts`), demo mode (`demoSession.ts`) and the API helper (`api.ts`).
-- `src/pages/auth/`: `/login`, `/signup`, `/access-pending` and `/access-denied`.
+- `src/auth/`: Firebase sign-in for Google and email/password (`firebaseClient.ts`), the `AuthProvider` / `useAuth` state (`AuthContext.tsx`), Firestore and API membership (`membershipService.ts`), route guards (`guards.tsx`), safe return-to links (`redirects.ts`), demo mode (`demoSession.ts`) and the API helper (`api.ts`).
+- `src/pages/auth/`: `/login`, `/signup`, `/reset-password`, `/verify-email`, `/access-pending` and `/access-denied`.
+- `firestore.rules` (with `firebase.json` and `.firebaserc` for the Firebase CLI, if you ever use it): who may read and write Firestore.
 - `src/auth/auth.test.tsx` and `src/auth/auth.unit.test.ts`: tests, with Firebase replaced by a fake so no Google account is needed.
 
 ## Switching demo roles

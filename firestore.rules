@@ -1,0 +1,24 @@
+rules_version = '2';
+
+// AxiomFlo Firestore security rules.
+//
+// Memberships live at memberships/{Firebase UID}. A signed-in person whose email
+// address is verified may READ only their own membership. Nobody may create, change
+// or delete memberships from the browser: administrators manage them in the Firebase
+// console (or later from a trusted backend using the Admin SDK, which bypasses rules).
+//
+// Everything else is closed until a rule is written for it.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /memberships/{userId} {
+      allow read: if request.auth != null
+                  && request.auth.uid == userId
+                  && request.auth.token.email_verified == true;
+      allow write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

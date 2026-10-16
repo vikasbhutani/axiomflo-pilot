@@ -1,24 +1,35 @@
 /**
- * Firebase Authentication with Google as the only sign-in provider.
+ * Firebase Authentication with two sign-in methods: Google and email/password.
  *
- * - Uses a popup started straight from the button click (no redirect flow, see README).
- * - Asks Google only for basic profile and email (Firebase's default). No Drive,
- *   Gmail, Calendar or other scopes are requested.
+ * - Google uses a popup started straight from the button click (no redirect flow, see README),
+ *   and asks only for basic profile and email. No Drive, Gmail or Calendar scopes.
+ * - Email/password accounts must confirm their email address before AxiomFlo checks membership.
  * - Firebase keeps the session itself (in IndexedDB), so a refresh restores it. We never
  *   copy tokens into localStorage, and never log credentials or tokens.
  */
-import { getApp, getApps, initializeApp } from 'firebase/app';
-import { GoogleAuthProvider, getAuth, onAuthStateChanged, signInWithPopup, signOut, type User } from 'firebase/auth';
-import type { FirebaseWebConfig } from './config';
+import type { FirebaseApp } from 'firebase/app';
+import {
+  GoogleAuthProvider,
+  createUserWithEmailAndPassword,
+  getAuth,
+  onAuthStateChanged,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut,
+  updateProfile,
+  type User,
+} from 'firebase/auth';
 import type { AuthClient, AuthUser } from './types';
 
 function toAuthUser(user: User): AuthUser {
-  return { uid: user.uid, displayName: user.displayName, email: user.email };
+  return { uid: user.uid, displayName: user.displayName, email: user.email, emailVerified: user.emailVerified };
 }
 
-export function createFirebaseAuthClient(config: FirebaseWebConfig): AuthClient {
-  const app = getApps().length > 0 ? getApp() : initializeApp(config);
+export function createFirebaseAuthClient(app: FirebaseApp): AuthClient {
   const auth = getAuth(app);
+  auth.useDeviceLanguage();
 
   return {
     onAuthStateChanged: (callback) => onAuthStateChanged(auth, (user) => callback(user ? toAuthUser(user) : null)),
@@ -29,6 +40,31 @@ export function createFirebaseAuthClient(config: FirebaseWebConfig): AuthClient 
       if (selectAccount) provider.setCustomParameters({ prompt: 'select_account' });
       // The result (which includes OAuth credentials) is deliberately not kept or logged.
       await signInWithPopup(auth, provider);
+    },
+
+    async signInWithEmail(email, password) {
+      await signInWithEmailAndPassword(auth, email, password);
+    },
+
+    async signUpWithEmail(email, password, displayName) {
+      const { user } = await createUserWithEmailAndPassword(auth, email, password);
+      if (displayName) await updateProfile(user, { displayName });
+      await sendEmailVerification(user);
+    },
+
+    sendPasswordReset: (email) => sendPasswordResetEmail(auth, email),
+
+    async sendVerificationEmail() {
+      if (auth.currentUser) await sendEmailVerification(auth.currentUser);
+    },
+
+    async reloadUser() {
+      const user = auth.currentUser;
+      if (!user) return null;
+      await user.reload();
+      // Refresh the ID token so Firestore security rules see the new email_verified value.
+      await user.getIdToken(true);
+      return toAuthUser(user);
     },
 
     signOut: () => signOut(auth),

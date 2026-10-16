@@ -70,7 +70,7 @@ export function SetupRequiredNotice({ missing }: { missing: string[] }) {
   return (
     <div role="status" className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
       <p className="flex items-center gap-2 font-medium">
-        <Settings2 className="h-4 w-4" aria-hidden /> Google sign-in isn’t set up yet
+        <Settings2 className="h-4 w-4" aria-hidden /> Sign-in isn’t set up yet
       </p>
       <p className="mt-1">
         Add the Firebase web configuration to this app’s environment, then rebuild it. Missing:
@@ -80,7 +80,7 @@ export function SetupRequiredNotice({ missing }: { missing: string[] }) {
           <li key={name}>{name}</li>
         ))}
       </ul>
-      <p className="mt-2 text-xs">See “Google sign-in setup” in the README for step-by-step instructions.</p>
+      <p className="mt-2 text-xs">See “Sign-in setup” in the README for step-by-step instructions.</p>
     </div>
   );
 }

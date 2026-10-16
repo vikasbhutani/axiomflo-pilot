@@ -5,7 +5,7 @@ import { describeSignInError } from './errors';
 import { createHttpMembershipService, noBackendMembershipService, parseMembership } from './membershipService';
 import { destinationFor, loginPathFor, safeReturnTo } from './redirects';
 
-const user = { uid: 'u1', displayName: 'A', email: 'a@example.com' };
+const user = { uid: 'u1', displayName: 'A', email: 'a@example.com', emailVerified: true };
 
 describe('safeReturnTo', () => {
   it.each([
@@ -33,6 +33,7 @@ describe('safeReturnTo', () => {
     expect(destinationFor({ status: 'pending', user, membership: null }, '/teams')).toBe('/access-pending');
     expect(destinationFor({ status: 'denied', user }, '/teams')).toBe('/access-denied');
     expect(destinationFor({ status: 'initializing' })).toBeNull();
+    expect(destinationFor({ status: 'verification_required', user: { ...user, emailVerified: false } }, '/teams')).toBe('/verify-email');
   });
 });
 
@@ -40,6 +41,18 @@ describe('describeSignInError', () => {
   it('treats a closed popup as a cancellation', () => {
     expect(describeSignInError({ code: 'auth/popup-closed-by-user' }, 'x').kind).toBe('cancelled');
     expect(describeSignInError({ code: 'auth/cancelled-popup-request' }, 'x').kind).toBe('cancelled');
+  });
+
+  it('explains when Firebase Authentication was never set up', () => {
+    expect(describeSignInError({ code: 'auth/configuration-not-found' }, 'x').kind).toBe('auth_not_set_up');
+  });
+
+  it('gives one message for a wrong email or password, so accounts can’t be probed', () => {
+    const a = describeSignInError({ code: 'auth/user-not-found' }, 'x');
+    const b = describeSignInError({ code: 'auth/wrong-password' }, 'x');
+    const c = describeSignInError({ code: 'auth/invalid-credential' }, 'x');
+    expect(a.message).toBe(b.message);
+    expect(b.message).toBe(c.message);
   });
 
   it('names the hostname that needs authorizing', () => {
@@ -113,33 +126,72 @@ describe('membership services', () => {
 describe('Firebase client', () => {
   afterEach(() => {
     vi.resetModules();
-    vi.doUnmock('firebase/app');
     vi.doUnmock('firebase/auth');
+    vi.doUnmock('firebase/firestore');
   });
 
-  it('uses a Google popup with no extra scopes, and the account chooser on request', async () => {
-    const setCustomParameters = vi.fn();
-    const addScope = vi.fn();
-    const signInWithPopup = vi.fn(async () => ({ user: {} }));
-    vi.doMock('firebase/app', () => ({ getApps: () => [], getApp: vi.fn(), initializeApp: vi.fn(() => ({})) }));
+  function mockAuth() {
+    const fns = {
+      setCustomParameters: vi.fn(),
+      addScope: vi.fn(),
+      signInWithPopup: vi.fn(async () => ({ user: {} })),
+      createUserWithEmailAndPassword: vi.fn(async () => ({ user: { uid: 'new' } })),
+      updateProfile: vi.fn(async () => {}),
+      sendEmailVerification: vi.fn(async () => {}),
+      signInWithEmailAndPassword: vi.fn(async () => ({})),
+      sendPasswordResetEmail: vi.fn(async () => {}),
+    };
     vi.doMock('firebase/auth', () => ({
-      getAuth: () => ({ currentUser: null }),
+      getAuth: () => ({ currentUser: null, useDeviceLanguage: vi.fn() }),
       GoogleAuthProvider: class {
-        setCustomParameters = setCustomParameters;
-        addScope = addScope;
+        setCustomParameters = fns.setCustomParameters;
+        addScope = fns.addScope;
       },
-      signInWithPopup,
       onAuthStateChanged: vi.fn(),
       signOut: vi.fn(),
+      ...fns,
     }));
+    return fns;
+  }
+
+  it('uses a Google popup with no extra scopes, and the account chooser on request', async () => {
+    const fns = mockAuth();
     const { createFirebaseAuthClient } = await import('./firebaseClient');
-    const client = createFirebaseAuthClient({ apiKey: 'k', authDomain: 'd', projectId: 'p', appId: 'a' });
+    const client = createFirebaseAuthClient({} as never);
     await client.signInWithGoogle();
-    expect(signInWithPopup).toHaveBeenCalledTimes(1);
-    expect(setCustomParameters).not.toHaveBeenCalled();
+    expect(fns.signInWithPopup).toHaveBeenCalledTimes(1);
+    expect(fns.setCustomParameters).not.toHaveBeenCalled();
     await client.signInWithGoogle({ selectAccount: true });
-    expect(setCustomParameters).toHaveBeenCalledWith({ prompt: 'select_account' });
-    expect(addScope).not.toHaveBeenCalled();
+    expect(fns.setCustomParameters).toHaveBeenCalledWith({ prompt: 'select_account' });
+    expect(fns.addScope).not.toHaveBeenCalled();
     expect(await client.getIdToken()).toBeNull();
+  });
+
+  it('creates email accounts with a name and sends the verification email', async () => {
+    const fns = mockAuth();
+    const { createFirebaseAuthClient } = await import('./firebaseClient');
+    const client = createFirebaseAuthClient({} as never);
+    await client.signUpWithEmail('a@example.com', 'long-password', 'Ann');
+    expect(fns.createUserWithEmailAndPassword).toHaveBeenCalledWith(expect.anything(), 'a@example.com', 'long-password');
+    expect(fns.updateProfile).toHaveBeenCalledWith({ uid: 'new' }, { displayName: 'Ann' });
+    expect(fns.sendEmailVerification).toHaveBeenCalledWith({ uid: 'new' });
+  });
+
+  it('reads only the signed-in person’s own membership document from Firestore', async () => {
+    const getDoc = vi.fn();
+    const docFn = vi.fn((_db: unknown, ...path: string[]) => path.join('/'));
+    vi.doMock('firebase/firestore', () => ({ getFirestore: () => ({}), doc: docFn, getDoc }));
+    const { createFirestoreMembershipService } = await import('./membershipService');
+    const service = createFirestoreMembershipService({} as never);
+
+    getDoc.mockResolvedValueOnce({ exists: () => false });
+    expect(await service.getMembership(user)).toBeNull();
+    expect(docFn).toHaveBeenCalledWith(expect.anything(), 'memberships', 'u1');
+
+    getDoc.mockResolvedValueOnce({ exists: () => true, id: 'u1', data: () => ({ userId: 'someone-else', companyId: 'c1', role: 'individual_user', teamIds: ['t1'], status: 'active' }) });
+    expect(await service.getMembership(user)).toMatchObject({ userId: 'u1', role: 'individual_user', status: 'active' });
+
+    getDoc.mockResolvedValueOnce({ exists: () => true, id: 'u1', data: () => ({ companyId: 'c1', role: 'owner', teamIds: [], status: 'active' }) });
+    await expect(service.getMembership(user)).rejects.toThrow();
   });
 });

@@ -5,6 +5,7 @@
  * It is never taken from the browser: not from the demo role switcher, URL
  * parameters, localStorage, or an email-domain match.
  */
+import type { FirebaseApp } from 'firebase/app';
 import type { Role } from '../types';
 import type { ApiClient } from './api';
 import type { AuthUser, Membership, MembershipStatus } from './types';
@@ -15,8 +16,8 @@ export interface MembershipService {
 }
 
 /**
- * Used while there is no backend: nobody has an approved membership, so every
- * real Google user is shown the "Access pending" screen. This is deliberate.
+ * Used when Firebase isn't configured: nobody has an approved membership, so every
+ * signed-in person is shown the "Access pending" screen. This is deliberate.
  */
 export const noBackendMembershipService: MembershipService = {
   async getMembership() {
@@ -65,6 +66,28 @@ export function createHttpMembershipService(api: ApiClient): MembershipService {
       if (response.status === 404) return null;
       if (!response.ok) throw new Error(`Membership lookup failed (HTTP ${response.status}).`);
       return parseMembership(await response.json());
+    },
+  };
+}
+
+/**
+ * Reads memberships from Cloud Firestore: one document per person at `memberships/{Firebase UID}`.
+ *
+ * This is safe only together with the security rules in `firestore.rules`, which let a
+ * signed-in person with a verified email READ their own document and let NOBODY write
+ * from the browser. Administrators create and change memberships in the Firebase
+ * console (or later from a trusted backend), never from this app.
+ *
+ * Firestore is loaded only when a membership is first checked, so the demo stays light.
+ */
+export function createFirestoreMembershipService(app: FirebaseApp): MembershipService {
+  return {
+    async getMembership(user) {
+      const { doc, getDoc, getFirestore } = await import('firebase/firestore');
+      const snapshot = await getDoc(doc(getFirestore(app), 'memberships', user.uid));
+      if (!snapshot.exists()) return null;
+      // The document ID is the UID, so the person can only ever receive their own membership.
+      return parseMembership({ ...snapshot.data(), userId: snapshot.id });
     },
   };
 }

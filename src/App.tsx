@@ -2,6 +2,7 @@ import { lazy } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { AuthStatusRoute } from './auth/guards';
 import { AccessDeniedPage, AccessPendingPage } from './pages/auth/AccessPages';
+import { ResetPasswordPage, VerifyEmailPage } from './pages/auth/EmailPages';
 import { LoginPage, SignupPage } from './pages/auth/LoginPage';
 import { AppShell } from './components/layout/AppShell';
 import { NotFoundPage } from './pages/NotFoundPage';
@@ -20,6 +21,8 @@ export function App() {
     <Routes>
       <Route path="login" element={<AuthStatusRoute allow={['signed_out', 'config_missing']}><LoginPage /></AuthStatusRoute>} />
       <Route path="signup" element={<AuthStatusRoute allow={['signed_out', 'config_missing']}><SignupPage /></AuthStatusRoute>} />
+      <Route path="reset-password" element={<AuthStatusRoute allow={['signed_out', 'config_missing']}><ResetPasswordPage /></AuthStatusRoute>} />
+      <Route path="verify-email" element={<AuthStatusRoute allow={['verification_required']}><VerifyEmailPage /></AuthStatusRoute>} />
       <Route path="access-pending" element={<AuthStatusRoute allow={['pending', 'error']}><AccessPendingPage /></AuthStatusRoute>} />
       <Route path="access-denied" element={<AuthStatusRoute allow={['denied']}><AccessDeniedPage /></AuthStatusRoute>} />
       {/* Workspace pages. AppShell only renders them for an approved member or an explicit demo session. */}
