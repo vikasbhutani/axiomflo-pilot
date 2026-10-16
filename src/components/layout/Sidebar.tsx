@@ -2,10 +2,15 @@ import { NavLink } from 'react-router-dom';
 import { Building2, FlaskConical } from 'lucide-react';
 import { navItems } from './navigation';
 import { Logo } from './Logo';
+import { useWorkspaceSession } from '../../auth/WorkspaceSession';
 import { useDemo } from '../../context/DemoContext';
 
 export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { workspace } = useDemo();
+  const session = useWorkspaceSession();
+  // A real workspace never shows the sample company's name.
+  const companyName = session.mode === 'real' ? session.membership.companyName ?? 'Your company' : workspace.companyName;
+  const departmentName = session.mode === 'real' ? null : workspace.departmentName;
   return (
     <div className="flex h-full flex-col bg-navy-900 text-navy-200">
       <div className="px-5 pb-4 pt-5">
@@ -13,8 +18,8 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         <div className="mt-5 flex items-center gap-2 rounded-lg bg-navy-800 px-3 py-2.5">
           <Building2 className="h-4 w-4 shrink-0 text-navy-300" aria-hidden />
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-white">{workspace.companyName}</p>
-            <p className="truncate text-xs text-navy-300">{workspace.departmentName}</p>
+            <p className="truncate text-sm font-medium text-white">{companyName}</p>
+            {departmentName && <p className="truncate text-xs text-navy-300">{departmentName}</p>}
           </div>
         </div>
       </div>
@@ -43,12 +48,14 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           ))}
         </ul>
       </nav>
-      <div className="m-3 rounded-lg border border-navy-700 px-3 py-2.5 text-xs text-navy-300">
-        <p className="flex items-center gap-1.5 font-medium text-navy-200">
-          <FlaskConical className="h-3.5 w-3.5 text-teal-300" aria-hidden /> Demo workspace
-        </p>
-        <p className="mt-1 leading-relaxed">All figures are sample data. No live providers or billing are connected.</p>
-      </div>
+      {session.mode === 'demo' && (
+        <div className="m-3 rounded-lg border border-navy-700 px-3 py-2.5 text-xs text-navy-300">
+          <p className="flex items-center gap-1.5 font-medium text-navy-200">
+            <FlaskConical className="h-3.5 w-3.5 text-teal-300" aria-hidden /> Demo workspace
+          </p>
+          <p className="mt-1 leading-relaxed">All figures are sample data. No live providers or billing are connected.</p>
+        </div>
+      )}
     </div>
   );
 }

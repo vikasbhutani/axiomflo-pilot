@@ -1,4 +1,5 @@
 import { FlaskConical, Menu } from 'lucide-react';
+import { useWorkspaceSession } from '../../auth/WorkspaceSession';
 import { useDemo } from '../../context/DemoContext';
 import { useToast } from '../../context/ToastContext';
 import { formatPeriod } from '../../lib/format';
@@ -19,6 +20,9 @@ export function DemoDataLabel() {
 export function TopBar({ onOpenNav }: { onOpenNav: () => void }) {
   const { role, setRole, period, setPeriod, workspace } = useDemo();
   const notify = useToast();
+  // The demo label, period and role switcher belong to the sample workspace only.
+  // A real member's role comes from their membership and can't be changed here.
+  const isDemo = useWorkspaceSession().mode === 'demo';
 
   const changeRole = (next: string) => {
     setRole(next as Role);
@@ -31,26 +35,28 @@ export function TopBar({ onOpenNav }: { onOpenNav: () => void }) {
         <button type="button" onClick={onOpenNav} className="rounded-md p-2 text-slate-600 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600 lg:hidden" aria-label="Open navigation">
           <Menu className="h-5 w-5" aria-hidden />
         </button>
-        <DemoDataLabel />
-        <div className="order-last flex w-full gap-2 sm:order-none sm:ml-auto sm:w-auto">
-          <SelectField
-            label="Reporting period"
-            hideLabel
-            value={period}
-            onChange={setPeriod}
-            options={workspace.periods.map((p) => ({ value: p, label: formatPeriod(p) }))}
-            className="flex-1 sm:w-44 sm:flex-none"
-          />
-          <SelectField
-            label="Demo role"
-            hideLabel
-            value={role}
-            onChange={changeRole}
-            options={(Object.keys(roleLabels) as Role[]).map((r) => ({ value: r, label: `View as: ${roleLabels[r]}` }))}
-            className="flex-1 sm:w-56 sm:flex-none"
-          />
-        </div>
-        <div className="ml-auto sm:ml-0">
+        {isDemo && <DemoDataLabel />}
+        {isDemo && (
+          <div className="order-last flex w-full gap-2 sm:order-none sm:ml-auto sm:w-auto">
+            <SelectField
+              label="Reporting period"
+              hideLabel
+              value={period}
+              onChange={setPeriod}
+              options={workspace.periods.map((p) => ({ value: p, label: formatPeriod(p) }))}
+              className="flex-1 sm:w-44 sm:flex-none"
+            />
+            <SelectField
+              label="Demo role"
+              hideLabel
+              value={role}
+              onChange={changeRole}
+              options={(Object.keys(roleLabels) as Role[]).map((r) => ({ value: r, label: `View as: ${roleLabels[r]}` }))}
+              className="flex-1 sm:w-56 sm:flex-none"
+            />
+          </div>
+        )}
+        <div className={isDemo ? 'ml-auto sm:ml-0' : 'ml-auto'}>
           <ProfileMenu />
         </div>
       </div>
