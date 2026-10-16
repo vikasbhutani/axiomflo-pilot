@@ -40,7 +40,7 @@ export function ProfileMenu() {
           <span className="block text-sm font-medium leading-tight text-slate-900">{currentUser.name}</span>
           <span className="block text-xs leading-tight text-slate-500">{roleLabels[role]}</span>
         </span>
-        <ChevronDown className="h-4 w-4 text-slate-400" aria-hidden />
+        <ChevronDown className="hidden h-4 w-4 text-slate-400 sm:block" aria-hidden />
         <span className="sr-only">Open profile menu</span>
       </button>
       {open && (

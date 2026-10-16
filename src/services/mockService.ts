@@ -19,11 +19,14 @@ import {
   usageRecords,
   users,
 } from '../data/mockData';
-import { costBreakdown, summarize, summarizeBy, type CostSummary } from '../lib/calculations';
+import { costBreakdown, pricingVersionFor, summarize, summarizeBy, type CostBreakdown, type CostSummary } from '../lib/calculations';
 import { periodBounds, toLocalDate } from '../lib/format';
 import { can, scopeUsageRecords, visibleTeamIds } from '../lib/permissions';
 import type {
+  CostStatus,
   CostedUsageRecord,
+  PricingVersion,
+  RequestStatus,
   PeriodKey,
   ProviderConnection,
   ProviderId,
@@ -38,6 +41,13 @@ const LATENCY_MS = import.meta.env?.MODE === 'test' ? 0 : 250;
 
 function respond<T>(value: T): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(value), LATENCY_MS));
+}
+
+export class NotFoundError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'NotFoundError';
+  }
 }
 
 export class AccessDeniedError extends Error {
@@ -85,19 +95,58 @@ export interface ReportFilters {
   providerId?: ProviderId | 'all';
 }
 
-/** Every record the user may see, matching the filters. The single source for all reports. */
-export function selectRecords(filters: ReportFilters, context: UserContext): CostedUsageRecord[] {
-  const [start, end] = periodBounds(filters.period);
+interface BaseFilters {
+  startDate: string;
+  endDate: string;
+  teamId?: string;
+  providerId?: ProviderId | 'all';
+}
+
+/**
+ * Every record the user may see within a Sydney date range, team and provider.
+ * The single source for all reports, so every screen agrees.
+ */
+function selectScoped(filters: BaseFilters, context: UserContext): CostedUsageRecord[] {
   const allowedTeams = visibleTeamIds(context, users, teams.map((t) => t.id));
   const teamFilter = filters.teamId && filters.teamId !== 'all' ? filters.teamId : null;
   return scopeUsageRecords(allCostedRecords, context, users).filter(
     (r) =>
-      r.localDate >= start &&
-      r.localDate <= end &&
+      r.localDate >= filters.startDate &&
+      r.localDate <= filters.endDate &&
       allowedTeams.includes(r.teamId) &&
       (teamFilter === null || r.teamId === teamFilter) &&
       (!filters.providerId || filters.providerId === 'all' || r.providerId === filters.providerId),
   );
+}
+
+/** Every record the user may see for a reporting period and filters. */
+export function selectRecords(filters: ReportFilters, context: UserContext): CostedUsageRecord[] {
+  const [startDate, endDate] = periodBounds(filters.period);
+  return selectScoped({ startDate, endDate, teamId: filters.teamId, providerId: filters.providerId }, context);
+}
+
+export interface UsageFilters {
+  /** Inclusive Australia/Sydney dates (YYYY-MM-DD). */
+  startDate: string;
+  endDate: string;
+  teamId?: string;
+  providerId?: ProviderId | 'all';
+  requestStatus?: RequestStatus | 'all';
+  costStatus?: CostStatus | 'all';
+  /** Case-insensitive match on the request ID. */
+  search?: string;
+}
+
+export function selectUsage(filters: UsageFilters, context: UserContext): CostedUsageRecord[] {
+  const query = filters.search?.trim().toLowerCase() ?? '';
+  return selectScoped(filters, context)
+    .filter(
+      (r) =>
+        (!filters.requestStatus || filters.requestStatus === 'all' || r.requestStatus === filters.requestStatus) &&
+        (!filters.costStatus || filters.costStatus === 'all' || r.costStatus === filters.costStatus) &&
+        (query === '' || r.id.toLowerCase().includes(query)),
+    )
+    .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 }
 
 // ---------------------------------------------------------------------------
@@ -239,7 +288,7 @@ export function buildOverview(filters: ReportFilters, context: UserContext): Ove
         { id: 'workspace', label: 'Demo workspace created', done: true, href: '/settings' },
         { id: 'teams', label: 'Teams and usage codes assigned', done: true, href: '/teams' },
         { id: 'providers', label: 'Provider connections tested (simulated)', done: providerConnections.every((c) => c.lastSimulatedTestAt !== null), href: '/providers' },
-        { id: 'unresolved', label: 'Review requests with unavailable cost', done: false, href: '/usage' },
+        { id: 'unresolved', label: 'Review requests with unavailable cost', done: false, href: '/usage?cost=unavailable' },
         { id: 'showback', label: 'Preview the first monthly showback', done: false, href: '/showback' },
       ]
     : [
@@ -275,8 +324,54 @@ export function getOverview(filters: ReportFilters, context: UserContext): Promi
   return respond(buildOverview(filters, context));
 }
 
-export function getUsage(filters: ReportFilters, context: UserContext): Promise<CostedUsageRecord[]> {
-  return respond(selectRecords(filters, context));
+export interface UsageResult {
+  records: CostedUsageRecord[];
+  summary: CostSummary;
+}
+
+/** Requests matching the Usage Explorer filters, newest first, with totals from the shared calculations. */
+export function getUsage(filters: UsageFilters, context: UserContext): Promise<UsageResult> {
+  const records = selectUsage(filters, context);
+  return respond({ records, summary: summarize(records) });
+}
+
+/** Earliest and latest Sydney dates in the dataset, for date-range controls. */
+export function getDataDateBounds(): [string, string] {
+  const dates = allCostedRecords.map((r) => r.localDate).sort();
+  return [dates[0], dates[dates.length - 1]];
+}
+
+export interface RequestDetail {
+  record: CostedUsageRecord;
+  breakdown: CostBreakdown | null;
+  pricingVersion: PricingVersion | null;
+  /** Plain-language notes about anything missing or unresolved. Never invented values. */
+  missingInformation: string[];
+}
+
+export function buildRequestDetail(requestId: string, context: UserContext): RequestDetail {
+  // Look up within the caller's scope only, so out-of-scope IDs look the same as unknown ones.
+  const record = scopeUsageRecords(allCostedRecords, context, users).find((r) => r.id === requestId);
+  if (!record) throw new NotFoundError('This request does not exist or is not visible to your role.');
+  const pricingVersion = pricingVersionFor(record.localDate, pricingVersions);
+  const breakdown = costBreakdown(record, record.localDate, pricingVersions);
+
+  const missingInformation: string[] = [];
+  if (record.inputTokens === null) missingInformation.push('The provider did not report input tokens for this request.');
+  if (record.outputTokens === null) missingInformation.push('The provider did not report output tokens for this request.');
+  if (record.inputTokens !== null && record.outputTokens !== null && !breakdown) missingInformation.push('No illustrative rate exists for this model in the pricing version in effect.');
+  if (!breakdown) missingInformation.push('Estimated cost is not available and is not counted as $0. It appears under unresolved records.');
+  if (record.costStatus === 'estimated') missingInformation.push('Not yet reconciled (sample state). The estimate may change once matched to a provider billing record.');
+
+  return { record, breakdown, pricingVersion, missingInformation };
+}
+
+export function getRequestDetail(requestId: string, context: UserContext): Promise<RequestDetail> {
+  try {
+    return respond(buildRequestDetail(requestId, context));
+  } catch (error) {
+    return Promise.reject(error);
+  }
 }
 
 /** Teams the user may see. Individual Users only see their own team. */
