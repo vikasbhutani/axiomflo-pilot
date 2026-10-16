@@ -17,6 +17,7 @@ import { glossary } from '../lib/glossary';
 import { safeRatio, type CostSummary } from '../lib/calculations';
 import { formatCalendarDate, formatCurrency, formatDateTime, formatNumber, formatPercent, formatPeriod, formatPeriodRange } from '../lib/format';
 import type { ProviderId } from '../types';
+import { TableScroll } from '../components/ui/TableScroll';
 
 /** Builds a Usage Explorer link that carries the Overview's team and provider filters. */
 function usageLink(filters: OverviewData['filters'], extra: Record<string, string> = {}): string {
@@ -338,7 +339,7 @@ function RecentRequestsCard({ data }: { data: OverviewData }) {
       {data.recentRequests.length === 0 ? (
         <EmptyState title="No requests in this view" />
       ) : (
-        <div className="overflow-x-auto">
+        <TableScroll label="Recent requests table">
           <table className="w-full min-w-[640px] text-sm">
             <thead className="whitespace-nowrap bg-slate-50 text-left text-xs text-slate-500">
               <tr>
@@ -371,7 +372,7 @@ function RecentRequestsCard({ data }: { data: OverviewData }) {
               ))}
             </tbody>
           </table>
-        </div>
+        </TableScroll>
       )}
     </Card>
   );

@@ -19,6 +19,7 @@ import { downloadText } from '../lib/csv';
 import { safeRatio } from '../lib/calculations';
 import { formatCalendarDate, formatCurrency, formatDateTime, formatNumber, formatPercent, formatPeriod, formatPeriodRange } from '../lib/format';
 import type { ProviderId } from '../types';
+import { TableScroll } from '../components/ui/TableScroll';
 
 export const SHOWBACK_NOTICE = 'This report explains allocated AI usage costs. It is not an invoice and does not initiate payment.';
 
@@ -190,7 +191,7 @@ function TeamAllocation({ report }: { report: MonthlyShowback }) {
   return (
     <Card>
       <CardHeader title="Team allocation" description="Estimated spend allocated by each team’s usage code" />
-      <div className="overflow-x-auto">
+      <TableScroll label="Team allocation table">
         <table className="w-full min-w-[720px] text-sm">
           <thead className="whitespace-nowrap bg-slate-50 text-left text-xs text-slate-500">
             <tr>
@@ -243,7 +244,7 @@ function TeamAllocation({ report }: { report: MonthlyShowback }) {
             </tr>
           </tfoot>
         </table>
-      </div>
+      </TableScroll>
     </Card>
   );
 }
@@ -252,7 +253,7 @@ function ProviderBreakdown({ report }: { report: MonthlyShowback }) {
   return (
     <Card>
       <CardHeader title="Provider breakdown" description="Illustrative models and rates" />
-      <div className="overflow-x-auto">
+      <TableScroll label="Provider breakdown table">
         <table className="w-full min-w-[520px] text-sm">
           <thead className="whitespace-nowrap bg-slate-50 text-left text-xs text-slate-500">
             <tr>
@@ -278,7 +279,7 @@ function ProviderBreakdown({ report }: { report: MonthlyShowback }) {
             ))}
           </tbody>
         </table>
-      </div>
+      </TableScroll>
     </Card>
   );
 }
@@ -343,7 +344,7 @@ function UnresolvedCard({ report }: { report: MonthlyShowback }) {
       {shown.length === 0 ? (
         <EmptyState title="No unresolved requests this month" />
       ) : (
-        <div className="overflow-x-auto">
+        <TableScroll label="Unresolved requests table">
           <table className="w-full min-w-[720px] text-sm">
             <thead className="whitespace-nowrap bg-slate-50 text-left text-xs text-slate-500">
               <tr>
@@ -378,7 +379,7 @@ function UnresolvedCard({ report }: { report: MonthlyShowback }) {
               ))}
             </tbody>
           </table>
-        </div>
+        </TableScroll>
       )}
     </Card>
   );

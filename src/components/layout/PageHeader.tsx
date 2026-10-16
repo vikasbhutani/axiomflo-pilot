@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 
 export interface Crumb {
   label: string;
@@ -8,6 +9,7 @@ export interface Crumb {
 }
 
 export function PageHeader({ title, description, breadcrumbs, actions }: { title: string; description?: ReactNode; breadcrumbs?: Crumb[]; actions?: ReactNode }) {
+  useDocumentTitle(title);
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div className="min-w-0">

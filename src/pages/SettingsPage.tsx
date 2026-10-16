@@ -12,6 +12,7 @@ import { getAuditEvents, getLookups, resetDemoWorkspace, saveCompanyName, Valida
 import { can, roleLabels } from '../lib/permissions';
 import { clearPreferences } from '../lib/storage';
 import { formatDateTime } from '../lib/format';
+import { TableScroll } from '../components/ui/TableScroll';
 
 export function SettingsPage() {
   const { workspace, currentUser, role, userContext, dataVersion, setRole, setPeriod } = useDemo();
@@ -136,7 +137,7 @@ function AuditLogCard() {
       ) : state.data.length === 0 ? (
         <EmptyState title="No audit events yet" />
       ) : (
-        <div className="overflow-x-auto">
+        <TableScroll label="Audit events table">
           <table className="w-full min-w-[640px] text-sm">
             <thead className="whitespace-nowrap bg-slate-50 text-left text-xs text-slate-500">
               <tr>
@@ -157,7 +158,7 @@ function AuditLogCard() {
               ))}
             </tbody>
           </table>
-        </div>
+        </TableScroll>
       )}
     </Card>
   );
