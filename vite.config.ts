@@ -6,6 +6,8 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    // Component tests (.test.tsx) run in a simulated browser.
+    environmentMatchGlobs: [['src/**/*.test.tsx', 'jsdom']],
+    include: ['src/**/*.test.{ts,tsx}'],
   },
 });
