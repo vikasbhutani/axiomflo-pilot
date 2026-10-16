@@ -18,6 +18,16 @@ import { safeRatio, type CostSummary } from '../lib/calculations';
 import { formatCalendarDate, formatCurrency, formatDateTime, formatNumber, formatPercent, formatPeriod, formatPeriodRange } from '../lib/format';
 import type { ProviderId } from '../types';
 
+/** Builds a Usage Explorer link that carries the Overview's team and provider filters. */
+function usageLink(filters: OverviewData['filters'], extra: Record<string, string> = {}): string {
+  const params = new URLSearchParams();
+  if (filters.teamId && filters.teamId !== 'all') params.set('team', filters.teamId);
+  if (filters.providerId && filters.providerId !== 'all') params.set('provider', filters.providerId);
+  for (const [k, v] of Object.entries(extra)) params.set(k, v);
+  const query = params.toString();
+  return query ? `/usage?${query}` : '/usage';
+}
+
 export function OverviewPage() {
   const { userContext, period } = useDemo();
   const [params, setParams] = useSearchParams();
@@ -178,7 +188,7 @@ function SummaryCards({ data }: { data: OverviewData }) {
             {s.unresolvedCount > 0 && (
               <>
                 {' · '}
-                <Link to="/usage" className="font-medium text-teal-700 hover:underline">
+                <Link to={usageLink(data.filters, { cost: 'unavailable' })} className="font-medium text-teal-700 hover:underline">
                   Review
                 </Link>
               </>
@@ -320,7 +330,7 @@ function RecentRequestsCard({ data }: { data: OverviewData }) {
         title="Recent requests"
         description="Latest requests in the selected period and filters"
         action={
-          <Link to="/usage" className="inline-flex items-center gap-1 text-xs font-medium text-teal-700 hover:underline">
+          <Link to={usageLink(data.filters)} className="inline-flex items-center gap-1 text-xs font-medium text-teal-700 hover:underline">
             Open Usage Explorer <ArrowRight className="h-3.5 w-3.5" aria-hidden />
           </Link>
         }
@@ -343,9 +353,9 @@ function RecentRequestsCard({ data }: { data: OverviewData }) {
               {data.recentRequests.map((r) => (
                 <tr key={r.id} className="hover:bg-slate-50/60">
                   <td className="px-5 py-2.5">
-                    <p className="max-w-[12rem] truncate font-mono text-xs text-slate-700" title={r.id}>
+                    <Link to={usageLink(data.filters, { request: r.id })} className="block max-w-[12rem] truncate font-mono text-xs text-teal-800 hover:underline" title={r.id} aria-label={`Open details for request ${r.id}`}>
                       {r.id}
-                    </p>
+                    </Link>
                     <p className="text-xs text-slate-500">{formatDateTime(r.timestamp, { short: true })}</p>
                   </td>
                   <td className="px-3 py-2.5">

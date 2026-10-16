@@ -1,6 +1,7 @@
 import { Route, Routes } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell';
 import { OverviewPage } from './pages/OverviewPage';
+import { UsageExplorerPage } from './pages/UsageExplorerPage';
 import { UpcomingPage } from './pages/UpcomingPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
@@ -9,17 +10,7 @@ export function App() {
     <Routes>
       <Route element={<AppShell />}>
         <Route index element={<OverviewPage />} />
-        <Route
-          path="usage"
-          element={
-            <UpcomingPage
-              title="Usage Explorer"
-              milestone="milestone 2"
-              summary="A searchable table of every request you are allowed to see, with a detail drawer that shows how each estimated cost was calculated."
-              features={['Filters for date range, team, provider, request status and cost status', 'Search by request ID', 'Request detail drawer with calculation breakdown and pricing version', 'Clear “Not available” handling for missing usage']}
-            />
-          }
-        />
+        <Route path="usage" element={<UsageExplorerPage />} />
         <Route
           path="teams"
           element={
