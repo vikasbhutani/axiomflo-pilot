@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "agent:fixtures": "vite-node scripts/export-agent-fixtures.ts"
   },
   "dependencies": {
     "firebase": "^12.19.0",

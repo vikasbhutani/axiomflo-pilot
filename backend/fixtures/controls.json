@@ -1,0 +1,59 @@
+{
+  "label": "MOCK DATA: hand-written sample gateway controls and notification subscriptions for the demo workspace. No AxiomFlo gateway exists yet, so nothing here is enforced or delivered.",
+  "teamControls": [
+    {
+      "tenantId": "co-acme",
+      "teamId": "team-platform",
+      "policyVersion": 1,
+      "updatedAt": "2026-09-01T00:00:00Z",
+      "enforcement": "not_enforced",
+      "controls": {
+        "allowedProviders": ["gemini_vertex", "anthropic"],
+        "allowedModels": ["gemini-pro-demo", "gemini-flash-demo", "claude-sonnet-demo", "claude-haiku-demo"],
+        "requestsPerMinute": null,
+        "monthlyEstimatedSpendAlertAud": 150
+      }
+    },
+    {
+      "tenantId": "co-acme",
+      "teamId": "team-product",
+      "policyVersion": 1,
+      "updatedAt": "2026-09-01T00:00:00Z",
+      "enforcement": "not_enforced",
+      "controls": {
+        "allowedProviders": ["gemini_vertex", "anthropic"],
+        "allowedModels": ["gemini-flash-demo", "gemini-pro-demo", "claude-haiku-demo", "claude-sonnet-demo"],
+        "requestsPerMinute": 30,
+        "monthlyEstimatedSpendAlertAud": null
+      }
+    }
+  ],
+  "subscriptions": [
+    {
+      "id": "sub-weekly-maya",
+      "tenantId": "co-acme",
+      "ownerUserId": "u-maya",
+      "kind": "weekly_summary",
+      "scope": "company",
+      "channelType": "web",
+      "destination": "Private, in the AxiomFlo web app",
+      "schedule": "Mondays 09:00",
+      "timezone": "Australia/Sydney",
+      "status": "draft",
+      "lastDelivery": null
+    },
+    {
+      "id": "sub-monthly-noah",
+      "tenantId": "co-acme",
+      "ownerUserId": "u-noah",
+      "kind": "monthly_showback_ready",
+      "scope": "own_requests",
+      "channelType": "web",
+      "destination": "Private, in the AxiomFlo web app",
+      "schedule": "1st of the month 09:00",
+      "timezone": "Australia/Sydney",
+      "status": "draft",
+      "lastDelivery": null
+    }
+  ]
+}
