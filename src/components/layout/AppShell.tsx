@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { Suspense, useCallback, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { RequireWorkspace } from '../../auth/guards';
 import { useWorkspaceSession } from '../../auth/WorkspaceSession';
@@ -6,6 +6,7 @@ import { RealWorkspaceNotice } from '../auth/RealWorkspaceNotice';
 import { SidebarContent } from './Sidebar';
 import { MobileNav } from './MobileNav';
 import { TopBar } from './TopBar';
+import { LoadingState } from '../ui/States';
 
 export function AppShell() {
   return (
@@ -32,7 +33,13 @@ function Shell() {
         <TopBar onOpenNav={() => setNavOpen(true)} />
         <main id="main" className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:py-8">
           {/* Demo pages read sample data, so they only render in demo mode. */}
-          {session.mode === 'real' ? <RealWorkspaceNotice /> : <Outlet />}
+          {session.mode === 'real' ? (
+            <RealWorkspaceNotice />
+          ) : (
+            <Suspense fallback={<LoadingState label="Loading page…" />}>
+              <Outlet />
+            </Suspense>
+          )}
         </main>
       </div>
     </div>

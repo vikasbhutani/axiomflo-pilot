@@ -7,6 +7,7 @@ import { useDemo } from '../context/DemoContext';
 import { getAssistantResponse, SUGGESTED_QUESTIONS, type AssistantResponse, type SupportingFilters } from '../services/assistantService';
 import { roleLabels } from '../lib/permissions';
 import { formatPeriod } from '../lib/format';
+import { TableScroll } from '../components/ui/TableScroll';
 
 type ChatMessage = { id: number; from: 'user'; text: string } | { id: number; from: 'assistant'; response: AssistantResponse } | { id: number; from: 'error'; text: string };
 
@@ -229,7 +230,7 @@ function AssistantAnswer({ response, onAsk, disabled }: { response: AssistantRes
           )}
 
           {r.table && (
-            <div className="mt-3 overflow-x-auto rounded-lg border border-slate-200">
+            <TableScroll label={r.table.caption} className="mt-3 rounded-lg border border-slate-200">
               <table className="w-full min-w-[420px] text-xs tabular-nums">
                 <caption className="bg-slate-50 px-3 py-2 text-left text-xs font-medium text-slate-600">{r.table.caption}</caption>
                 <thead className="whitespace-nowrap bg-slate-50 text-slate-500">
@@ -276,7 +277,7 @@ function AssistantAnswer({ response, onAsk, disabled }: { response: AssistantRes
                   </tfoot>
                 )}
               </table>
-            </div>
+            </TableScroll>
           )}
 
           {r.supporting && (

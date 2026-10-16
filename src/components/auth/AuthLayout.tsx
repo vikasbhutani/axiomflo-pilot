@@ -3,9 +3,11 @@ import { AlertCircle, Info, Settings2 } from 'lucide-react';
 import { useAppSettings } from '../../auth/settings';
 import type { SignInError } from '../../auth/errors';
 import { Logo } from '../layout/Logo';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 
 /** Centered card on a light background, shared by the sign-in and access pages. */
 export function AuthLayout({ title, description, children }: { title: string; description?: ReactNode; children: ReactNode }) {
+  useDocumentTitle(title);
   return (
     <div className="flex min-h-screen flex-col bg-slate-50">
       <main id="main" className="flex flex-1 flex-col items-center justify-center px-4 py-10 sm:px-6">
@@ -36,7 +38,7 @@ export function LegalLinks() {
         {label}
       </a>
     ) : (
-      <span className="text-slate-400">{label} (setup required: not published yet)</span>
+      <span className="text-slate-500">{label} (setup required: not published yet)</span>
     );
   return (
     <nav aria-label="Legal" className="mt-6 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs">

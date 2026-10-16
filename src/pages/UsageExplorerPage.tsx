@@ -17,6 +17,7 @@ import { can } from '../lib/permissions';
 import { glossary } from '../lib/glossary';
 import { formatCurrency, formatDateTime, formatNumber, periodBounds } from '../lib/format';
 import type { CostStatus, CostedUsageRecord, ProviderId, RequestStatus } from '../types';
+import { TableScroll } from '../components/ui/TableScroll';
 
 const PAGE_SIZE = 25;
 type SortKey = 'time_desc' | 'time_asc' | 'cost_desc' | 'cost_asc';
@@ -204,7 +205,7 @@ export function UsageExplorerPage() {
           />
         ) : (
           <div className={state.status === 'loading' ? 'opacity-60 transition-opacity' : ''} aria-busy={state.status === 'loading'}>
-            <div className="overflow-x-auto">
+            <TableScroll label="Requests table">
               <table className="w-full min-w-[1180px] text-sm">
                 <caption className="sr-only">Requests matching the current filters. Select a request ID to open its details.</caption>
                 <thead className="whitespace-nowrap bg-slate-50 text-left text-xs text-slate-500">
@@ -271,7 +272,7 @@ export function UsageExplorerPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TableScroll>
             <Pagination page={currentPage} pageSize={PAGE_SIZE} total={sorted.length} onPageChange={(p) => update({ page: p === 1 ? null : String(p) }, { keepPage: true })} />
           </div>
         )}

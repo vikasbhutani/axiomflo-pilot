@@ -53,6 +53,18 @@ gcloud run deploy axiomflo-pilot \
 
 When it finishes, it prints a `https://axiomflo-pilot-….run.app` address. `--allow-unauthenticated` makes that address public, which suits a sample-data demo. Leave the flag off if only people in your Google Cloud project should be able to open it. To ship a new version later, run step 3 again.
 
+No command line? Everything above can also be done in the [Google Cloud console](https://console.cloud.google.com/run), or by clicking the **>_** (Activate Cloud Shell) icon at the top right of the console, which opens a terminal in your browser with `gcloud` already installed.
+
+### If the address shows a Google error page
+
+These pages come from Google, not from the app. Open **Cloud Run → your service** in the console:
+
+- **"Error: Page not found. The requested URL was not found on this server."** Open the **Networking** tab, set **Ingress** to **All**, make sure the default `run.app` URL isn't disabled, and save.
+- **"Error: Forbidden. Your client does not have permission…"** Open the **Security** tab, choose **Allow unauthenticated access**, and save. Only do this if anyone with the link may see the demo.
+- **"Service Unavailable"** or a timeout. Open the **Logs** tab and look for the first error after the latest deploy.
+
+The service page also shows the exact URL to use; Cloud Run can show two `run.app` addresses for the same service, and both work.
+
 ### Use your own domain
 
 Cloud Run's built-in domain mapping is a Google preview feature and only works in [some regions](https://cloud.google.com/run/docs/mapping-custom-domains). That's why step 3 uses `asia-southeast1` (Singapore): it's the closest supported region to Sydney. Replace `demo.example.com` with your domain:
@@ -233,11 +245,14 @@ Admin changes in the demo (team names, invitations, team moves, suspensions, pro
 src/
   types/        Shared TypeScript types
   data/         The mock dataset (sample data only)
-  lib/          Calculations, formatting, permissions, storage helpers
-  services/     Mock service functions (replace these with real API calls later)
+  lib/          Calculations, formatting, permissions, CSV and storage helpers
+  services/     Mock service functions and the demo assistant (replace with real API calls later)
+  auth/         Google sign-in, membership checks and route guards
   context/      Demo role / period state and notifications
+  hooks/        Small shared React hooks
   components/   Shared UI and the application shell
   pages/        One component per screen
+deploy/         nginx configuration used by the Dockerfile
 ```
 
 All totals (cards, charts, tables, the showback CSV and assistant answers) come from one module, `src/lib/calculations.ts`, so they always agree.
@@ -253,6 +268,10 @@ The functions in `src/services/mockService.ts` (`getOverview`, `getUsage`, `getT
 - [x] **Milestone 3:** Teams & Users, AI Providers, Settings (with demo reset)
 - [x] **Milestone 4:** Monthly Showback, report preview and role-scoped CSV export
 - [x] **Milestone 5:** AI Cost Assistant (deterministic, read-only, role-scoped answers)
-- [ ] Milestone 6: responsive and accessibility polish, remaining tests
+- [x] **Milestone 6:** responsive and accessibility polish, remaining tests, this README
 
-Screens not built yet show a short “planned for milestone N” page so navigation never dead-ends.
+## Quality checks
+
+- **Tests** (`npm test`) cover the shared cost calculations, Overview/showback/assistant total consistency, role-scoped filtering, missing-cost handling, CSV totals and escaping, admin actions, formatting and sign-in.
+- **Accessibility:** every screen was checked with the axe accessibility checker for both roles at desktop and phone widths, with no violations. Dialogs, the request drawer and the mobile menu keep keyboard focus inside while open, close with Escape and return focus to the button that opened them. Wide tables scroll sideways on small screens and can be scrolled with the keyboard. Each page sets its own browser tab title, and animations are reduced when your device asks for reduced motion.
+- **Performance:** each screen loads on demand, so the sign-in page doesn't download the charts.
