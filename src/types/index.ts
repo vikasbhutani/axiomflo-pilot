@@ -101,8 +101,26 @@ export interface ProviderConnection {
   status: ConnectionStatus;
   /** ISO timestamp of the last simulated connection test. */
   lastSimulatedTestAt: string | null;
+  lastSimulatedTestResult: 'success' | 'failure' | null;
   /** Human-readable, already-masked configuration summary. Never a secret. */
   configSummary: string;
+  /** Gemini on Vertex AI: non-secret configuration only. */
+  projectId?: string;
+  region?: string;
+  /** Placeholder description of the server-side identity. Never a key file. */
+  identitySummary?: string;
+  /** Anthropic: an already-masked sample, never a real key. */
+  maskedCredential?: string;
+  notes?: string;
+}
+
+export interface AuditEvent {
+  id: string;
+  /** ISO timestamp. */
+  at: string;
+  actorName: string;
+  action: string;
+  detail: string;
 }
 
 export type Principal =

@@ -2,6 +2,9 @@ import { Route, Routes } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell';
 import { OverviewPage } from './pages/OverviewPage';
 import { UsageExplorerPage } from './pages/UsageExplorerPage';
+import { TeamsPage } from './pages/TeamsPage';
+import { ProvidersPage } from './pages/ProvidersPage';
+import { SettingsPage } from './pages/SettingsPage';
 import { UpcomingPage } from './pages/UpcomingPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
@@ -11,28 +14,8 @@ export function App() {
       <Route element={<AppShell />}>
         <Route index element={<OverviewPage />} />
         <Route path="usage" element={<UsageExplorerPage />} />
-        <Route
-          path="teams"
-          element={
-            <UpcomingPage
-              title="Teams & Users"
-              milestone="milestone 3"
-              summary="One department, two teams, each with a read-only usage code, members, request counts and estimated spend."
-              features={['Edit team names (Company Admin)', 'Invite users in the demo (no real emails)', 'Move members between teams, suspend or reactivate', 'Confirmation dialogs for sensitive changes']}
-            />
-          }
-        />
-        <Route
-          path="providers"
-          element={
-            <UpcomingPage
-              title="AI Providers"
-              milestone="milestone 3"
-              summary="Gemini on Vertex AI and Anthropic connection cards with simulated tests. No live provider calls and no stored credentials."
-              features={['Masked configuration summaries', 'Simulated connection test with loading, success and failure states', 'Disable-connection confirmation']}
-            />
-          }
-        />
+        <Route path="teams" element={<TeamsPage />} />
+        <Route path="providers" element={<ProvidersPage />} />
         <Route
           path="showback"
           element={
@@ -55,17 +38,7 @@ export function App() {
             />
           }
         />
-        <Route
-          path="settings"
-          element={
-            <UpcomingPage
-              title="Settings"
-              milestone="milestone 3"
-              summary="Company and profile details, read-only AUD reporting currency, Australia/Sydney timezone, demo reset and a simulated audit log."
-              features={['Company name and reporting preferences', 'Profile information', 'Reset sample data', 'Audit events for simulated admin actions']}
-            />
-          }
-        />
+        <Route path="settings" element={<SettingsPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

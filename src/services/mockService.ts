@@ -6,24 +6,15 @@
  * and return the same shapes the pages render. Swap their bodies for real
  * HTTP calls later; keep the role checks on the server when you do.
  */
-import {
-  applications,
-  company,
-  DEMO_REPORTING_DATE,
-  department,
-  models,
-  pricingVersions,
-  providerConnections,
-  providers,
-  teams,
-  usageRecords,
-  users,
-} from '../data/mockData';
+import { applications, DEMO_PERSONAS, DEMO_REPORTING_DATE, department, models, pricingVersions, providers, usageRecords } from '../data/mockData';
+import { currentTeams, currentUsers, demoStore, newAuditEvent } from '../data/demoStore';
 import { costBreakdown, pricingVersionFor, summarize, summarizeBy, type CostBreakdown, type CostSummary } from '../lib/calculations';
 import { periodBounds, toLocalDate } from '../lib/format';
 import { can, scopeUsageRecords, visibleTeamIds } from '../lib/permissions';
 import type {
+  AuditEvent,
   CostStatus,
+  Role,
   CostedUsageRecord,
   PricingVersion,
   RequestStatus,
@@ -62,8 +53,13 @@ export class AccessDeniedError extends Error {
 // ---------------------------------------------------------------------------
 
 function principalName(record: UsageRecord): string {
-  if (record.principal.type === 'user') return users.find((u) => u.id === record.principal.id)?.name ?? 'Unknown user';
+  if (record.principal.type === 'user') return currentUsers().find((u) => u.id === record.principal.id)?.name ?? 'Unknown user';
   return applications.find((a) => a.id === record.principal.id)?.name ?? 'Unknown application';
+}
+
+/** Attaches current display names (people and teams can be renamed in the demo). */
+function withNames(record: CostedUsageRecord): CostedUsageRecord {
+  return { ...record, principalName: principalName(record), teamName: currentTeams().find((t) => t.id === record.teamId)?.name ?? record.teamCode };
 }
 
 export function toCostedRecord(record: UsageRecord): CostedUsageRecord {
@@ -74,7 +70,7 @@ export function toCostedRecord(record: UsageRecord): CostedUsageRecord {
     estimatedCost: breakdown?.total ?? null,
     pricingVersionId: breakdown?.pricingVersionId ?? null,
     principalName: principalName(record),
-    teamName: teams.find((t) => t.id === record.teamId)?.name ?? record.teamCode,
+    teamName: currentTeams().find((t) => t.id === record.teamId)?.name ?? record.teamCode,
     modelName: models.find((m) => m.id === record.modelId)?.displayName ?? record.modelId,
     providerName: providers.find((p) => p.id === record.providerId)?.name ?? record.providerId,
     localDate,
@@ -107,16 +103,18 @@ interface BaseFilters {
  * The single source for all reports, so every screen agrees.
  */
 function selectScoped(filters: BaseFilters, context: UserContext): CostedUsageRecord[] {
-  const allowedTeams = visibleTeamIds(context, users, teams.map((t) => t.id));
+  const allowedTeams = visibleTeamIds(context, currentUsers(), currentTeams().map((t) => t.id));
   const teamFilter = filters.teamId && filters.teamId !== 'all' ? filters.teamId : null;
-  return scopeUsageRecords(allCostedRecords, context, users).filter(
-    (r) =>
-      r.localDate >= filters.startDate &&
-      r.localDate <= filters.endDate &&
-      allowedTeams.includes(r.teamId) &&
-      (teamFilter === null || r.teamId === teamFilter) &&
-      (!filters.providerId || filters.providerId === 'all' || r.providerId === filters.providerId),
-  );
+  return scopeUsageRecords(allCostedRecords, context, currentUsers())
+    .filter(
+      (r) =>
+        r.localDate >= filters.startDate &&
+        r.localDate <= filters.endDate &&
+        allowedTeams.includes(r.teamId) &&
+        (teamFilter === null || r.teamId === teamFilter) &&
+        (!filters.providerId || filters.providerId === 'all' || r.providerId === filters.providerId),
+    )
+    .map(withNames);
 }
 
 /** Every record the user may see for a reporting period and filters. */
@@ -172,10 +170,10 @@ export function getReportingPeriods(): PeriodKey[] {
 export function getWorkspaceInfo(): WorkspaceInfo {
   const periods = getReportingPeriods();
   return {
-    companyName: company.name,
+    companyName: demoStore.get().companyName,
     departmentName: department.name,
-    currency: company.reportingCurrency,
-    timezone: company.reportingTimezone,
+    currency: 'AUD',
+    timezone: 'Australia/Sydney',
     demoReportingDate: DEMO_REPORTING_DATE,
     periods,
     defaultPeriod: periods[0],
@@ -183,7 +181,7 @@ export function getWorkspaceInfo(): WorkspaceInfo {
 }
 
 export function getCurrentUser(context: UserContext): User | undefined {
-  return users.find((u) => u.id === context.userId);
+  return currentUsers().find((u) => u.id === context.userId);
 }
 
 export interface TeamSlice {
@@ -261,7 +259,8 @@ export function buildOverview(filters: ReportFilters, context: UserContext): Ove
   const previousPeriod = previousPeriodOf(filters.period);
   const previousSummary = previousPeriod ? summarize(selectRecords({ ...effectiveFilters, period: previousPeriod }, context)) : null;
 
-  const allowedTeamIds = visibleTeamIds(context, users, teams.map((t) => t.id));
+  const teams = currentTeams();
+  const allowedTeamIds = visibleTeamIds(context, currentUsers(), teams.map((t) => t.id));
   const teamGroups = summarizeBy(records, (r) => r.teamId);
   const byTeam: TeamSlice[] = teams
     .filter((t) => allowedTeamIds.includes(t.id))
@@ -273,6 +272,7 @@ export function buildOverview(filters: ReportFilters, context: UserContext): Ove
     .filter((p) => !filters.providerId || filters.providerId === 'all' || p.id === filters.providerId)
     .map((p) => ({ providerId: p.id, name: p.name, summary: providerGroups.get(p.id) ?? summarize([]) }));
 
+  const providerConnections = demoStore.get().connections.map(withConfigSummary);
   const connections: ProviderConnectionSummary[] = providerConnections
     .filter((c) => !filters.providerId || filters.providerId === 'all' || c.providerId === filters.providerId)
     .map((c) => ({
@@ -351,8 +351,9 @@ export interface RequestDetail {
 
 export function buildRequestDetail(requestId: string, context: UserContext): RequestDetail {
   // Look up within the caller's scope only, so out-of-scope IDs look the same as unknown ones.
-  const record = scopeUsageRecords(allCostedRecords, context, users).find((r) => r.id === requestId);
-  if (!record) throw new NotFoundError('This request does not exist or is not visible to your role.');
+  const found = scopeUsageRecords(allCostedRecords, context, currentUsers()).find((r) => r.id === requestId);
+  if (!found) throw new NotFoundError('This request does not exist or is not visible to your role.');
+  const record = withNames(found);
   const pricingVersion = pricingVersionFor(record.localDate, pricingVersions);
   const breakdown = costBreakdown(record, record.localDate, pricingVersions);
 
@@ -374,16 +375,355 @@ export function getRequestDetail(requestId: string, context: UserContext): Promi
   }
 }
 
-/** Teams the user may see. Individual Users only see their own team. */
-export function getTeams(context: UserContext): Promise<Team[]> {
-  const allowed = visibleTeamIds(context, users, teams.map((t) => t.id));
-  return respond(teams.filter((t) => allowed.includes(t.id)));
+// ---------------------------------------------------------------------------
+// Teams & Users (simulated admin actions)
+// ---------------------------------------------------------------------------
+
+export class ValidationError extends Error {
+  constructor(public readonly fieldErrors: Record<string, string>) {
+    super(Object.values(fieldErrors)[0] ?? 'Please check the form.');
+    this.name = 'ValidationError';
+  }
 }
 
-export function getProviderConnections(context: UserContext): Promise<ProviderConnection[]> {
-  if (!can(context, 'view_provider_settings')) return Promise.reject(new AccessDeniedError('Only Company Admins can view provider connection settings.'));
-  return respond(providerConnections);
+function requirePermission(context: UserContext, permission: Parameters<typeof can>[1], message: string) {
+  if (!can(context, permission)) throw new AccessDeniedError(message);
 }
 
-/** Static lookups shared by filter controls. */
-export const lookups = { teams, providers, models, pricingVersions };
+function actorName(context: UserContext): string {
+  return getCurrentUser(context)?.name ?? 'Unknown user';
+}
+
+/** Runs a synchronous mutation and returns it as a simulated async call. */
+function act<T>(fn: () => T): Promise<T> {
+  try {
+    return respond(fn());
+  } catch (error) {
+    return Promise.reject(error);
+  }
+}
+
+export interface TeamMember extends User {
+  /** Requests this person made under this team's code in the period. Not shown to other Individual Users. */
+  requestCount: number;
+}
+
+export interface TeamOverview {
+  team: Team;
+  members: TeamMember[];
+  summary: CostSummary;
+}
+
+export interface TeamsData {
+  departmentName: string;
+  teams: TeamOverview[];
+  canManage: boolean;
+}
+
+/** Department, teams, members and period totals the user may see. */
+export function buildTeams(period: PeriodKey, context: UserContext): TeamsData {
+  const teams = currentTeams();
+  const allowed = visibleTeamIds(context, currentUsers(), teams.map((t) => t.id));
+  const records = selectRecords({ period }, context);
+  const isAdmin = can(context, 'manage_teams');
+  return {
+    departmentName: department.name,
+    canManage: isAdmin,
+    teams: teams
+      .filter((t) => allowed.includes(t.id))
+      .map((team) => {
+        const teamRecords = records.filter((r) => r.teamId === team.id);
+        const members = currentUsers()
+          .filter((u) => u.teamId === team.id)
+          // Individual Users see who is on their team, but only their own activity.
+          .map((u) => ({ ...u, requestCount: isAdmin || u.id === context.userId ? teamRecords.filter((r) => r.principal.type === 'user' && r.principal.id === u.id).length : 0 }));
+        return { team, members, summary: summarize(teamRecords) };
+      }),
+  };
+}
+
+export function getTeams(period: PeriodKey, context: UserContext): Promise<TeamsData> {
+  return respond(buildTeams(period, context));
+}
+
+export function validateTeamName(name: string, teamId: string): string | null {
+  const trimmed = name.trim();
+  if (!trimmed) return 'Enter a team name.';
+  if (trimmed.length > 60) return 'Use 60 characters or fewer.';
+  if (currentTeams().some((t) => t.id !== teamId && t.name.toLowerCase() === trimmed.toLowerCase())) return 'Another team already uses this name.';
+  return null;
+}
+
+export function renameTeam(teamId: string, name: string, context: UserContext): Promise<Team> {
+  return act(() => {
+    requirePermission(context, 'manage_teams', 'Only Company Admins can rename teams.');
+    const team = currentTeams().find((t) => t.id === teamId);
+    if (!team) throw new NotFoundError('Team not found.');
+    const error = validateTeamName(name, teamId);
+    if (error) throw new ValidationError({ name: error });
+    const trimmed = name.trim();
+    demoStore.update((s) => ({
+      ...s,
+      teamNames: { ...s.teamNames, [teamId]: trimmed },
+      audit: [newAuditEvent(actorName(context), 'Team renamed', `${team.code}: “${team.name}” → “${trimmed}”`), ...s.audit],
+    }));
+    return { ...team, name: trimmed };
+  });
+}
+
+export interface InviteInput {
+  name: string;
+  email: string;
+  role: Role;
+  teamId: string;
+}
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function validateInvite(input: InviteInput): Record<string, string> {
+  const errors: Record<string, string> = {};
+  if (!input.name.trim()) errors.name = 'Enter a name.';
+  else if (input.name.trim().length > 80) errors.name = 'Use 80 characters or fewer.';
+  const email = input.email.trim().toLowerCase();
+  if (!email) errors.email = 'Enter an email address.';
+  else if (!EMAIL_PATTERN.test(email)) errors.email = 'Enter a valid email address, like name@company.com.';
+  else if (currentUsers().some((u) => u.email.toLowerCase() === email)) errors.email = 'Someone with this email is already in the workspace.';
+  if (input.role !== 'company_admin' && input.role !== 'individual_user') errors.role = 'Choose a role.';
+  if (!currentTeams().some((t) => t.id === input.teamId)) errors.teamId = 'Choose a team.';
+  return errors;
+}
+
+/** Adds an "invited" user. No email is sent: this is a demo. */
+export function inviteUser(input: InviteInput, context: UserContext): Promise<User> {
+  return act(() => {
+    requirePermission(context, 'invite_users', 'Only Company Admins can invite users.');
+    const errors = validateInvite(input);
+    if (Object.keys(errors).length > 0) throw new ValidationError(errors);
+    const user: User = {
+      id: `u-invited-${Date.now()}`,
+      name: input.name.trim(),
+      email: input.email.trim().toLowerCase(),
+      role: input.role,
+      teamId: input.teamId,
+      status: 'invited',
+      title: 'Invited (demo)',
+    };
+    const team = currentTeams().find((t) => t.id === input.teamId)!;
+    demoStore.update((s) => ({
+      ...s,
+      users: [...s.users, user],
+      audit: [newAuditEvent(actorName(context), 'User invited (simulated)', `${user.name} <${user.email}> to ${team.name} as ${input.role === 'company_admin' ? 'Company Admin' : 'Individual User'}. No email sent.`), ...s.audit],
+    }));
+    return user;
+  });
+}
+
+/** Demo personas power the role switcher, so they can't be suspended or moved. */
+export function isDemoPersona(userId: string): boolean {
+  return (Object.values(DEMO_PERSONAS) as string[]).includes(userId);
+}
+
+export function changeUserTeam(userId: string, teamId: string, context: UserContext): Promise<User> {
+  return act(() => {
+    requirePermission(context, 'manage_teams', 'Only Company Admins can change team assignments.');
+    const user = currentUsers().find((u) => u.id === userId);
+    const team = currentTeams().find((t) => t.id === teamId);
+    if (!user || !team) throw new NotFoundError('User or team not found.');
+    if (isDemoPersona(userId)) throw new ValidationError({ teamId: 'Demo personas used by the role switcher keep their team.' });
+    if (user.teamId === teamId) return user;
+    const from = currentTeams().find((t) => t.id === user.teamId);
+    const updated = { ...user, teamId };
+    demoStore.update((s) => ({
+      ...s,
+      users: s.users.map((u) => (u.id === userId ? updated : u)),
+      audit: [newAuditEvent(actorName(context), 'Team assignment changed', `${user.name}: ${from?.code ?? 'none'} → ${team.code}. Past requests keep their original team code.`), ...s.audit],
+    }));
+    return updated;
+  });
+}
+
+export function setUserStatus(userId: string, status: 'active' | 'suspended', context: UserContext): Promise<User> {
+  return act(() => {
+    requirePermission(context, 'manage_teams', 'Only Company Admins can suspend or reactivate users.');
+    const user = currentUsers().find((u) => u.id === userId);
+    if (!user) throw new NotFoundError('User not found.');
+    if (isDemoPersona(userId)) throw new ValidationError({ status: 'Demo personas used by the role switcher can’t be suspended.' });
+    const updated = { ...user, status };
+    demoStore.update((s) => ({
+      ...s,
+      users: s.users.map((u) => (u.id === userId ? updated : u)),
+      audit: [newAuditEvent(actorName(context), status === 'suspended' ? 'User suspended' : 'User reactivated', user.name), ...s.audit],
+    }));
+    return updated;
+  });
+}
+
+// ---------------------------------------------------------------------------
+// AI Providers (simulated connections; no live calls, no stored secrets)
+// ---------------------------------------------------------------------------
+
+function withConfigSummary(c: ProviderConnection): ProviderConnection {
+  const configSummary =
+    c.providerId === 'gemini_vertex'
+      ? [c.projectId && `Project ${c.projectId}`, c.region, c.identitySummary].filter(Boolean).join(' · ')
+      : [c.maskedCredential && `API key ${c.maskedCredential} (sample, not a real key)`].filter(Boolean).join(' · ');
+  return { ...c, configSummary };
+}
+
+export interface ProviderCard {
+  connection: ProviderConnection;
+  providerName: string;
+  summary: CostSummary;
+}
+
+export function buildProviderCards(period: PeriodKey, context: UserContext): ProviderCard[] {
+  requirePermission(context, 'view_provider_settings', 'Only Company Admins can view provider connection settings.');
+  const groups = summarizeBy(selectRecords({ period }, context), (r) => r.providerId);
+  return demoStore.get().connections.map((c) => ({
+    connection: withConfigSummary(c),
+    providerName: providers.find((p) => p.id === c.providerId)?.name ?? c.providerId,
+    summary: groups.get(c.providerId) ?? summarize([]),
+  }));
+}
+
+export function getProviderConnections(period: PeriodKey, context: UserContext): Promise<ProviderCard[]> {
+  return act(() => buildProviderCards(period, context));
+}
+
+export interface GeminiConfigInput {
+  projectId: string;
+  region: string;
+}
+
+export interface AnthropicConfigInput {
+  displayName: string;
+  notes: string;
+}
+
+export const GEMINI_REGIONS = ['australia-southeast1', 'australia-southeast2', 'asia-southeast1', 'us-central1', 'europe-west4'];
+const PROJECT_ID_PATTERN = /^[a-z][a-z0-9-]{4,28}[a-z0-9]$/;
+
+export function validateGeminiConfig(input: GeminiConfigInput): Record<string, string> {
+  const errors: Record<string, string> = {};
+  if (!PROJECT_ID_PATTERN.test(input.projectId.trim())) errors.projectId = 'Use 6–30 lowercase letters, digits or hyphens, starting with a letter (Google Cloud project ID format).';
+  if (!GEMINI_REGIONS.includes(input.region)) errors.region = 'Choose a region.';
+  return errors;
+}
+
+export function validateAnthropicConfig(input: AnthropicConfigInput): Record<string, string> {
+  const errors: Record<string, string> = {};
+  if (!input.displayName.trim()) errors.displayName = 'Enter a display name.';
+  else if (input.displayName.trim().length > 60) errors.displayName = 'Use 60 characters or fewer.';
+  if (input.notes.length > 500) errors.notes = 'Use 500 characters or fewer.';
+  return errors;
+}
+
+function updateConnection(connectionId: string, context: UserContext, action: string, detail: string, patch: Partial<ProviderConnection>): ProviderConnection {
+  const existing = demoStore.get().connections.find((c) => c.id === connectionId);
+  if (!existing) throw new NotFoundError('Connection not found.');
+  const updated = { ...existing, ...patch };
+  demoStore.update((s) => ({
+    ...s,
+    connections: s.connections.map((c) => (c.id === connectionId ? updated : c)),
+    audit: [newAuditEvent(actorName(context), action, detail), ...s.audit],
+  }));
+  return withConfigSummary(updated);
+}
+
+export function saveGeminiConfig(connectionId: string, input: GeminiConfigInput, context: UserContext): Promise<ProviderConnection> {
+  return act(() => {
+    requirePermission(context, 'view_provider_settings', 'Only Company Admins can change provider connections.');
+    const errors = validateGeminiConfig(input);
+    if (Object.keys(errors).length > 0) throw new ValidationError(errors);
+    return updateConnection(connectionId, context, 'Connection settings updated (simulated)', `Gemini on Vertex AI: project ${input.projectId.trim()}, ${input.region}`, { projectId: input.projectId.trim(), region: input.region });
+  });
+}
+
+export function saveAnthropicConfig(connectionId: string, input: AnthropicConfigInput, context: UserContext): Promise<ProviderConnection> {
+  return act(() => {
+    requirePermission(context, 'view_provider_settings', 'Only Company Admins can change provider connections.');
+    const errors = validateAnthropicConfig(input);
+    if (Object.keys(errors).length > 0) throw new ValidationError(errors);
+    return updateConnection(connectionId, context, 'Connection settings updated (simulated)', `Anthropic: display name “${input.displayName.trim()}”`, { displayName: input.displayName.trim(), notes: input.notes.trim() });
+  });
+}
+
+export type SimulatedOutcome = 'success' | 'failure';
+
+/**
+ * Pretends to test a connection. No provider is contacted: the outcome is
+ * whatever the admin chose to simulate, after a short delay.
+ */
+export function simulateConnectionTest(connectionId: string, outcome: SimulatedOutcome, context: UserContext): Promise<ProviderConnection> {
+  return new Promise((resolve, reject) => {
+    setTimeout(
+      () => {
+        try {
+          requirePermission(context, 'view_provider_settings', 'Only Company Admins can test provider connections.');
+          const c = demoStore.get().connections.find((x) => x.id === connectionId);
+          if (!c) throw new NotFoundError('Connection not found.');
+          if (c.status === 'disabled') throw new ValidationError({ status: 'Enable the connection before testing it.' });
+          const name = providers.find((p) => p.id === c.providerId)?.name ?? c.providerId;
+          resolve(
+            updateConnection(connectionId, context, 'Connection test (simulated)', `${name} test ${outcome === 'success' ? 'succeeded' : 'failed'}.`, {
+              lastSimulatedTestAt: new Date().toISOString(),
+              lastSimulatedTestResult: outcome,
+            }),
+          );
+        } catch (error) {
+          reject(error);
+        }
+      },
+      import.meta.env?.MODE === 'test' ? 0 : 1200,
+    );
+  });
+}
+
+export function setConnectionEnabled(connectionId: string, enabled: boolean, context: UserContext): Promise<ProviderConnection> {
+  return act(() => {
+    requirePermission(context, 'view_provider_settings', 'Only Company Admins can change provider connections.');
+    const c = demoStore.get().connections.find((x) => x.id === connectionId);
+    if (!c) throw new NotFoundError('Connection not found.');
+    const name = providers.find((p) => p.id === c.providerId)?.name ?? c.providerId;
+    return updateConnection(connectionId, context, enabled ? 'Connection enabled (simulated)' : 'Connection disabled (simulated)', name, { status: enabled ? 'connected_demo' : 'disabled' });
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Settings
+// ---------------------------------------------------------------------------
+
+export function validateCompanyName(name: string): string | null {
+  if (!name.trim()) return 'Enter a company name.';
+  if (name.trim().length > 80) return 'Use 80 characters or fewer.';
+  return null;
+}
+
+export function saveCompanyName(name: string, context: UserContext): Promise<string> {
+  return act(() => {
+    requirePermission(context, 'manage_teams', 'Only Company Admins can change company details.');
+    const error = validateCompanyName(name);
+    if (error) throw new ValidationError({ name: error });
+    const previous = demoStore.get().companyName;
+    const trimmed = name.trim();
+    demoStore.update((s) => ({ ...s, companyName: trimmed, audit: [newAuditEvent(actorName(context), 'Company name changed', `“${previous}” → “${trimmed}”`), ...s.audit] }));
+    return trimmed;
+  });
+}
+
+export function getAuditEvents(context: UserContext): Promise<AuditEvent[]> {
+  return act(() => {
+    requirePermission(context, 'manage_teams', 'Only Company Admins can view the audit log.');
+    return demoStore.get().audit;
+  });
+}
+
+/** Restores the seed dataset and clears simulated edits. Usage records never change. */
+export function resetDemoWorkspace(): Promise<void> {
+  return act(() => demoStore.reset());
+}
+
+/** Lookups shared by filter controls. Read at call time so renamed teams show up. */
+export function getLookups() {
+  return { teams: currentTeams(), providers, models, pricingVersions };
+}

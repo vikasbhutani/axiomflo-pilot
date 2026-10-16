@@ -12,7 +12,7 @@ import { EmptyState, ErrorState, LoadingState } from '../components/ui/States';
 import { RequestDetailPanel } from '../components/usage/RequestDetailPanel';
 import { useDemo } from '../context/DemoContext';
 import { useAsync } from '../hooks/useAsync';
-import { getDataDateBounds, getUsage, lookups, type UsageFilters } from '../services/mockService';
+import { getDataDateBounds, getUsage, getLookups, type UsageFilters } from '../services/mockService';
 import { can } from '../lib/permissions';
 import { glossary } from '../lib/glossary';
 import { formatCurrency, formatDateTime, formatNumber, periodBounds } from '../lib/format';
@@ -43,7 +43,7 @@ function sortRecords(records: CostedUsageRecord[], sort: SortKey): CostedUsageRe
 }
 
 export function UsageExplorerPage() {
-  const { userContext, period } = useDemo();
+  const { userContext, period, dataVersion } = useDemo();
   const [params, setParams] = useSearchParams();
   const isAdmin = can(userContext, 'view_all_teams');
   const [minDate, maxDate] = useMemo(() => getDataDateBounds(), []);
@@ -93,7 +93,7 @@ export function UsageExplorerPage() {
 
   const state = useAsync(
     () => (invalidRange ? Promise.reject(new Error('The start date is after the end date.')) : getUsage(filters, userContext)),
-    [filters.startDate, filters.endDate, filters.teamId, filters.providerId, filters.requestStatus, filters.costStatus, filters.search, userContext.userId, userContext.role],
+    [filters.startDate, filters.endDate, filters.teamId, filters.providerId, filters.requestStatus, filters.costStatus, filters.search, userContext.userId, userContext.role, dataVersion],
   );
 
   const sorted = useMemo(() => (state.data ? sortRecords(state.data.records, sort) : []), [state.data, sort]);
@@ -130,14 +130,14 @@ export function UsageExplorerPage() {
               label="Team"
               value={filters.teamId ?? 'all'}
               onChange={(v) => update({ team: v })}
-              options={[{ value: 'all', label: 'All teams' }, ...lookups.teams.map((t) => ({ value: t.id, label: t.name }))]}
+              options={[{ value: 'all', label: 'All teams' }, ...getLookups().teams.map((t) => ({ value: t.id, label: t.name }))]}
             />
           )}
           <SelectField
             label="Provider"
             value={filters.providerId ?? 'all'}
             onChange={(v) => update({ provider: v })}
-            options={[{ value: 'all', label: 'All providers' }, ...lookups.providers.map((p) => ({ value: p.id, label: p.name }))]}
+            options={[{ value: 'all', label: 'All providers' }, ...getLookups().providers.map((p) => ({ value: p.id, label: p.name }))]}
           />
           <SelectField
             label="Request status"

@@ -1,4 +1,5 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { demoStore } from '../data/demoStore';
 import { DEMO_PERSONAS } from '../data/mockData';
 import { getCurrentUser, getWorkspaceInfo, type WorkspaceInfo } from '../services/mockService';
 import { readPreference, writePreference } from '../lib/storage';
@@ -12,12 +13,16 @@ interface DemoState {
   currentUser: User;
   period: PeriodKey;
   setPeriod: (period: PeriodKey) => void;
+  /** Changes whenever simulated demo data is edited or reset; add it to data-loading dependencies. */
+  dataVersion: number;
 }
 
 const DemoContext = createContext<DemoState | null>(null);
 
 export function DemoProvider({ children }: { children: ReactNode }) {
-  const workspace = useMemo(() => getWorkspaceInfo(), []);
+  const dataVersion = useSyncExternalStore(demoStore.subscribe, demoStore.revision);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const workspace = useMemo(() => getWorkspaceInfo(), [dataVersion]);
   const [role, setRoleState] = useState<Role>(() => {
     const saved = readPreference<Role>('role', 'company_admin');
     return saved === 'individual_user' ? 'individual_user' : 'company_admin';
@@ -43,8 +48,9 @@ export function DemoProvider({ children }: { children: ReactNode }) {
         setPeriodState(next);
         writePreference('period', next);
       },
+      dataVersion,
     };
-  }, [workspace, role, period]);
+  }, [workspace, role, period, dataVersion]);
 
   return <DemoContext.Provider value={value}>{children}</DemoContext.Provider>;
 }
