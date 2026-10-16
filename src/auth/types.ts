@@ -14,6 +14,8 @@ export interface AuthUser {
   uid: string;
   displayName: string | null;
   email: string | null;
+  /** Whether the email address has been confirmed (Google does this; email/password users click a link). */
+  emailVerified: boolean;
 }
 
 export type MembershipStatus = 'active' | 'pending' | 'suspended';
@@ -40,7 +42,9 @@ export type AuthState =
   | { status: 'initializing' }
   /** `reason: 'signed_out'` means the person just clicked Sign out. */
   | { status: 'signed_out'; reason?: 'signed_out' }
-  /** Signed in with Google; asking the membership service what they may access. */
+  /** Signed in with email/password, but the email address isn't confirmed yet. No membership is checked. */
+  | { status: 'verification_required'; user: AuthUser }
+  /** Signed in; asking the membership service what they may access. */
   | { status: 'membership_loading'; user: AuthUser }
   | { status: 'approved'; user: AuthUser; membership: Membership }
   /** Signed in, but no approved membership (none exists, or it awaits approval). */
@@ -61,6 +65,14 @@ export interface AuthClient {
   onAuthStateChanged(callback: (user: AuthUser | null) => void): () => void;
   /** Opens the Google sign-in popup. Must be called directly from a click handler. */
   signInWithGoogle(options?: { selectAccount?: boolean }): Promise<void>;
+  signInWithEmail(email: string, password: string): Promise<void>;
+  /** Creates an email/password account and sends the verification email. */
+  signUpWithEmail(email: string, password: string, displayName?: string): Promise<void>;
+  /** Sends a password reset email. Resolves the same way whether or not the account exists. */
+  sendPasswordReset(email: string): Promise<void>;
+  sendVerificationEmail(): Promise<void>;
+  /** Fetches the latest profile (e.g. after the person clicks the verification link). */
+  reloadUser(): Promise<AuthUser | null>;
   signOut(): Promise<void>;
   /** A fresh Firebase ID token for the signed-in user, or null when signed out. Never log it. */
   getIdToken(): Promise<string | null>;

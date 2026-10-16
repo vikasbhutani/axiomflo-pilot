@@ -14,8 +14,10 @@ import type { AuthClient, AuthUser, Membership } from '../auth/types';
 import { DemoProvider } from '../context/DemoContext';
 import { ToastProvider } from '../context/ToastContext';
 
-export const alice: AuthUser = { uid: 'uid-alice', displayName: 'Alice Example', email: 'alice@example.com' };
-export const bob: AuthUser = { uid: 'uid-bob', displayName: 'Bob Example', email: 'bob@example.com' };
+export const alice: AuthUser = { uid: 'uid-alice', displayName: 'Alice Example', email: 'alice@example.com', emailVerified: true };
+export const bob: AuthUser = { uid: 'uid-bob', displayName: 'Bob Example', email: 'bob@example.com', emailVerified: true };
+/** Signed up with email/password and hasn't clicked the verification link yet. */
+export const carol: AuthUser = { uid: 'uid-carol', displayName: 'Carol Example', email: 'carol@example.com', emailVerified: false };
 
 export function membershipFor(user: AuthUser, overrides: Partial<Membership> = {}): Membership {
   return { userId: user.uid, companyId: 'co-real', companyName: 'Real Co', role: 'individual_user', teamIds: ['team-1'], status: 'active', ...overrides };
@@ -31,6 +33,11 @@ function LocationDisplay() {
 export class FakeAuthClient implements AuthClient {
   private listener: ((user: AuthUser | null) => void) | null = null;
   signInWithGoogle = vi.fn<(options?: { selectAccount?: boolean }) => Promise<void>>(async () => {});
+  signInWithEmail = vi.fn<(email: string, password: string) => Promise<void>>(async () => {});
+  signUpWithEmail = vi.fn<(email: string, password: string, displayName?: string) => Promise<void>>(async () => {});
+  sendPasswordReset = vi.fn<(email: string) => Promise<void>>(async () => {});
+  sendVerificationEmail = vi.fn(async () => {});
+  reloadUser = vi.fn<() => Promise<AuthUser | null>>(async () => null);
   signOut = vi.fn(async () => this.emit(null));
   getIdToken = vi.fn(async () => 'fake-id-token');
 

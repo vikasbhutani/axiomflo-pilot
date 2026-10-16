@@ -6,7 +6,7 @@ import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { AuthProvider } from './AuthContext';
 import { demoSession } from './demoSession';
 import { RequireWorkspace } from './guards';
-import { alice, bob, FakeAuthClient, fakeMembershipService, membershipFor, renderApp, testSettings } from '../test/authTestUtils';
+import { alice, bob, carol, FakeAuthClient, fakeMembershipService, membershipFor, renderApp, testSettings } from '../test/authTestUtils';
 import type { MembershipService } from './membershipService';
 
 beforeAll(() => {
@@ -161,6 +161,84 @@ describe('Google sign-in', () => {
   });
 });
 
+describe('email and password', () => {
+  it('logs in with email and password', async () => {
+    const client = new FakeAuthClient(null);
+    renderApp({ path: '/login', client });
+    await userEvent.type(await screen.findByLabelText('Work email'), 'alice@example.com');
+    await userEvent.type(screen.getByLabelText('Password'), 'secret-pass');
+    await userEvent.click(screen.getByRole('button', { name: 'Log in' }));
+    expect(client.signInWithEmail).toHaveBeenCalledWith('alice@example.com', 'secret-pass');
+  });
+
+  it('checks the form before contacting Firebase', async () => {
+    const client = new FakeAuthClient(null);
+    renderApp({ path: '/signup', client });
+    await userEvent.type(await screen.findByLabelText('Work email'), 'not-an-email');
+    await userEvent.click(screen.getByRole('button', { name: 'Create account' }));
+    expect(await screen.findByText('Enter a valid email address.')).toBeTruthy();
+    await userEvent.clear(screen.getByLabelText('Work email'));
+    await userEvent.type(screen.getByLabelText('Work email'), 'carol@example.com');
+    await userEvent.type(screen.getByLabelText('Password'), 'short');
+    await userEvent.click(screen.getByRole('button', { name: 'Create account' }));
+    expect(await screen.findByText('Use at least 8 characters.')).toBeTruthy();
+    expect(client.signUpWithEmail).not.toHaveBeenCalled();
+  });
+
+  it('creates an account and asks the person to confirm their email before anything else', async () => {
+    const client = new FakeAuthClient(null);
+    client.signUpWithEmail.mockImplementation(async () => client.emit(carol));
+    const service = fakeMembershipService();
+    renderApp({ path: '/signup', client, membershipService: service });
+    await userEvent.type(await screen.findByLabelText('Full name (optional)'), 'Carol Example');
+    await userEvent.type(screen.getByLabelText('Work email'), 'carol@example.com');
+    await userEvent.type(screen.getByLabelText('Password'), 'long-enough-pass');
+    await userEvent.click(screen.getByRole('button', { name: 'Create account' }));
+    expect(client.signUpWithEmail).toHaveBeenCalledWith('carol@example.com', 'long-enough-pass', 'Carol Example');
+    expect(await screen.findByRole('heading', { name: 'Confirm your email' })).toBeTruthy();
+    expect(location()).toBe('/verify-email');
+    expect(service.getMembership).not.toHaveBeenCalled();
+  });
+
+  it('keeps unverified accounts out of workspace pages', async () => {
+    renderApp({ path: '/usage', client: new FakeAuthClient(carol), membershipService: fakeMembershipService({ [carol.uid]: membershipFor(carol) }) });
+    expect(await screen.findByRole('heading', { name: 'Confirm your email' })).toBeTruthy();
+    expect(screen.queryByRole('navigation', { name: 'Main' })).toBeNull();
+  });
+
+  it('checks membership once the email is confirmed', async () => {
+    const client = new FakeAuthClient(carol);
+    client.reloadUser.mockResolvedValueOnce(carol).mockResolvedValueOnce({ ...carol, emailVerified: true });
+    renderApp({ path: '/verify-email', client });
+    await userEvent.click(await screen.findByRole('button', { name: 'I’ve confirmed my email' }));
+    expect(await screen.findByText(/isn’t confirmed yet/)).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: 'I’ve confirmed my email' }));
+    expect(await screen.findByRole('heading', { name: 'Access pending' })).toBeTruthy();
+    expect(screen.getByText(carol.uid)).toBeTruthy();
+  });
+
+  it('shows the same message for any wrong email or password', async () => {
+    const client = new FakeAuthClient(null);
+    client.signInWithEmail.mockRejectedValue({ code: 'auth/invalid-credential' });
+    renderApp({ path: '/login', client });
+    await userEvent.type(await screen.findByLabelText('Work email'), 'alice@example.com');
+    await userEvent.type(screen.getByLabelText('Password'), 'wrong');
+    await userEvent.click(screen.getByRole('button', { name: 'Log in' }));
+    expect((await screen.findByRole('alert')).textContent).toMatch(/don’t match an AxiomFlo account/);
+  });
+
+  it('sends a password reset link without revealing whether the account exists', async () => {
+    const client = new FakeAuthClient(null);
+    client.sendPasswordReset.mockRejectedValue({ code: 'auth/user-not-found' });
+    renderApp({ path: '/login', client });
+    await userEvent.click(await screen.findByRole('link', { name: 'Forgot password?' }));
+    await userEvent.type(await screen.findByLabelText('Email'), 'nobody@example.com');
+    await userEvent.click(screen.getByRole('button', { name: 'Send reset link' }));
+    expect(await screen.findByText(/If an AxiomFlo account uses that email/)).toBeTruthy();
+    expect(client.sendPasswordReset).toHaveBeenCalledWith('nobody@example.com');
+  });
+});
+
 describe('sign-out', () => {
   it('returns to /login from the workspace profile menu', async () => {
     const client = new FakeAuthClient(alice);
@@ -245,7 +323,7 @@ describe('missing Firebase configuration', () => {
   it('shows setup instructions instead of crashing or pretending to sign in', async () => {
     renderApp({ path: '/', client: null, missingConfig: ['VITE_FIREBASE_API_KEY', 'VITE_FIREBASE_APP_ID'] });
     expect(await screen.findByRole('heading', { name: 'Welcome back to AxiomFlo' })).toBeTruthy();
-    const notice = screen.getByText('Google sign-in isn’t set up yet').closest('[role="status"]') as HTMLElement;
+    const notice = screen.getByText('Sign-in isn’t set up yet').closest('[role="status"]') as HTMLElement;
     expect(within(notice).getByText('VITE_FIREBASE_API_KEY')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Continue with Google' }).hasAttribute('disabled')).toBe(true);
   });

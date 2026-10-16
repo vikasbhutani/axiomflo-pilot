@@ -4,7 +4,7 @@
  */
 import type { AuthState } from './types';
 
-const AUTH_PAGES = ['/login', '/signup', '/access-pending', '/access-denied'];
+const AUTH_PAGES = ['/login', '/signup', '/reset-password', '/verify-email', '/access-pending', '/access-denied'];
 const PLACEHOLDER_ORIGIN = 'https://axiomflo.invalid';
 
 export function safeReturnTo(raw: string | null | undefined): string {
@@ -39,6 +39,8 @@ export function destinationFor(state: AuthState, returnTo = '/'): string | null 
       return '/login';
     case 'approved':
       return safeReturnTo(returnTo);
+    case 'verification_required':
+      return '/verify-email';
     case 'pending':
     case 'error':
       return '/access-pending';
