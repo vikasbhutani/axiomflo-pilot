@@ -1,0 +1,8 @@
+node_modules
+dist
+coverage
+.env.local
+*.local
+# Never commit service-account keys. The API uses Application Default Credentials.
+*-key.json
+service-account*.json
