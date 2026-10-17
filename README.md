@@ -286,6 +286,10 @@ The functions in `src/services/mockService.ts` (`getOverview`, `getUsage`, `getT
 
 `backend/` holds **AxiomFlo Agent**, a Python assistant built on Google's Agent Development Kit that uses Gemini on Vertex AI to explain costs through read-only tools. It runs locally on the same sample data and isn't connected to this web app yet. See [backend/README.md](backend/README.md) to run it and [docs/agent/architecture.md](docs/agent/architecture.md) for the design. After changing the sample data or calculations, run `npm run agent:fixtures` to refresh the agent's copy.
 
+## AxiomFlo API (backend, in progress)
+
+`server/` holds the **AxiomFlo API**, a Node.js + Express service that will verify Firebase sign-in tokens and decide workspace access from membership records in Firestore. It is a skeleton for now (only `GET /health`) and the web app doesn't use it yet. See [server/README.md](server/README.md) to run it and [docs/backend/plan.md](docs/backend/plan.md) for the plan.
+
 ## Build progress
 
 - [x] **Milestone 1:** app shell, typed mock dataset, shared calculations, Overview page, tests

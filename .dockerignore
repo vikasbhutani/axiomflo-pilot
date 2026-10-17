@@ -4,3 +4,4 @@ dist
 coverage
 *.local
 backend
+server
