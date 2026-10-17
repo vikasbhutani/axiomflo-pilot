@@ -5,3 +5,4 @@ coverage
 *.local
 *-key.json
 service-account*.json
+bootstrap.json

@@ -1,0 +1,16 @@
+{
+  "company": {
+    "id": "REPLACE-company-id",
+    "name": "REPLACE with your company name",
+    "reportingCurrency": "AUD",
+    "reportingTimezone": "Australia/Sydney"
+  },
+  "department": {
+    "id": "REPLACE-department-id",
+    "name": "REPLACE with your department name"
+  },
+  "teams": [
+    { "id": "REPLACE-team-1-id", "name": "REPLACE with team 1 name", "code": "REPLACE-TEAM-1-CODE" },
+    { "id": "REPLACE-team-2-id", "name": "REPLACE with team 2 name", "code": "REPLACE-TEAM-2-CODE" }
+  ]
+}

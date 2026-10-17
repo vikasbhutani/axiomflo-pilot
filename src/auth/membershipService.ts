@@ -1,14 +1,14 @@
 /**
- * Where AxiomFlo membership (company, teams, role, status) comes from.
+ * Where AxiomFlo membership (company, teams, role, status) comes from: the AxiomFlo
+ * API's `GET /api/me`, which verifies the Firebase ID token and reads the membership
+ * on the server.
  *
- * Membership must come from a trusted backend that verifies the Firebase ID token.
  * It is never taken from the browser: not from the demo role switcher, URL
- * parameters, localStorage, or an email-domain match.
+ * parameters, localStorage, Firestore read directly, or an email-domain match.
  */
-import type { FirebaseApp } from 'firebase/app';
 import type { Role } from '../types';
 import type { ApiClient } from './api';
-import type { AuthUser, Membership, MembershipStatus } from './types';
+import type { AuthUser, Membership, TeamSummary } from './types';
 
 export interface MembershipService {
   /** The person's membership, or null when they have none yet. Throws if the lookup fails. */
@@ -26,68 +26,70 @@ export const noBackendMembershipService: MembershipService = {
 };
 
 const ROLES: Role[] = ['company_admin', 'individual_user'];
-const STATUSES: MembershipStatus[] = ['active', 'pending', 'suspended'];
 
-/** Checks the backend's response has the expected shape before the UI trusts it. */
-export function parseMembership(value: unknown): Membership {
-  const v = value as Partial<Membership> | null;
-  if (
-    !v ||
-    typeof v.userId !== 'string' ||
-    typeof v.companyId !== 'string' ||
-    !ROLES.includes(v.role as Role) ||
-    !STATUSES.includes(v.status as MembershipStatus) ||
-    !Array.isArray(v.teamIds) ||
-    !v.teamIds.every((t) => typeof t === 'string')
-  ) {
-    throw new Error('The membership response was not in the expected format.');
+class UnexpectedResponseError extends Error {
+  constructor() {
+    super('The AxiomFlo API response was not in the expected format.');
+    this.name = 'UnexpectedResponseError';
+  }
+}
+
+type Data = Record<string, unknown>;
+
+function isObject(v: unknown): v is Data {
+  return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
+
+function parseTeams(value: unknown): TeamSummary[] {
+  if (!Array.isArray(value)) throw new UnexpectedResponseError();
+  return value.map((t) => {
+    if (!isObject(t) || typeof t.id !== 'string' || typeof t.name !== 'string' || typeof t.code !== 'string') throw new UnexpectedResponseError();
+    return { id: t.id, name: t.name, code: t.code };
+  });
+}
+
+/**
+ * Turns a `GET /api/me` response into the app's Membership, checking its shape first.
+ *
+ *   access "active"    → an active membership with company, role and teams
+ *   access "pending"   → null (no membership yet)
+ *   access "suspended" → a suspended membership; only its status is used (Access denied)
+ */
+export function parseMeResponse(value: unknown): Membership | null {
+  if (!isObject(value) || !isObject(value.user) || typeof value.user.uid !== 'string') throw new UnexpectedResponseError();
+  const userId = value.user.uid;
+  if (value.access === 'pending') return null;
+  // The denied page shows no company details, so none are needed (or trusted) here.
+  if (value.access === 'suspended') return { userId, companyId: '', role: 'individual_user', teamIds: [], status: 'suspended' };
+  if (value.access !== 'active') throw new UnexpectedResponseError();
+
+  const { company, membership } = value;
+  if (!isObject(company) || typeof company.id !== 'string' || typeof company.name !== 'string') throw new UnexpectedResponseError();
+  if (!isObject(membership) || !ROLES.includes(membership.role as Role) || !Array.isArray(membership.teamIds) || !membership.teamIds.every((t) => typeof t === 'string')) {
+    throw new UnexpectedResponseError();
   }
   return {
-    userId: v.userId,
-    companyId: v.companyId,
-    companyName: typeof v.companyName === 'string' ? v.companyName : undefined,
-    role: v.role as Role,
-    teamIds: v.teamIds,
-    status: v.status as MembershipStatus,
+    userId,
+    companyId: company.id,
+    companyName: company.name,
+    role: membership.role as Role,
+    teamIds: membership.teamIds as string[],
+    teams: parseTeams(value.teams),
+    status: 'active',
   };
 }
 
 /**
- * Proposed backend contract (not built yet):
- *   GET /v1/me/membership   Authorization: Bearer <Firebase ID token>
- *   200 → Membership JSON for the verified token's UID
- *   404 → the person has no membership yet
- * The backend must work out the UID from the verified token, never from the request body or URL.
+ * Asks the AxiomFlo API who the signed-in person is and what they may access.
+ * Any non-200 answer (including 401 after one token refresh, 403, 5xx) is an error,
+ * which the app shows as a retryable "couldn't check your access" page.
  */
 export function createHttpMembershipService(api: ApiClient): MembershipService {
   return {
     async getMembership() {
-      const response = await api.fetch('/v1/me/membership', { headers: { Accept: 'application/json' } });
-      if (response.status === 404) return null;
+      const response = await api.fetch('/api/me', { headers: { Accept: 'application/json' } });
       if (!response.ok) throw new Error(`Membership lookup failed (HTTP ${response.status}).`);
-      return parseMembership(await response.json());
-    },
-  };
-}
-
-/**
- * Reads memberships from Cloud Firestore: one document per person at `memberships/{Firebase UID}`.
- *
- * This is safe only together with the security rules in `firestore.rules`, which let a
- * signed-in person with a verified email READ their own document and let NOBODY write
- * from the browser. Administrators create and change memberships in the Firebase
- * console (or later from a trusted backend), never from this app.
- *
- * Firestore is loaded only when a membership is first checked, so the demo stays light.
- */
-export function createFirestoreMembershipService(app: FirebaseApp): MembershipService {
-  return {
-    async getMembership(user) {
-      const { doc, getDoc, getFirestore } = await import('firebase/firestore');
-      const snapshot = await getDoc(doc(getFirestore(app), 'memberships', user.uid));
-      if (!snapshot.exists()) return null;
-      // The document ID is the UID, so the person can only ever receive their own membership.
-      return parseMembership({ ...snapshot.data(), userId: snapshot.id });
+      return parseMeResponse(await response.json());
     },
   };
 }

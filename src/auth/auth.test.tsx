@@ -68,6 +68,15 @@ describe('protected workspace pages', () => {
     expect(screen.getAllByText('Real Co').length).toBeGreaterThan(0);
   });
 
+  it('shows the signed-in identity, company, role and assigned teams from the membership', async () => {
+    renderApp({ path: '/', client: new FakeAuthClient(alice), membershipService: fakeMembershipService({ [alice.uid]: membershipFor(alice) }) });
+    await screen.findByRole('heading', { name: 'Your workspace access is approved' });
+    expect(screen.getAllByText(/alice@example\.com/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Individual User').length).toBeGreaterThan(0);
+    expect(screen.getByText('Your teams')).toBeTruthy();
+    expect(screen.getByText('Team One')).toBeTruthy();
+  });
+
   it('returns an approved member to the page they originally asked for', async () => {
     renderApp({ path: '/login?returnTo=%2Fshowback', client: new FakeAuthClient(alice), membershipService: fakeMembershipService({ [alice.uid]: membershipFor(alice) }) });
     await screen.findByRole('heading', { name: 'Your workspace access is approved' });

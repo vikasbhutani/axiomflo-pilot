@@ -11,6 +11,9 @@ RUN npm run build
 FROM nginx:1.27-alpine
 # Cloud Run tells the container which port to listen on via $PORT (8080 by default).
 ENV PORT=8080
+# Where /api/* is forwarded: the AxiomFlo API's https address, set on the Cloud Run
+# service. Until it is set, /api answers 503 and everyone sees "couldn't check your access".
+ENV API_ORIGIN=http://127.0.0.1:9
 # The nginx image fills in ${PORT} in templates at startup.
 COPY deploy/nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist /usr/share/nginx/html

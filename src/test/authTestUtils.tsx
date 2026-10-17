@@ -20,7 +20,7 @@ export const bob: AuthUser = { uid: 'uid-bob', displayName: 'Bob Example', email
 export const carol: AuthUser = { uid: 'uid-carol', displayName: 'Carol Example', email: 'carol@example.com', emailVerified: false };
 
 export function membershipFor(user: AuthUser, overrides: Partial<Membership> = {}): Membership {
-  return { userId: user.uid, companyId: 'co-real', companyName: 'Real Co', role: 'individual_user', teamIds: ['team-1'], status: 'active', ...overrides };
+  return { userId: user.uid, companyId: 'co-real', companyName: 'Real Co', role: 'individual_user', teamIds: ['team-1'], teams: [{ id: 'team-1', name: 'Team One', code: 'TEAM-1' }], status: 'active', ...overrides };
 }
 
 /** Shows the current address so tests can check where they ended up. */

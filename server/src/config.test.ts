@@ -15,6 +15,10 @@ describe('loadConfig', () => {
     });
   });
 
+  it('refuses to run on Cloud Run with the Auth emulator switched on', () => {
+    expect(() => loadConfig({ ...base, K_SERVICE: 'axiomflo-api', FIREBASE_AUTH_EMULATOR_HOST: 'localhost:9099' })).toThrow(/emulator/i);
+  });
+
   it('uses the PORT Cloud Run provides', () => {
     expect(loadConfig({ ...base, PORT: '9000' }).port).toBe(9000);
   });

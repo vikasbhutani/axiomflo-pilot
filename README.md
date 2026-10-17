@@ -100,7 +100,7 @@ Then open http://localhost:8080.
 AxiomFlo signs people in with **Firebase Authentication**, using either their **Google account** or an **email and password**. Memberships are stored in **Cloud Firestore**. Two ideas are kept apart:
 
 - **Identity** answers *who is this person?* Google or Firebase confirms it. Email/password accounts must click a confirmation link before anything else happens.
-- **AxiomFlo membership** answers *which company, teams and role may they see?* It comes from a Firestore document that only an administrator can create, at `memberships/{user ID}`. Signing in never creates a membership, and nobody becomes an administrator by signing up first.
+- **AxiomFlo membership** answers *which company, teams and role may they see?* It comes from a Firestore record under `companies/{company}/memberships/{user ID}` that only the AxiomFlo API reads, created by the bootstrap script (for the first admin) or by an administrator. Signing in never creates a membership, and nobody becomes an administrator by signing up first.
 
 Until you add a membership document for someone, **they see "Access pending"** after signing in. That is intentional, not a bug. The sample-data demo is still available through **Explore the demo workspace** on the sign-in page and is always labelled "Demo workspace — sample data".
 
@@ -193,33 +193,24 @@ Open http://localhost:5173. You'll land on the sign-in page.
 7. On **Sign up**, create an email/password account. You should see **Confirm your email**. Open the link Firebase emails you, then click **I've confirmed my email**: you move on to **Access pending**.
 8. On **Log in**, click **Forgot password?** and send yourself a reset link.
 
-### Set up Firestore for memberships
+### Set up Firestore and workspace access
 
-1. In the Firebase console, open **Firestore Database** (under Build) and click **Create database**. Choose **Standard edition** if asked, a location close to your users (for example `asia-southeast1`, Singapore; it can't be changed later), and **Start in production mode**. Firestore has a free daily quota; check the [Firebase pricing page](https://firebase.google.com/pricing) if you expect heavy use.
-2. Open the **Rules** tab, replace everything with the contents of [`firestore.rules`](firestore.rules) from this repo, and click **Publish**. These rules let a signed-in person with a confirmed email read **only their own** membership and stop anyone writing memberships from the browser.
-3. To give someone access, open the **Data** tab and click **Start collection** (or open the existing `memberships` collection). Use:
-   - **Collection ID:** `memberships`
-   - **Document ID:** the person's AxiomFlo user ID, shown on their **Access pending** screen
-   - **Fields:** `companyId` (string, for example `acme`), `companyName` (string, for example `Acme Innovation`), `role` (string: `company_admin` or `individual_user`), `teamIds` (array of strings), `status` (string: `active`, `pending` or `suspended`)
-4. Ask the person to refresh AxiomFlo. With `status` = `active` they reach the workspace, with `suspended` they see **Access denied**, and with `pending` they stay on **Access pending**.
+Workspace access is decided by the **AxiomFlo API** (`server/`), not by the browser. The API checks each person's Firebase sign-in and reads their membership from Firestore under `companies/{companyId}/memberships/{uid}`. Browsers have no direct access to Firestore at all (see [`firestore.rules`](firestore.rules)).
 
-Create your own membership first this way, as `company_admin`.
+1. If you haven't already, open **Firestore Database** (under Build) in the Firebase console and click **Create database**. Choose **Standard edition** if asked, a location close to your users (for example `asia-southeast1`; it can't be changed later), and **Start in production mode**.
+2. Follow **[docs/backend/go-live.md](docs/backend/go-live.md)**. It covers creating the company and your admin membership with the bootstrap script, deploying the API, pointing the web app at it, and publishing the locked-down rules, in that order.
+
+To run everything on your computer, start the API (`cd server && npm run dev`; see [server/README.md](server/README.md)) and then `npm run dev` here. The dev server forwards `/api` to the API on port 8080.
 
 ### 9. Why a signed-in person sees "Access pending"
 
-Signing in only proves who someone is. Access to company data needs an **active AxiomFlo membership**, which only exists once an administrator creates the person's document in Firestore (see "Set up Firestore for memberships"). Memberships are never taken from the demo role switcher, URL parameters, browser storage or an email domain. A suspended membership leads to **Access denied** instead.
+Signing in only proves who someone is. Access needs an **active membership** in the approved company. Only the bootstrap script (for the first admin) or, later, an admin invitation creates one. Memberships are never taken from the demo role switcher, URL parameters, browser storage or an email domain. A suspended membership or company leads to **Access denied**. If the API can't be reached, you see a "couldn't check your access" page with **Try again**, never access.
 
 ### 10. What's needed before real company data is shown
 
-Memberships now come from Firestore, protected by `firestore.rules`. What's still missing is **real reporting data**:
+Workspace access is real now. **Reporting data isn't.** Approved members see their company, role and teams, plus a notice that reporting isn't connected yet, and never sample data. Real usage and cost data needs reporting endpoints on the API that check membership on every request.
 
-1. **Where the usage and cost data lives**, for example Firestore collections under each company, or a backend API (a second Cloud Run service) that verifies every request's Firebase ID token with the **Firebase Admin SDK**. The Admin SDK never goes in this frontend.
-2. **Security on every read.** If reporting data goes in Firestore, its rules must check the reader's membership (company, team and role) for every document. If it goes behind an API, the API checks membership on every request.
-3. **Optional:** if you later prefer a backend for memberships too, `GET /v1/me/membership` returning the membership for the verified token's UID (404 when there is none), then set `VITE_API_BASE_URL`; the app switches to `createHttpMembershipService` automatically.
-
-Hiding pages in the browser is not security on its own. Hiding pages in the browser is not security on its own. Until those exist, approved members see a "reporting data isn't connected yet" notice instead of sample data.
-
-`src/auth/api.ts` has a small helper that sends the signed-in user's ID token as an `Authorization: Bearer` header over HTTPS. It never puts tokens in URLs and never logs them.
+`src/auth/api.ts` sends the signed-in user's ID token as an `Authorization: Bearer` header over HTTPS. It never puts tokens in URLs and never stores or logs them. After a 401 it refreshes the token once and retries.
 
 ### Other settings
 
@@ -227,13 +218,13 @@ Hiding pages in the browser is not security on its own. Hiding pages in the brow
 | --- | --- |
 | `VITE_DEMO_MODE` | Set to `disabled` to remove "Explore the demo workspace". The demo is on by default so the current site keeps working. |
 | `VITE_TERMS_URL`, `VITE_PRIVACY_URL` | Links to your published Terms of Service and Privacy Policy (`https://`). These pages don't exist yet, so the sign-in pages mark them as "setup required". AxiomFlo doesn't include any policy text. |
-| `VITE_API_BASE_URL` | Optional backend address. When set, memberships come from that API instead of Firestore. Leave empty for now. |
+| `VITE_API_BASE_URL` | Optional address of the AxiomFlo API. Leave empty: the app then uses its own address, and the web server (or `npm run dev`) forwards `/api` to the API. |
 
 ### Where the code lives
 
-- `src/auth/`: Firebase sign-in for Google and email/password (`firebaseClient.ts`), the `AuthProvider` / `useAuth` state (`AuthContext.tsx`), Firestore and API membership (`membershipService.ts`), route guards (`guards.tsx`), safe return-to links (`redirects.ts`), demo mode (`demoSession.ts`) and the API helper (`api.ts`).
+- `src/auth/`: Firebase sign-in for Google and email/password (`firebaseClient.ts`), the `AuthProvider` / `useAuth` state (`AuthContext.tsx`), membership from the AxiomFlo API's `/api/me` (`membershipService.ts`), route guards (`guards.tsx`), safe return-to links (`redirects.ts`), demo mode (`demoSession.ts`) and the API helper (`api.ts`).
 - `src/pages/auth/`: `/login`, `/signup`, `/reset-password`, `/verify-email`, `/access-pending` and `/access-denied`.
-- `firestore.rules` (with `firebase.json` and `.firebaserc` for the Firebase CLI, if you ever use it): who may read and write Firestore.
+- `firestore.rules` (with `firebase.json` and `.firebaserc` for the Firebase CLI, if you ever use it): blocks all direct browser access to Firestore.
 - `src/auth/auth.test.tsx` and `src/auth/auth.unit.test.ts`: tests, with Firebase replaced by a fake so no Google account is needed.
 
 ## Switching demo roles
@@ -288,7 +279,7 @@ The functions in `src/services/mockService.ts` (`getOverview`, `getUsage`, `getT
 
 ## AxiomFlo API (backend, in progress)
 
-`server/` holds the **AxiomFlo API**, a Node.js + Express service that will verify Firebase sign-in tokens and decide workspace access from membership records in Firestore. It verifies sign-in tokens and serves `/api/me`, `/api/company` and `/api/teams`, but the web app doesn't use it yet. See [server/README.md](server/README.md) to run it and [docs/backend/plan.md](docs/backend/plan.md) for the plan.
+`server/` holds the **AxiomFlo API**, a Node.js + Express service that verifies Firebase sign-in tokens, decides workspace access from membership records in Firestore, and serves `/api/me`, `/api/company` and `/api/teams`, which the web app uses. See [server/README.md](server/README.md) to run it and [docs/backend/plan.md](docs/backend/plan.md) for the plan.
 
 ## Build progress
 

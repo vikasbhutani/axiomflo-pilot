@@ -45,7 +45,7 @@ export interface AppSettings {
   termsUrl: string | null;
   /** Published Privacy Policy page, or null while it is still a setup requirement. */
   privacyUrl: string | null;
-  /** Base URL of the future AxiomFlo backend API, or null when there isn't one yet. */
+  /** Base URL of the AxiomFlo API, or null to use the web app's own address (the default). */
   apiBaseUrl: string | null;
 }
 

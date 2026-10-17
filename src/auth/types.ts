@@ -20,6 +20,13 @@ export interface AuthUser {
 
 export type MembershipStatus = 'active' | 'pending' | 'suspended';
 
+/** A team the member may see, as returned by the AxiomFlo API. */
+export interface TeamSummary {
+  id: string;
+  name: string;
+  code: string;
+}
+
 export interface Membership {
   /** Firebase UID this membership belongs to. */
   userId: string;
@@ -28,6 +35,8 @@ export interface Membership {
   companyName?: string;
   role: Role;
   teamIds: string[];
+  /** The teams this member may see (all teams for a Company Admin), when the API provides them. */
+  teams?: TeamSummary[];
   status: MembershipStatus;
 }
 
@@ -74,6 +83,9 @@ export interface AuthClient {
   /** Fetches the latest profile (e.g. after the person clicks the verification link). */
   reloadUser(): Promise<AuthUser | null>;
   signOut(): Promise<void>;
-  /** A fresh Firebase ID token for the signed-in user, or null when signed out. Never log it. */
-  getIdToken(): Promise<string | null>;
+  /**
+   * A Firebase ID token for the signed-in user, or null when signed out. Never log or store it.
+   * `forceRefresh` asks Firebase for a brand-new token (used once after a 401).
+   */
+  getIdToken(forceRefresh?: boolean): Promise<string | null>;
 }
