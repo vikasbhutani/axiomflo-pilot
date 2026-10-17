@@ -2,7 +2,7 @@
 
 The backend that decides who may enter an AxiomFlo workspace. A Google (or verified email) sign-in tells it **who** someone is; a membership record in Firestore tells it **which company, role and teams** they get. See [docs/backend/plan.md](../docs/backend/plan.md) for the full design and milestones.
 
-> **Milestone 1: skeleton only.** The server starts, answers `GET /health`, and has the safety plumbing (request IDs, sanitized logs, size limits, exact-origin CORS, safe errors). It doesn't verify tokens or read memberships yet, so the web app doesn't use it. Nothing is deployed.
+> **Milestone 2: sign-in checks and membership lookup.** The API verifies Firebase ID tokens and reads memberships from Firestore for `/api/me`, `/api/company` and `/api/teams`. The web app doesn't call it yet (Milestone 3), and nothing is deployed. All tests use stand-ins for Firebase; it hasn't been tried against your real project yet.
 
 ## What's real and what isn't yet
 
@@ -11,7 +11,8 @@ The backend that decides who may enter an AxiomFlo workspace. A Google (or verif
 | `GET /health` | Real |
 | Config checks (project ID, company ID, origins, port) | Real; the server refuses to start on bad values |
 | Request IDs, JSON logs with redaction, security headers, 16 KB body limit | Real |
-| Firebase token verification, `/api/me`, membership checks | Milestone 2 |
+| Firebase token verification (signature, expiry, project, revoked and disabled accounts) | Real code, tested with stand-ins |
+| `/api/me`, `/api/company`, `/api/teams` and membership checks on every request | Real code, tested with stand-ins |
 | Bootstrap script, frontend connection | Milestone 3 |
 | Invitations, member changes, audit events | Milestone 4 |
 | Deployment | Milestone 5, with your approval |
@@ -38,12 +39,27 @@ npm run build        # compile to dist/ (what Cloud Run runs)
 npm start            # run the compiled version
 ```
 
+## Endpoints
+
+| Endpoint | Who | Returns |
+| --- | --- | --- |
+| `GET /health` | anyone | `{"status":"ok"}` |
+| `GET /api/me` | anyone signed in | Who you are and `access`: `active`, `pending` or `suspended`. Company, role and teams only when active |
+| `GET /api/company` | active members | Company name, currency, timezone |
+| `GET /api/teams` | active members | Admin: all teams. Individual user: assigned teams |
+
+Every `/api` call needs `Authorization: Bearer <Firebase ID token>`. The response codes are `401` for no sign-in or an invalid one, `403` when you're signed in but not allowed, and `503` when the API can't check right now. See [docs/backend/auth-contract.md](../docs/backend/auth-contract.md) for the exact response shapes.
+
+### Trying `/api/me` against your real Firebase project
+
+This needs two things from Milestone 3, the bootstrap script and the web app connection, so you won't need to do it by hand. If you want to try it earlier, the API on your computer has to read Firestore as you, which needs the gcloud CLI once (`gcloud auth application-default login`). Cloud Shell in the Cloud Console already has this set up.
+
 ## Settings
 
 All settings are environment variables; [`.env.example`](.env.example) explains each one. **None of them are secrets.** The API never uses a service-account key file:
 
 - On Cloud Run it uses the service's own runtime service account automatically.
-- On your computer (from Milestone 2, when it starts talking to Firebase) it uses your own Google sign-in via Application Default Credentials.
+- On your computer or in Cloud Shell it uses your own Google sign-in (Application Default Credentials).
 
 | Variable | Required | Example | Meaning |
 | --- | --- | --- | --- |
@@ -63,4 +79,11 @@ All settings are environment variables; [`.env.example`](.env.example) explains 
 | `src/config.ts` | Reads and checks the settings |
 | `src/firebase.ts` | Firebase Admin SDK with Application Default Credentials |
 | `src/http/` | Request IDs and access log, redacting logger, CORS, security headers, error responses |
-| `src/routes/health.ts` | `GET /health` |
+| `src/auth/tokenVerifier.ts` | Checks Firebase ID tokens with the Admin SDK (revocation and disabled accounts included) |
+| `src/auth/authenticate.ts` | Reads the `Authorization: Bearer` header; 401/503 handling |
+| `src/membership/records.ts` | Firestore record shapes and strict parsers |
+| `src/membership/firestoreStore.ts` | Reads company, teams and memberships, always under the configured company |
+| `src/membership/access.ts` | Decides active / pending / suspended and which teams are visible |
+| `src/membership/requireMember.ts` | Route guards: active member, required role |
+| `src/routes/` | `/health`, `/api/me`, `/api/company`, `/api/teams` |
+| `src/test/fakes.ts` | Stand-ins for Firebase Auth and Firestore used by tests |

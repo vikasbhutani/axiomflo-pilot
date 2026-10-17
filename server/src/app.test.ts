@@ -2,10 +2,13 @@ import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { createApp } from './app.js';
 import { createLogger, sanitize, silentLogger } from './http/logger.js';
+import { FakeStore, FakeVerifier, IDENTITIES, pilotData } from './test/fakes.js';
 import { testConfig } from './test/testConfig.js';
 
+const fakes = () => ({ verifier: new FakeVerifier(IDENTITIES), store: new FakeStore(pilotData()) });
+
 function app(overrides = {}) {
-  return createApp({ config: testConfig(overrides), logger: silentLogger });
+  return createApp({ config: testConfig(overrides), logger: silentLogger, ...fakes() });
 }
 
 describe('GET /health', () => {
@@ -100,7 +103,7 @@ describe('logging', () => {
   it('never writes the Authorization header into the access log', async () => {
     const lines: string[] = [];
     const logger = createLogger({ level: 'debug', write: (line) => lines.push(line) });
-    await request(createApp({ config: testConfig(), logger }))
+    await request(createApp({ config: testConfig(), logger, ...fakes() }))
       .get('/health?token=secret-in-query')
       .set('Authorization', 'Bearer super-secret-token');
     const output = lines.join('\n');

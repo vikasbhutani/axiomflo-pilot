@@ -1,8 +1,10 @@
 /** Starts the AxiomFlo API. Cloud Run sets PORT; we listen on all interfaces (0.0.0.0). */
 import { createApp } from './app.js';
 import { ConfigError, loadConfig } from './config.js';
+import { createFirebaseTokenVerifier } from './auth/tokenVerifier.js';
 import { initFirebase } from './firebase.js';
 import { createLogger } from './http/logger.js';
+import { createFirestoreMembershipStore } from './membership/firestoreStore.js';
 
 function main() {
   let config;
@@ -17,9 +19,13 @@ function main() {
   }
 
   const logger = createLogger({ level: config.logLevel });
-  // Initialised now so a broken setup fails at startup; routes start using it in Milestone 2.
-  initFirebase(config);
-  const app = createApp({ config, logger });
+  const { auth, db } = initFirebase(config);
+  const app = createApp({
+    config,
+    logger,
+    verifier: createFirebaseTokenVerifier(auth, config.firebaseProjectId),
+    store: createFirestoreMembershipStore(db),
+  });
 
   const server = app.listen(config.port, '0.0.0.0', () => {
     logger.info('AxiomFlo API listening', { port: config.port, companyId: config.pilotCompanyId });

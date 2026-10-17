@@ -1,0 +1,57 @@
+# Auth contract: AxiomFlo API and other services
+
+How the web app, the AxiomFlo API (`server/`) and the AxiomFlo Agent (`backend/`) share one sign-in and one membership source. Code in `server/src/auth/` and `server/src/membership/` implements the API side.
+
+## Who decides what
+
+| Question | Answered by | From |
+| --- | --- | --- |
+| Who is this person? | Firebase Authentication | A Firebase ID token for project `axiomflo-pilot`, verified with the Admin SDK |
+| May they enter the workspace, with which role and teams? | **AxiomFlo API only** | `companies/{PILOT_COMPANY_ID}/memberships/{uid}` in Firestore, read on every request |
+| What may the agent show them? | AxiomFlo Agent, using **only** the trusted context the API passes | Never from the model, the browser or the agent's own lookup |
+
+## Browser → AxiomFlo API
+
+- Header: `Authorization: Bearer <Firebase ID token>`. No cookies. Tokens never go in URLs.
+- The API calls `verifyIdToken(token, checkRevoked = true)`. That checks the signature, expiry and project, rejects revoked sessions and disabled or deleted accounts, and then re-checks `aud` and `iss` against `FIREBASE_PROJECT_ID`.
+- The caller is the token's `uid`. Any uid, email, role, company or team sent in the body, query or headers is ignored.
+- Membership is looked up only when `email_verified` is true.
+- Statuses: `401` the token is missing or not acceptable; `403` signed in but not allowed; `503` sign-in or membership couldn't be checked. A `503` never means access.
+
+### `GET /api/me` response
+
+```json
+{
+  "user": { "uid": "…", "email": "…", "emailVerified": true, "displayName": "…" },
+  "access": "active",
+  "company": { "id": "…", "name": "…", "reportingCurrency": "AUD", "reportingTimezone": "Australia/Sydney" },
+  "membership": { "role": "company_admin", "teamIds": ["…"] },
+  "teams": [{ "id": "…", "name": "…", "code": "…", "departmentId": "…", "status": "active" }]
+}
+```
+
+When access isn't active the response has only `user`, `access` and `reason`:
+
+| access | reason |
+| --- | --- |
+| `pending` | `email_unverified`, `no_membership`, `company_not_set_up` |
+| `suspended` | `membership_suspended`, `company_suspended` |
+
+`teams` lists what the caller may see: every team for a `company_admin`, and only assigned, active teams for an `individual_user`. `membership.teamIds` leaves out IDs that don't exist in the company.
+
+## AxiomFlo API → AxiomFlo Agent (when the agent's reporting API is built)
+
+1. **The agent's Cloud Run service is private.** Only the API's runtime service account has `Cloud Run Invoker` on it, and the API calls it with a Google-signed ID token for that service (service-to-service auth). The agent never accepts a browser's Firebase token.
+2. The API sends the trusted context in the request body. It builds this context itself, after verifying the user and loading their membership in the same request:
+
+   ```json
+   { "context": { "companyId": "…", "uid": "…", "role": "individual_user", "teamIds": ["…"], "requestId": "…", "channel": "web" } }
+   ```
+
+   This maps one-to-one onto the agent's `TrustedContext` (`tenant_id` = `companyId`, `user_id` = `uid`).
+3. The agent trusts that context **only because** Cloud Run IAM proves the caller is the API service account. It still applies its own role and team scoping to every tool call.
+4. The agent never writes memberships and keeps no copy of them. If it ever needs to be called directly from a browser, it must verify the Firebase token the same way and read the same `companies/{companyId}/memberships/{uid}` document. It must never trust a company or role supplied by the browser.
+
+## What stays out of logs
+
+The following are never logged: tokens, Authorization headers, credential objects, Admin SDK error messages (only the error code is logged), request bodies, and query strings. Log lines carry the request ID, method, path, status, latency and, for refusals, a short reason code.
