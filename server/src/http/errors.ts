@@ -6,6 +6,7 @@
  *
  *   401 unauthenticated          missing, malformed, expired or revoked sign-in
  *   403 forbidden                signed in, but not allowed to do this
+ *   503 auth_unavailable         the sign-in token couldn't be checked right now
  *   503 membership_unavailable   the membership database couldn't be reached
  *
  * A database failure is never turned into "no membership" and never grants access.
@@ -21,6 +22,7 @@ export type ErrorCode =
   | 'not_found'
   | 'conflict'
   | 'rate_limited'
+  | 'auth_unavailable'
   | 'membership_unavailable'
   | 'internal';
 

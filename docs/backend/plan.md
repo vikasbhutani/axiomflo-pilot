@@ -141,7 +141,7 @@ Both services trust the same Firebase project, but **only `axiomflo-api` decides
 - `axiomflo-api` verifies the user, loads the membership, and passes the trusted context (`companyId`, `uid`, `role`, `teamIds`, `requestId`) in the request. The agent's existing `TrustedContext` maps directly to it (`tenant_id` = companyId).
 - The agent never accepts a browser's Firebase token or a browser-supplied company or role. If it ever must be called from a browser directly, it would verify the Firebase token and read the same `companies/{companyId}/memberships/{uid}` document, never its own copy.
 
-I'll write this up as `docs/backend/auth-contract.md` in Milestone 2 so the agent thread can build against it.
+The full contract is in [auth-contract.md](auth-contract.md).
 
 ## 10. Milestones
 
