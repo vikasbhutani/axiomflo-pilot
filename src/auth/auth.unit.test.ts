@@ -162,9 +162,12 @@ describe('membership services', () => {
 
   it('treats "no matching invitation" as a normal pending result, with no retry loop', async () => {
     const pending = { user: me.user, access: 'pending', reason: 'no_membership' };
-    const api = { fetch: vi.fn().mockResolvedValueOnce(new Response(JSON.stringify(pending))).mockResolvedValueOnce(new Response('{}', { status: 404 })) };
-    expect(await createHttpMembershipService(api).getMembership(user)).toBeNull();
-    expect(api.fetch).toHaveBeenCalledTimes(2);
+    // 403 is what the API answers before the company has been bootstrapped.
+    for (const status of [403, 404, 409, 429]) {
+      const api = { fetch: vi.fn().mockResolvedValueOnce(new Response(JSON.stringify(pending))).mockResolvedValueOnce(new Response('{}', { status })) };
+      expect(await createHttpMembershipService(api).getMembership(user)).toBeNull();
+      expect(api.fetch).toHaveBeenCalledTimes(2);
+    }
   });
 
   it('does not try invitations when the company is not set up, or for a suspended member', async () => {

@@ -2,7 +2,7 @@
 
 The backend that decides who may enter an AxiomFlo workspace. A Google (or verified email) sign-in tells it **who** someone is; a membership record in Firestore tells it **which company, role and teams** they get. See [docs/backend/plan.md](../docs/backend/plan.md) for the full design and milestones.
 
-> **Milestone 4: invitations and member controls.** The API verifies Firebase ID tokens, decides access from memberships, and lets a Company Admin invite people and change members. The bootstrap script creates the company and first admin. It's tested against the local Firebase emulators, **not yet against your real project**, and nothing is deployed. To go live, follow [docs/backend/go-live.md](../docs/backend/go-live.md).
+> **Milestone 5: tested and documented.** The API verifies Firebase ID tokens, decides access from memberships, and lets a Company Admin invite people and change members. The bootstrap script creates the company and first admin. It's tested against the local Firebase emulators, **not yet against your real project**, and nothing is deployed. To go live, follow [docs/backend/go-live.md](../docs/backend/go-live.md). Each security rule and the test that proves it is in [docs/backend/security-checklist.md](../docs/backend/security-checklist.md).
 
 ## What's real and what isn't yet
 
@@ -17,7 +17,7 @@ The backend that decides who may enter an AxiomFlo workspace. A Google (or verif
 | Web app uses `/api/me` (and refreshes the sign-in token once after a 401) | Real code, tested |
 | Invitations (create, list, revoke, accept), member changes, audit events, rate limits | Real code, tested against the emulators, including two admins acting at once |
 | Invitation emails | **Not built.** Invitations say "Created — email not sent"; the admin tells the person to sign in |
-| Deployment | Milestone 5, with your approval |
+| Deployment | Documented in [go-live.md](../docs/backend/go-live.md); waits for your approval |
 
 ## Run it on your computer
 
@@ -85,7 +85,7 @@ It checks the UID exists, isn't disabled and has a verified email. It then shows
 npm run test:emulator
 ```
 
-This starts local, throwaway copies of Firebase Authentication and Firestore (project `demo-axiomflo`, which can't touch real data) and runs the tests that need them. They cover the bootstrap's idempotency and conflict handling, plus real sign-in tokens going through `/api/me`, including disabled and revoked accounts. It needs Java 11+; the first run downloads the Firestore emulator.
+This starts local, throwaway copies of Firebase Authentication and Firestore (project `demo-axiomflo`, which can't touch real data) and runs the tests that need them. They cover the bootstrap, real sign-in tokens (including disabled and revoked accounts), invitations and member changes under concurrent requests, and every rule in the [security checklist](../docs/backend/security-checklist.md). It needs Java 11+; the first run downloads the Firestore emulator.
 
 The API on your computer can also use real Firestore as you, but only with the gcloud CLI (`gcloud auth application-default login`). Cloud Shell already has this set up.
 
@@ -126,3 +126,5 @@ All settings are environment variables; [`.env.example`](.env.example) explains 
 | `src/bootstrap/` | The bootstrap script (`cli.ts`), its checks (`input.ts`) and the transaction (`bootstrap.ts`) |
 | `src/test/fakes.ts` | Stand-ins for Firebase Auth and Firestore used by unit tests |
 | `src/test/emulator.ts`, `*.emulator.test.ts` | Tests against the local Firebase emulators |
+| `src/security.emulator.test.ts` | The brief's security rules, end to end |
+| `src/repo.test.ts` | Fails if a private key or service-account file is ever committed |

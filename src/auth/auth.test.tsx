@@ -2,12 +2,13 @@ import { act, cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { createApiClient } from './api';
 import { AuthProvider } from './AuthContext';
 import { demoSession } from './demoSession';
 import { RequireWorkspace } from './guards';
 import { alice, bob, carol, FakeAuthClient, fakeMembershipService, membershipFor, renderApp, testSettings } from '../test/authTestUtils';
-import type { MembershipService } from './membershipService';
+import { createHttpMembershipService, type MembershipService } from './membershipService';
 
 beforeAll(() => {
   // Charts on the demo pages measure their container; jsdom has no layout engine.
@@ -294,6 +295,25 @@ describe('sign-out', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Sign out' }));
     await screen.findByRole('heading', { name: 'Welcome back to AxiomFlo' });
     expect(demoSession.isActive()).toBe(false);
+  });
+});
+
+describe('sign-in tokens', () => {
+  it('are never written to localStorage or sessionStorage, even after API calls', async () => {
+    const client = new FakeAuthClient(alice);
+    const me = { user: { uid: alice.uid, email: alice.email, emailVerified: true, displayName: alice.displayName }, access: 'active', company: { id: 'co-real', name: 'Real Co', reportingCurrency: 'AUD', reportingTimezone: 'Australia/Sydney' }, membership: { role: 'company_admin', teamIds: [] }, teams: [] };
+    const fetchImpl = vi.fn(async (url: string | URL | Request) => {
+      const path = new URL(String(url)).pathname;
+      const body = path === '/api/me' ? me : path === '/api/members' ? { members: [] } : { invitations: [] };
+      return new Response(JSON.stringify(body), { headers: { 'Content-Type': 'application/json' } });
+    });
+    const api = createApiClient({ baseUrl: 'https://app.example.com', getIdToken: () => client.getIdToken(), fetchImpl });
+    renderApp({ path: '/', client, membershipService: createHttpMembershipService(api), api });
+    await screen.findByRole('heading', { name: 'Your workspace access is approved' });
+    await screen.findByText('No invitations yet.');
+    expect(fetchImpl.mock.calls.map(([url]) => new URL(String(url)).pathname).sort()).toEqual(['/api/invitations', '/api/me', '/api/members']);
+    const stored = [window.localStorage, window.sessionStorage].flatMap((s) => Object.keys(s).map((k) => `${k}=${s.getItem(k)}`)).join('\n');
+    expect(stored).not.toContain('fake-id-token');
   });
 });
 

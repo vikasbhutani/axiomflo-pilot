@@ -111,6 +111,24 @@ To undo, paste the previous rules back (the Rules tab keeps a history).
 
 Once you've signed in through the API, delete the old top-level **`memberships`** collection in **Firestore Database → Data**. Nothing reads it any more.
 
+## 7. Check it works
+
+These are the same rules the [security checklist](security-checklist.md) tests automatically, checked once by hand on the real deployment. Use a private browser window for the second account.
+
+| Do this | You should see |
+| --- | --- |
+| Open `https://axiomflo-api-….run.app/api/me` directly in a browser | `{"error":{"code":"unauthenticated",…}}` with status 401 |
+| Sign in to AxiomFlo as yourself | **Your workspace access is approved**, Company Admin, both teams, and the Invite, Members and Invitations panels |
+| Sign in with a second Google account that hasn't been invited | **Access pending** |
+| Invite that second account as an Individual User on one team, then sign that account out and in again | It's let in, sees only that team, and has no admin panels |
+| Suspend it from **Members**, then reload its page | **You don’t have access to AxiomFlo** |
+| Try to suspend yourself | There's no button for it. The API refuses it too |
+| In Firestore, open `companies → your company → auditEvents` | One event per change, with no email addresses |
+| In Cloud Run → `axiomflo-api` → **Logs** | One line per request with a request ID, and no tokens |
+| In **IAM & Admin → IAM**, find `axiomflo-api@…` | Only **Cloud Datastore User** and **Firebase Authentication Viewer**. No Owner or Editor |
+
+If any row looks different, stop and ask before inviting more people.
+
 ## If something goes wrong
 
 | You see | Likely cause |

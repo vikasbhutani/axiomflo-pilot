@@ -84,12 +84,13 @@ export function parseMeResponse(value: unknown): Membership | null {
  *
  * If they have no membership yet, it tries ONCE to accept an invitation that matches
  * their verified email (`POST /api/invitations/accept`), then asks again. "No matching
- * invitation" (404) is a normal outcome: they stay on Access pending, with no retry
- * loop. The browser sends no role, team or email; the API takes them from the
- * invitation and the sign-in token.
+ * invitation" (404, or 403 before the company is set up) is a normal outcome: they
+ * stay on Access pending, with no retry loop. The browser sends no role, team or
+ * email; the API takes them from the invitation and the sign-in token.
  *
- * Any other non-200 answer (including 401 after one token refresh, 403, 5xx) is an
- * error, which the app shows as a retryable "couldn't check your access" page.
+ * Any other non-200 answer from /api/me (including 401 after one token refresh, 403,
+ * 5xx) is an error, which the app shows as a retryable "couldn't check your access"
+ * page. So is a 5xx from accept.
  */
 export function createHttpMembershipService(api: ApiClient): MembershipService {
   const loadMe = async (): Promise<unknown> => {
@@ -105,8 +106,9 @@ export function createHttpMembershipService(api: ApiClient): MembershipService {
       if (membership || !isObject(me) || me.reason !== 'no_membership') return membership;
 
       const accept = await api.fetch('/api/invitations/accept', { method: 'POST', headers: { Accept: 'application/json' } });
-      // No invitation, already handled, or too many attempts: stay pending.
-      if (accept.status === 404 || accept.status === 409 || accept.status === 429) return null;
+      // Not allowed (for example the company isn't set up yet), no invitation, already
+      // handled, or too many attempts: all mean "stay pending", never access.
+      if ([403, 404, 409, 429].includes(accept.status)) return null;
       if (!accept.ok) throw new Error(`Invitation check failed (HTTP ${accept.status}).`);
       return parseMeResponse(await loadMe());
     },

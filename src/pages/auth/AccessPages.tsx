@@ -51,7 +51,7 @@ export function AccessPendingPage() {
       <p className="mt-4 text-sm text-slate-600">
         {state.membership
           ? 'Your AxiomFlo membership is waiting for an administrator to approve it.'
-          : 'If you expected access, ask your company’s AxiomFlo administrator to add you to your workspace, and give them the user ID below.'}
+          : 'If you expected access, ask your company’s AxiomFlo administrator to invite this email address, then sign out and sign in again.'}
       </p>
       <p className="mt-3 text-sm text-slate-600">
         Your AxiomFlo user ID: <code className="break-all rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-800">{user.uid}</code>
