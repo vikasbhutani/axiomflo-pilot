@@ -13,6 +13,8 @@ import { authenticate } from './auth/authenticate.js';
 import type { TokenVerifier } from './auth/tokenVerifier.js';
 import { requireActiveMember } from './membership/requireMember.js';
 import type { MembershipStore } from './membership/store.js';
+import type { AdminService } from './admin/service.js';
+import { adminRouter } from './routes/admin.js';
 import { healthRouter } from './routes/health.js';
 import { meRouter } from './routes/me.js';
 import { workspaceRouter } from './routes/workspace.js';
@@ -25,13 +27,14 @@ export interface AppDeps {
   logger: Logger;
   verifier: TokenVerifier;
   store: MembershipStore;
+  admin: AdminService;
 }
 
-export function createApp({ config, logger, verifier, store }: AppDeps): express.Express {
+export function createApp({ config, logger, verifier, store, admin }: AppDeps): express.Express {
   const app = express();
   app.disable('x-powered-by');
-  // Cloud Run puts one Google front end in front of the container; trust exactly that hop
-  // so req.ip (used for rate limiting) is the caller, not the proxy.
+  // Cloud Run puts one Google front end in front of the container; trust exactly that hop.
+  // (Rate limits count per signed-in user, not per IP.)
   app.set('trust proxy', 1);
 
   app.use(requestContext({ logger, projectId: config.firebaseProjectId }));
@@ -48,6 +51,7 @@ export function createApp({ config, logger, verifier, store }: AppDeps): express
   app.use(healthRouter());
   app.use(meRouter({ authenticate: auth, store, companyId, logger }));
   app.use(workspaceRouter({ authenticate: auth, requireMember }));
+  app.use(adminRouter({ authenticate: auth, requireMember, admin, companyId, logger }));
 
   app.use(notFoundHandler);
   app.use(errorHandler(logger));

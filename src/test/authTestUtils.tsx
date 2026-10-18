@@ -6,6 +6,8 @@ import { render } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { vi } from 'vitest';
 import { App } from '../App';
+import type { ApiClient } from '../auth/api';
+import { ApiProvider } from '../auth/apiContext';
 import { AuthProvider } from '../auth/AuthContext';
 import type { AppSettings } from '../auth/config';
 import type { MembershipService } from '../auth/membershipService';
@@ -70,23 +72,27 @@ export function renderApp({
   membershipService = fakeMembershipService(),
   missingConfig,
   settings = testSettings,
+  api = null,
 }: {
   path?: string;
   client?: AuthClient | null;
   membershipService?: MembershipService;
   missingConfig?: string[];
   settings?: AppSettings;
+  api?: ApiClient | null;
 } = {}) {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <AppSettingsProvider value={settings}>
         <AuthProvider client={client} missingConfig={missingConfig} membershipService={membershipService}>
-          <DemoProvider>
-            <ToastProvider>
-              <App />
-              <LocationDisplay />
-            </ToastProvider>
-          </DemoProvider>
+          <ApiProvider api={api}>
+            <DemoProvider>
+              <ToastProvider>
+                <App />
+                <LocationDisplay />
+              </ToastProvider>
+            </DemoProvider>
+          </ApiProvider>
         </AuthProvider>
       </AppSettingsProvider>
     </MemoryRouter>,

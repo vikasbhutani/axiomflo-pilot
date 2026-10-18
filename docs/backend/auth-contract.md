@@ -39,6 +39,21 @@ When access isn't active the response has only `user`, `access` and `reason`:
 
 `teams` lists what the caller may see: every team for a `company_admin`, and only assigned, active teams for an `individual_user`. `membership.teamIds` leaves out IDs that don't exist in the company.
 
+## Invitations and member changes
+
+| Call | Who | Notes |
+| --- | --- | --- |
+| `GET /api/members` | active `company_admin` | `{ "members": [{ uid, email, displayName, role, teamIds, status }] }` |
+| `PATCH /api/members/:uid` | active `company_admin` | Body: any of `role`, `teamIds`, `status`. `403` for your own uid, `404` unknown member, `409` if it would leave no active admin |
+| `GET /api/invitations` | active `company_admin` | `{ "invitations": [{ id, email, role, teamIds, status, delivery, expiresAt, createdAt }] }`; `delivery` is always `"Created — email not sent"` |
+| `POST /api/invitations` | active `company_admin` | Body: `email`, `role`, `teamIds`, optional `expiresInDays`. `201`, or `409` if a pending invitation or membership already exists for the email |
+| `POST /api/invitations/:id/revoke` | active `company_admin` | `409` if it isn't pending |
+| `POST /api/invitations/accept` | any valid token | Body ignored. `200 { result: "accepted" \| "already_member", role, teamIds }`; `403` unverified email or suspended member; `404` no unexpired invitation for the token's email |
+
+A `company_admin` has `teamIds: []` and sees every team; an `individual_user` needs at least one team. Unknown body fields are refused with `400`.
+
+The web app calls `accept` once, only when `/api/me` says `pending` with reason `no_membership`, then reloads `/api/me`. A `404` simply leaves the person on Access pending.
+
 ## AxiomFlo API → AxiomFlo Agent (when the agent's reporting API is built)
 
 1. **The agent's Cloud Run service is private.** Only the API's runtime service account has `Cloud Run Invoker` on it, and the API calls it with a Google-signed ID token for that service (service-to-service auth). The agent never accepts a browser's Firebase token.

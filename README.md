@@ -279,7 +279,7 @@ The functions in `src/services/mockService.ts` (`getOverview`, `getUsage`, `getT
 
 ## AxiomFlo API (backend, in progress)
 
-`server/` holds the **AxiomFlo API**, a Node.js + Express service that verifies Firebase sign-in tokens, decides workspace access from membership records in Firestore, and serves `/api/me`, `/api/company` and `/api/teams`, which the web app uses. See [server/README.md](server/README.md) to run it and [docs/backend/plan.md](docs/backend/plan.md) for the plan.
+`server/` holds the **AxiomFlo API**, a Node.js + Express service that verifies Firebase sign-in tokens, decides workspace access from membership records in Firestore, and serves `/api/me`, `/api/company` and `/api/teams`, which the web app uses. Company Admins can also invite people and change members' roles, teams and status from the workspace page. See [server/README.md](server/README.md) to run it and [docs/backend/plan.md](docs/backend/plan.md) for the plan.
 
 ## Build progress
 

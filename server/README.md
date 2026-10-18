@@ -2,7 +2,7 @@
 
 The backend that decides who may enter an AxiomFlo workspace. A Google (or verified email) sign-in tells it **who** someone is; a membership record in Firestore tells it **which company, role and teams** they get. See [docs/backend/plan.md](../docs/backend/plan.md) for the full design and milestones.
 
-> **Milestone 3: bootstrap and web app connection.** The API verifies Firebase ID tokens and reads memberships for `/api/me`, `/api/company` and `/api/teams`, and the web app now uses `/api/me`. The bootstrap script creates the company and first admin. It's tested against the local Firebase emulators, **not yet against your real project**, and nothing is deployed. To go live, follow [docs/backend/go-live.md](../docs/backend/go-live.md).
+> **Milestone 4: invitations and member controls.** The API verifies Firebase ID tokens, decides access from memberships, and lets a Company Admin invite people and change members. The bootstrap script creates the company and first admin. It's tested against the local Firebase emulators, **not yet against your real project**, and nothing is deployed. To go live, follow [docs/backend/go-live.md](../docs/backend/go-live.md).
 
 ## What's real and what isn't yet
 
@@ -15,7 +15,8 @@ The backend that decides who may enter an AxiomFlo workspace. A Google (or verif
 | `/api/me`, `/api/company`, `/api/teams` and membership checks on every request | Real code, tested with stand-ins |
 | Bootstrap script (`npm run bootstrap`) | Real code, tested against the Firestore emulator |
 | Web app uses `/api/me` (and refreshes the sign-in token once after a 401) | Real code, tested |
-| Invitations, member changes, audit events | Milestone 4 |
+| Invitations (create, list, revoke, accept), member changes, audit events, rate limits | Real code, tested against the emulators, including two admins acting at once |
+| Invitation emails | **Not built.** Invitations say "Created — email not sent"; the admin tells the person to sign in |
 | Deployment | Milestone 5, with your approval |
 
 ## Run it on your computer
@@ -48,8 +49,24 @@ npm start            # run the compiled version
 | `GET /api/me` | anyone signed in | Who you are and `access`: `active`, `pending` or `suspended`. Company, role and teams only when active |
 | `GET /api/company` | active members | Company name, currency, timezone |
 | `GET /api/teams` | active members | Admin: all teams. Individual user: assigned teams |
+| `GET /api/members` | Company Admin | Members with email, name, role, teams and status |
+| `PATCH /api/members/:uid` | Company Admin | Change someone else's role, teams or status (`active` / `suspended`) |
+| `GET /api/invitations` | Company Admin | Invitations, newest first |
+| `POST /api/invitations` | Company Admin | Invite `{email, role, teamIds, expiresInDays}` (1 to 30 days, default 14) |
+| `POST /api/invitations/:id/revoke` | Company Admin | Revoke a pending invitation |
+| `POST /api/invitations/accept` | anyone signed in with a verified email | Accept the invitation for **your own** email. The body is ignored |
 
-Every `/api` call needs `Authorization: Bearer <Firebase ID token>`. The response codes are `401` for no sign-in or an invalid one, `403` when you're signed in but not allowed, and `503` when the API can't check right now. See [docs/backend/auth-contract.md](../docs/backend/auth-contract.md) for the exact response shapes.
+Every `/api` call needs `Authorization: Bearer <Firebase ID token>`. The response codes are `401` for no sign-in or an invalid one, `403` when you're signed in but not allowed, `400` for a bad request body, `404` when there's nothing to act on, `409` when a rule would be broken, `429` for too many changes, and `503` when the API can't check right now. See [docs/backend/auth-contract.md](../docs/backend/auth-contract.md) for the exact response shapes.
+
+### Rules the admin endpoints enforce
+
+- Nobody can change their own role, teams or status, not even an admin.
+- The company always keeps at least one active Company Admin. Two admins demoting each other at the same moment leaves exactly one.
+- One pending invitation per email address. Revoke it, or let it expire, to send a new one.
+- Inviting someone who is already a member (active or suspended) is refused, and a suspended member can't accept an invitation to get back in.
+- Accepting uses the email and verification status from the sign-in token, and the role and teams from the invitation. Nothing the browser sends is used.
+- Every change writes an audit event (`invitation.created`, `invitation.revoked`, `invitation.accepted`, `member.updated`) in the same transaction, under `companies/{id}/auditEvents`. Audit events don't contain email addresses.
+- Writes are limited to 30 a minute per admin, and accept to 10 a minute per person. The limit is kept in memory, per server instance.
 
 ## Bootstrap the company and first admin
 
@@ -103,7 +120,9 @@ All settings are environment variables; [`.env.example`](.env.example) explains 
 | `src/membership/firestoreStore.ts` | Reads company, teams and memberships, always under the configured company |
 | `src/membership/access.ts` | Decides active / pending / suspended and which teams are visible |
 | `src/membership/requireMember.ts` | Route guards: active member, required role |
-| `src/routes/` | `/health`, `/api/me`, `/api/company`, `/api/teams` |
+| `src/routes/` | `/health`, `/api/me`, `/api/company`, `/api/teams`, and the member and invitation routes (`admin.ts`) |
+| `src/admin/` | Request checks (`validation.ts`) and the member and invitation operations, each in a Firestore transaction (`firestoreAdminService.ts`) |
+| `src/http/rateLimit.ts` | Per-user request limits |
 | `src/bootstrap/` | The bootstrap script (`cli.ts`), its checks (`input.ts`) and the transaction (`bootstrap.ts`) |
 | `src/test/fakes.ts` | Stand-ins for Firebase Auth and Firestore used by unit tests |
 | `src/test/emulator.ts`, `*.emulator.test.ts` | Tests against the local Firebase emulators |
