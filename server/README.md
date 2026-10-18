@@ -55,6 +55,9 @@ npm start            # run the compiled version
 | `POST /api/invitations` | Company Admin | Invite `{email, role, teamIds, expiresInDays}` (1 to 30 days, default 14) |
 | `POST /api/invitations/:id/revoke` | Company Admin | Revoke a pending invitation |
 | `POST /api/invitations/accept` | anyone signed in with a verified email | Accept the invitation for **your own** email. The body is ignored |
+| `GET /api/keys` | active members | Your AxiomFlo keys (Company Admin: every key) |
+| `POST /api/keys` | active members | Create a key `{name, teamId}` for one of your teams. The full key is returned **once** |
+| `POST /api/keys/:id/revoke` | active members | Revoke your key (Company Admin: any key) |
 
 Every `/api` call needs `Authorization: Bearer <Firebase ID token>`. The response codes are `401` for no sign-in or an invalid one, `403` when you're signed in but not allowed, `400` for a bad request body, `404` when there's nothing to act on, `409` when a rule would be broken, `429` for too many changes, and `503` when the API can't check right now. See [docs/backend/auth-contract.md](../docs/backend/auth-contract.md) for the exact response shapes.
 
@@ -123,6 +126,7 @@ All settings are environment variables; [`.env.example`](.env.example) explains 
 | `src/routes/` | `/health`, `/api/me`, `/api/company`, `/api/teams`, and the member and invitation routes (`admin.ts`) |
 | `src/admin/` | Request checks (`validation.ts`) and the member and invitation operations, each in a Firestore transaction (`firestoreAdminService.ts`) |
 | `src/http/rateLimit.ts` | Per-user request limits |
+| `src/keys/` | AxiomFlo keys for the gateway: format and hashing, create, list and revoke, and `resolveKey`, which the gateway runs on every request |
 | `src/bootstrap/` | The bootstrap script (`cli.ts`), its checks (`input.ts`) and the transaction (`bootstrap.ts`) |
 | `src/test/fakes.ts` | Stand-ins for Firebase Auth and Firestore used by unit tests |
 | `src/test/emulator.ts`, `*.emulator.test.ts` | Tests against the local Firebase emulators |

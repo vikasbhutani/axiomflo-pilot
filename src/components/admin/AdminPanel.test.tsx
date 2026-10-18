@@ -35,6 +35,7 @@ function fakeApi({ fail }: { fail?: { path: string; status: number; message?: st
     if (fail && path === fail.path && (!fail.method || fail.method === method)) return json({ error: { code: 'x', message: fail.message ?? 'Refused.' } }, fail.status);
     if (path === '/api/members' && method === 'GET') return json({ members });
     if (path === '/api/invitations' && method === 'GET') return json({ invitations });
+    if (path === '/api/keys' && method === 'GET') return json({ keys: [] });
     if (path === '/api/invitations' && method === 'POST') {
       const invitation: InvitationView = { id: `inv-${invitations.length + 1}`, email: body.email.toLowerCase(), role: body.role, teamIds: body.teamIds, status: 'pending', delivery: 'Created — email not sent', expiresAt: '2026-11-01T00:00:00.000Z', createdAt: '2026-10-18T00:00:00.000Z' };
       invitations.unshift(invitation);
@@ -69,7 +70,7 @@ describe('Admin members and invitations', () => {
     renderAs(membershipFor(alice), api);
     await screen.findByRole('heading', { name: 'Your workspace access is approved' });
     expect(screen.queryByText('Invite someone')).toBeNull();
-    expect(fetch).not.toHaveBeenCalled();
+    expect(fetch.mock.calls.map(([p]) => p)).toEqual(['/api/keys']);
   });
 
   it('lists members and offers no changes on your own row', async () => {

@@ -7,6 +7,7 @@ import type { DocumentReference, Firestore } from 'firebase-admin/firestore';
 import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createFirestoreAdminService } from './admin/firestoreAdminService.js';
+import { createFirestoreKeyService } from './keys/firestoreKeyService.js';
 import { createApp } from './app.js';
 import { createFirebaseTokenVerifier } from './auth/tokenVerifier.js';
 import { applyBootstrap } from './bootstrap/bootstrap.js';
@@ -18,7 +19,7 @@ import { testConfig } from './test/testConfig.js';
 
 const { auth, db } = emulatorApp();
 const config = testConfig({ firebaseProjectId: PROJECT, pilotCompanyId: 'pilot-co' });
-const app = createApp({ config, logger: silentLogger, verifier: createFirebaseTokenVerifier(auth, PROJECT), store: createFirestoreMembershipStore(db), admin: createFirestoreAdminService({ db, auth }) });
+const app = createApp({ config, logger: silentLogger, verifier: createFirebaseTokenVerifier(auth, PROJECT), store: createFirestoreMembershipStore(db), admin: createFirestoreAdminService({ db, auth }), keys: createFirestoreKeyService({ db, auth }) });
 
 const setup = parseBootstrapInput({
   company: { id: 'pilot-co', name: 'Pilot Co', reportingCurrency: 'AUD', reportingTimezone: 'Australia/Sydney' },

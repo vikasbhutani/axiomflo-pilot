@@ -75,7 +75,7 @@ The gateway also avoids the Anthropic Admin API, which needs a Claude Console *o
 
 | # | What's built | What you configure |
 | --- | --- | --- |
-| R1 | AxiomFlo keys: create, list, revoke, hashed storage, membership checks; key screen in the web app | Nothing |
+| R1 ✓ | AxiomFlo keys: create, list, revoke, hashed storage, membership checks; key screen in the web app | Nothing |
 | R2 | Anthropic route on the gateway, streaming included; usage records; price table; tested against a fake Anthropic server | Nothing |
 | R3 | Reports: Overview, Usage Explorer, request detail, Teams (per person) and Showback on real data | Nothing |
 | R4 | Gemini on Vertex route | Nothing |
