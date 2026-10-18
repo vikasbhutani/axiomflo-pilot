@@ -94,6 +94,10 @@ Then open AxiomFlo, sign in, and you should see **Your workspace access is appro
 
 To undo, open Cloud Run → `axiomflo-pilot` → **Revisions**, and send 100% of traffic to the previous revision.
 
+### Invite your team
+
+Once step 4 works, the workspace page shows **Invite someone**, **Members** and **Invitations** to you as Company Admin. Invite each person by email with their role and teams. AxiomFlo doesn't send emails yet, so each invitation says "Created — email not sent": tell the person to sign in to AxiomFlo with that exact address. When they sign in with a verified email, they're let in with the role and teams you chose.
+
 ## 5. Lock Firestore against direct browser access
 
 Do this **after** step 4 works. The old web app version still reads Firestore directly.

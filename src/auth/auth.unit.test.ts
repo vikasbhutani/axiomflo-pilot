@@ -145,6 +145,36 @@ describe('membership services', () => {
     expect(() => parseMeResponse({ ...me, teams: 'all' })).toThrow();
   });
 
+  it('tries to accept a matching invitation once when there is no membership, then reloads', async () => {
+    const pending = { user: me.user, access: 'pending', reason: 'no_membership' };
+    const api = {
+      fetch: vi
+        .fn()
+        .mockResolvedValueOnce(new Response(JSON.stringify(pending)))
+        .mockResolvedValueOnce(new Response(JSON.stringify({ result: 'accepted' })))
+        .mockResolvedValueOnce(new Response(JSON.stringify(me))),
+    };
+    expect(await createHttpMembershipService(api).getMembership(user)).toMatchObject({ status: 'active', role: 'company_admin' });
+    expect(api.fetch.mock.calls.map((c) => c[0])).toEqual(['/api/me', '/api/invitations/accept', '/api/me']);
+    // The accept call carries no role, team or email.
+    expect(api.fetch.mock.calls[1][1]).not.toHaveProperty('body');
+  });
+
+  it('treats "no matching invitation" as a normal pending result, with no retry loop', async () => {
+    const pending = { user: me.user, access: 'pending', reason: 'no_membership' };
+    const api = { fetch: vi.fn().mockResolvedValueOnce(new Response(JSON.stringify(pending))).mockResolvedValueOnce(new Response('{}', { status: 404 })) };
+    expect(await createHttpMembershipService(api).getMembership(user)).toBeNull();
+    expect(api.fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not try invitations when the company is not set up, or for a suspended member', async () => {
+    for (const body of [{ user: me.user, access: 'pending', reason: 'company_not_set_up' }, { user: me.user, access: 'suspended', reason: 'membership_suspended' }]) {
+      const api = { fetch: vi.fn(async () => new Response(JSON.stringify(body))) };
+      await createHttpMembershipService(api).getMembership(user);
+      expect(api.fetch).toHaveBeenCalledTimes(1);
+    }
+  });
+
   it('treats any error status, including 403 and 503, as a failed lookup, never as access', async () => {
     for (const status of [401, 403, 404, 500, 503]) {
       const api = { fetch: vi.fn(async () => new Response('{}', { status })) };

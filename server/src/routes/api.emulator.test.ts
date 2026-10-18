@@ -5,6 +5,7 @@
  */
 import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { createFirestoreAdminService } from '../admin/firestoreAdminService.js';
 import { createApp } from '../app.js';
 import { createFirebaseTokenVerifier } from '../auth/tokenVerifier.js';
 import { applyBootstrap } from '../bootstrap/bootstrap.js';
@@ -16,7 +17,7 @@ import { testConfig } from '../test/testConfig.js';
 
 const { auth, db } = emulatorApp();
 const config = testConfig({ firebaseProjectId: PROJECT, pilotCompanyId: 'pilot-co' });
-const app = createApp({ config, logger: silentLogger, verifier: createFirebaseTokenVerifier(auth, PROJECT), store: createFirestoreMembershipStore(db) });
+const app = createApp({ config, logger: silentLogger, verifier: createFirebaseTokenVerifier(auth, PROJECT), store: createFirestoreMembershipStore(db), admin: createFirestoreAdminService({ db, auth }) });
 
 const setup = parseBootstrapInput({
   company: { id: 'pilot-co', name: 'Pilot Co', reportingCurrency: 'AUD', reportingTimezone: 'Australia/Sydney' },
@@ -85,5 +86,36 @@ describe('the real API against the emulators', () => {
     await db.doc(`companies/other-co/memberships/${outsider.uid}`).set({ uid: outsider.uid, role: 'company_admin', teamIds: [], status: 'active' });
     expect((await me(outsider.token)).body).toMatchObject({ access: 'pending' });
     expect((await request(app).get('/api/company').set('Authorization', `Bearer ${outsider.token}`)).status).toBe(403);
+  });
+
+  it('walks the invitation flow over HTTP: invite → sign in → pending → accept → active', async () => {
+    const founder = await person('founder@example.com');
+    await applyBootstrap(db, setup, founder.uid);
+    const invite = await request(app)
+      .post('/api/invitations')
+      .set('Authorization', `Bearer ${founder.token}`)
+      .send({ email: 'New.Member@example.com', role: 'individual_user', teamIds: ['platform'] });
+    expect(invite.status).toBe(201);
+    expect(invite.body.invitation.delivery).toBe('Created — email not sent');
+
+    const member = await person('new.member@example.com');
+    expect((await me(member.token)).body.access).toBe('pending');
+    const accept = await request(app).post('/api/invitations/accept').set('Authorization', `Bearer ${member.token}`).send({ role: 'company_admin' });
+    expect(accept.body).toEqual({ result: 'accepted', role: 'individual_user', teamIds: ['platform'] });
+    expect((await me(member.token)).body).toMatchObject({ access: 'active', membership: { role: 'individual_user', teamIds: ['platform'] } });
+
+    // Now an individual user: admin routes are closed to them.
+    expect((await request(app).get('/api/members').set('Authorization', `Bearer ${member.token}`)).status).toBe(403);
+    // And the founder can suspend them, which takes effect on the next request.
+    expect((await request(app).patch(`/api/members/${member.uid}`).set('Authorization', `Bearer ${founder.token}`).send({ status: 'suspended' })).status).toBe(200);
+    expect((await me(member.token)).body).toMatchObject({ access: 'suspended' });
+  });
+
+  it('a person with no invitation gets 404 from accept and stays pending', async () => {
+    const stranger = await person('stranger@example.com');
+    const founder = await person('founder@example.com');
+    await applyBootstrap(db, setup, founder.uid);
+    expect((await request(app).post('/api/invitations/accept').set('Authorization', `Bearer ${stranger.token}`)).status).toBe(404);
+    expect((await me(stranger.token)).body.access).toBe('pending');
   });
 });

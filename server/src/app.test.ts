@@ -2,10 +2,10 @@ import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { createApp } from './app.js';
 import { createLogger, sanitize, silentLogger } from './http/logger.js';
-import { FakeStore, FakeVerifier, IDENTITIES, pilotData } from './test/fakes.js';
+import { FakeAdmin, FakeStore, FakeVerifier, IDENTITIES, pilotData } from './test/fakes.js';
 import { testConfig } from './test/testConfig.js';
 
-const fakes = () => ({ verifier: new FakeVerifier(IDENTITIES), store: new FakeStore(pilotData()) });
+const fakes = () => ({ verifier: new FakeVerifier(IDENTITIES), store: new FakeStore(pilotData()), admin: new FakeAdmin() });
 
 function app(overrides = {}) {
   return createApp({ config: testConfig(overrides), logger: silentLogger, ...fakes() });

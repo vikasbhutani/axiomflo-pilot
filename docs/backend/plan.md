@@ -84,8 +84,10 @@ Your hand-made document at the top-level `memberships/{uid}` keeps working until
 | `GET /api/company` | active members | Company name, currency, timezone. |
 | `GET /api/teams` | active members | Admin: all teams. Individual user: assigned teams only. |
 | `GET /api/members` | admin | Memberships with email and name from Firebase Auth. |
+| `GET /api/invitations` | admin | Invitations, newest first, with status pending / accepted / revoked / expired. |
 | `POST /api/invitations` | admin | Validates email, role, teamIds, expiry (default 14 days, max 30). Refuses a second pending invitation for the same email. Status shows **"Created — email not sent"**; there's no email delivery. Audited. |
 | `POST /api/invitations/accept` | valid token, verified email | Finds an unexpired pending invitation for the **token's** email. Role and teams come only from the invitation. One transaction creates the membership and marks the invitation accepted. A retry after success returns the existing membership. A suspended member can't use an invitation to get back in. |
+| `POST /api/invitations/:id/revoke` | admin | Revokes a pending invitation, which frees the email for a new one. Audited. |
 | `PATCH /api/members/:uid` | admin | Validated role, teams or status change. Transaction keeps at least one active admin. Audited. |
 
 Defence in depth on every route: JSON body limit (16 KB), strict validation that rejects unknown fields, request IDs in responses and logs, rate limits on invitation and member-change endpoints, and exact-origin CORS (no wildcards, no cookies).
@@ -150,7 +152,7 @@ The full contract is in [auth-contract.md](auth-contract.md).
 | **1 (this PR)** | This plan. `server/` skeleton: config validation (refuses wildcard CORS, bad IDs), `/health`, request IDs, sanitized JSON logs, security headers, exact-origin CORS, body limit, safe JSON errors, Admin SDK init with ADC, Dockerfile, `.env.example`, tests. | Nothing yet. |
 | 2 | Token-verification middleware, `/api/me`, `/api/company`, `/api/teams`, membership gating, auth contract doc. | Nothing yet (tested with mocks/emulator). |
 | 3 | Bootstrap script (emulator-tested); frontend switched to `/api/me` with 401 refresh-once; workspace shows identity, company, role and teams; closed Firestore rules; `/api` forwarding in the web server and the dev server; [go-live steps](go-live.md). The invitation-accept-once step moves to Milestone 4 together with the invitation endpoint. | Follow [go-live.md](go-live.md) when you're ready: bootstrap in Cloud Shell, then (with your approval) the service account, API deploy and web app update, then the rules. |
-| 4 | `/api/members`, invitations (create/accept), `PATCH /api/members/:uid`, last-admin protection, audit events, rate limits, a small admin screen. | Nothing new. |
+| 4 | `/api/members`, invitations (list, create, revoke, accept), `PATCH /api/members/:uid`, no self-changes, last-admin protection, one pending invitation per email, audit events, per-user rate limits. The web app tries a matching invitation once when someone has no membership, and Company Admins get a members and invitations screen. Emulator-tested, including concurrent requests. | Nothing new. Invitations go live with the API in [go-live.md](go-live.md). |
 | 5 | Full test pass (emulator + mocks) for the security list in the brief; local and deployment docs; nginx `/api/` forwarding. | Create the service account and roles, deploy `axiomflo-api`, allow public invocation, redeploy the web app. Each step listed for the Console, and only with your go-ahead. |
 
 ## Defaults I've picked (say if you want otherwise)

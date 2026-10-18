@@ -1,6 +1,7 @@
 /** Starts the AxiomFlo API. Cloud Run sets PORT; we listen on all interfaces (0.0.0.0). */
 import { createApp } from './app.js';
 import { ConfigError, loadConfig } from './config.js';
+import { createFirestoreAdminService } from './admin/firestoreAdminService.js';
 import { createFirebaseTokenVerifier } from './auth/tokenVerifier.js';
 import { initFirebase } from './firebase.js';
 import { createLogger } from './http/logger.js';
@@ -25,6 +26,7 @@ function main() {
     logger,
     verifier: createFirebaseTokenVerifier(auth, config.firebaseProjectId),
     store: createFirestoreMembershipStore(db),
+    admin: createFirestoreAdminService({ db, auth }),
   });
 
   const server = app.listen(config.port, '0.0.0.0', () => {

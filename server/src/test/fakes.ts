@@ -5,6 +5,7 @@ import { TokenRejectedError, TokenVerificationUnavailableError, type TokenVerifi
 import { silentLogger, type Logger } from '../http/logger.js';
 import type { CompanyRecord, MembershipRecord, TeamRecord } from '../membership/records.js';
 import type { MembershipStore } from '../membership/store.js';
+import type { AdminService } from '../admin/service.js';
 import { testConfig } from './testConfig.js';
 
 export const COMPANY_ID = 'test-company';
@@ -97,6 +98,48 @@ export const IDENTITIES = {
   authdown: new TokenVerificationUnavailableError('auth/internal-error'),
 };
 
-export function makeApp({ store = new FakeStore(pilotData()), verifier = new FakeVerifier(IDENTITIES), config = testConfig(), logger = silentLogger }: { store?: FakeStore; verifier?: FakeVerifier; config?: ServerConfig; logger?: Logger } = {}) {
-  return { app: createApp({ config, logger, verifier, store }), store, verifier };
+/** Records what the routes ask for; the real behaviour is tested against the emulators. */
+export class FakeAdmin implements AdminService {
+  readonly calls: { method: string; args: unknown[] }[] = [];
+  /** Set to make the next call fail (e.g. like a Firestore outage). */
+  failWith: Error | null = null;
+  private record(method: string, args: unknown[]) {
+    this.calls.push({ method, args });
+    if (this.failWith) throw this.failWith;
+  }
+  async listMembers(...args: unknown[]) {
+    this.record('listMembers', args);
+    return [];
+  }
+  async listInvitations(...args: unknown[]) {
+    this.record('listInvitations', args);
+    return [];
+  }
+  async createInvitation(...args: Parameters<AdminService['createInvitation']>) {
+    this.record('createInvitation', args);
+    const input = args[2];
+    return { id: 'inv-1', email: input.normalizedEmail, role: input.role, teamIds: input.teamIds, status: 'pending' as const, delivery: 'Created — email not sent' as const, expiresAt: new Date(0).toISOString(), createdAt: null };
+  }
+  async revokeInvitation(...args: Parameters<AdminService['revokeInvitation']>) {
+    this.record('revokeInvitation', args);
+    return { id: args[2], email: 'x@example.com', role: 'individual_user' as const, teamIds: ['team-a'], status: 'revoked' as const, delivery: 'Created — email not sent' as const, expiresAt: new Date(0).toISOString(), createdAt: null };
+  }
+  async acceptInvitation(...args: Parameters<AdminService['acceptInvitation']>) {
+    this.record('acceptInvitation', args);
+    return { result: 'accepted' as const, role: 'individual_user' as const, teamIds: ['team-a'] };
+  }
+  async updateMember(...args: Parameters<AdminService['updateMember']>) {
+    this.record('updateMember', args);
+    return { uid: args[2], email: null, displayName: null, role: args[3].role ?? 'individual_user', teamIds: args[3].teamIds ?? [], status: args[3].status ?? 'active' };
+  }
+}
+
+export function makeApp({
+  store = new FakeStore(pilotData()),
+  verifier = new FakeVerifier(IDENTITIES),
+  admin = new FakeAdmin(),
+  config = testConfig(),
+  logger = silentLogger,
+}: { store?: FakeStore; verifier?: FakeVerifier; admin?: FakeAdmin; config?: ServerConfig; logger?: Logger } = {}) {
+  return { app: createApp({ config, logger, verifier, store, admin }), store, verifier, admin };
 }
