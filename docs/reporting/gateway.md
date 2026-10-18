@@ -7,7 +7,7 @@ The gateway is a separate Cloud Run service (`axiomflo-gateway`). It's built fro
 3. **Returns the answer unchanged.** Streamed answers pass through event by event.
 4. **Writes one usage record** to `companies/{companyId}/usage/{requestId}`.
 
-Status: the Claude route (R2) and the Gemini on Vertex AI route (R4) are built and tested against pretend provider servers. It is **not deployed yet**. Deploying it (R5) needs your approval, the **Vertex AI User** role for the gateway's service account, and, for Claude, an Anthropic API key in Secret Manager.
+Status: the Claude route (R2) and the Gemini on Vertex AI route (R4) are built and tested against pretend provider servers. It is **not deployed yet**. Deploying it (R5, steps in [gateway-deploy.md](gateway-deploy.md)) needs your approval, the **Vertex AI User** role for the gateway's service account, and, for Claude, an Anthropic API key in Secret Manager.
 
 ## What a usage record holds
 
