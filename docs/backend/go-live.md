@@ -2,6 +2,8 @@
 
 These steps switch AxiomFlo from "the browser reads its own membership" to "the AxiomFlo API decides access". Do them in order. Each step says whether it can be undone.
 
+> **Status (2026-10-18):** steps 1 to 5 are done. The company ID is `pilot`, the API is `axiomflo-api` in `axiomflo-pilot`, and the web app `axiomflo` forwards `/api` to it. Steps 6 and 7 are left.
+
 **Nothing here has been done for you.** Steps 2 to 4 create a Google Cloud resource and change who may call it, so they wait for your go-ahead. Cloud Run, Cloud Build and Artifact Registry can incur small charges.
 
 You'll use two places:
@@ -57,6 +59,19 @@ To undo, delete the service account.
 
 ## 3. Deploy the AxiomFlo API (needs your approval)
 
+**Before you start, check two things in `axiomflo-pilot`.** On the 2026-10-18 go-live, both stopped the first deploy:
+
+- **A billing account must be linked**, even though usage stays within free allowances. Without one, deploying fails with `Billing account … is not found`, and the Cloud Run page says the API "is not enabled". To fix it, open **Billing → Link a billing account** for the project. You can also add a budget alert: **Billing → Budgets & alerts**, for example 5 a month, which emails you and doesn't stop anything.
+- **The build account needs Cloud Run Builder.** Newer projects give the default compute account no permissions, so builds fail with `default service account is missing required IAM permissions`. Grant this one narrow role. It's not Owner or Editor, and the running API doesn't use it:
+
+  ```bash
+  gcloud projects add-iam-policy-binding axiomflo-pilot \
+    --member=serviceAccount:PROJECT_NUMBER-compute@developer.gserviceaccount.com \
+    --role=roles/run.builder --condition=None
+  ```
+
+  `PROJECT_NUMBER` is on the console's home page. It's `154167701875` for `axiomflo-pilot`. To undo, remove the role in **IAM & Admin → IAM**.
+
 In Cloud Shell, from the repo's top folder (`cd ..` if you're still in `server`):
 
 ```bash
@@ -79,20 +94,23 @@ To undo, delete the `axiomflo-api` service in Cloud Run.
 
 The web app's server forwards `/api` to the API, so the browser keeps using one address.
 
+**The web app is in a different Google Cloud project.** Its Cloud Run service is called `axiomflo`, and it lives in the project with number `603572706266`, not in `axiomflo-pilot`. Its address is `https://axiomflo-603572706266.asia-southeast1.run.app`. `gcloud` needs that project's ID, not its number, so this command looks up the ID first. It then checks the API is healthy and that the `axiomflo` service exists before updating it.
+
 In Cloud Shell, from the repo's top folder:
 
 ```bash
-gcloud run deploy axiomflo-pilot \
-  --source . \
-  --region asia-southeast1 \
-  --set-env-vars API_ORIGIN=https://axiomflo-api-XXXX.a.run.app
+WEB=$(gcloud projects describe 603572706266 --format='value(projectId)')
+API=$(gcloud run services describe axiomflo-api --region asia-southeast1 --project axiomflo-pilot --format='value(status.url)')
+curl -s "$API/health" && echo
+gcloud run services describe axiomflo --region asia-southeast1 --project "$WEB" --format='value(status.url)' && \
+gcloud run deploy axiomflo --source . --region asia-southeast1 --project "$WEB" --update-env-vars API_ORIGIN=$API
 ```
 
-(Use the address from step 3: no trailing slash, nothing after `.run.app`.)
+`API_ORIGIN` must be the API's address with no trailing slash and nothing after `.run.app`.
 
 Then open AxiomFlo, sign in, and you should see **Your workspace access is approved** with your company, the Company Admin role and both teams.
 
-To undo, open Cloud Run → `axiomflo-pilot` → **Revisions**, and send 100% of traffic to the previous revision.
+To undo, open Cloud Run → `axiomflo` (in the web app's project) → **Revisions**, and send 100% of traffic to the previous revision.
 
 ### Invite your team
 
