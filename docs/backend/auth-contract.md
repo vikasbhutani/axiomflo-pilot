@@ -61,6 +61,13 @@ The web app calls `accept` once, only when `/api/me` says `pending` with reason 
 - `resolveKey` re-checks everything on every use: the key is active, the secret matches (constant-time), the company is active, the owner is an active member, and the team is still theirs. Suspension or a team change stops the key on the next request.
 - Individual users see and revoke only their own keys. Admins see all keys, with owner emails. At most 10 active keys per person. Creating and revoking keys are audited, and the secret never appears in audit events.
 
+## Usage reports
+
+- `GET /api/usage?month=YYYY-MM` returns the usage records for one calendar month in the company's reporting timezone. Scope is decided on the server from the verified member: a Company Admin gets every record in the company, and an individual user gets only records where they are the principal. Query parameters other than `month` are ignored.
+- Each record carries tokens, model, team, status and the gateway's USD estimate. Records hold no prompts or answers. A cost is only returned when both token counts are present; otherwise `costStatus` is `unavailable` and the cost is `null`.
+- Records that don't match the expected shape are left out and counted in `skipped`. More than 20,000 records sets `truncated`.
+- Exchange rates live at `companies/{id}/exchangeRates/{YYYY-MM}`. Any member can read them. Only an active Company Admin can set one (checked in the route and again in the transaction), and every change is audited with the previous value.
+
 ## AxiomFlo API → AxiomFlo Agent (when the agent's reporting API is built)
 
 1. **The agent's Cloud Run service is private.** Only the API's runtime service account has `Cloud Run Invoker` on it, and the API calls it with a Google-signed ID token for that service (service-to-service auth). The agent never accepts a browser's Firebase token.

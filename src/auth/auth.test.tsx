@@ -62,7 +62,7 @@ describe('protected workspace pages', () => {
 
   it('lets an approved member into the application, without sample data or the demo switcher', async () => {
     renderApp({ path: '/', client: new FakeAuthClient(alice), membershipService: fakeMembershipService({ [alice.uid]: membershipFor(alice) }) });
-    expect(await screen.findByRole('heading', { name: 'Your workspace access is approved' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Overview' })).toBeTruthy();
     expect(screen.getAllByRole('navigation', { name: 'Main' }).length).toBeGreaterThan(0);
     expect(screen.queryByLabelText('Demo role')).toBeNull();
     expect(screen.queryByText('Demo workspace — sample data')).toBeNull();
@@ -70,7 +70,7 @@ describe('protected workspace pages', () => {
   });
 
   it('shows the signed-in identity, company, role and assigned teams from the membership', async () => {
-    renderApp({ path: '/', client: new FakeAuthClient(alice), membershipService: fakeMembershipService({ [alice.uid]: membershipFor(alice) }) });
+    renderApp({ path: '/settings', client: new FakeAuthClient(alice), membershipService: fakeMembershipService({ [alice.uid]: membershipFor(alice) }) });
     await screen.findByRole('heading', { name: 'Your workspace access is approved' });
     expect(screen.getAllByText(/alice@example\.com/).length).toBeGreaterThan(0);
     expect(screen.getAllByText('Individual User').length).toBeGreaterThan(0);
@@ -80,13 +80,13 @@ describe('protected workspace pages', () => {
 
   it('returns an approved member to the page they originally asked for', async () => {
     renderApp({ path: '/login?returnTo=%2Fshowback', client: new FakeAuthClient(alice), membershipService: fakeMembershipService({ [alice.uid]: membershipFor(alice) }) });
-    await screen.findByRole('heading', { name: 'Your workspace access is approved' });
+    await screen.findByRole('heading', { name: 'Monthly Showback' });
     expect(location()).toBe('/showback');
   });
 
   it('ignores return addresses that point outside the app', async () => {
     renderApp({ path: '/login?returnTo=https%3A%2F%2Fevil.example', client: new FakeAuthClient(alice), membershipService: fakeMembershipService({ [alice.uid]: membershipFor(alice) }) });
-    await screen.findByRole('heading', { name: 'Your workspace access is approved' });
+    await screen.findByRole('heading', { name: 'Overview' });
     expect(location()).toBe('/');
   });
 
@@ -109,7 +109,7 @@ describe('protected workspace pages', () => {
     renderApp({ path: '/', client: new FakeAuthClient(alice), membershipService: service });
     expect(await screen.findByRole('heading', { name: 'We couldn’t check your access' })).toBeTruthy();
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
-    expect(await screen.findByRole('heading', { name: 'Your workspace access is approved' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Overview' })).toBeTruthy();
   });
 });
 
@@ -253,7 +253,7 @@ describe('sign-out', () => {
   it('returns to /login from the workspace profile menu', async () => {
     const client = new FakeAuthClient(alice);
     renderApp({ path: '/', client, membershipService: fakeMembershipService({ [alice.uid]: membershipFor(alice) }) });
-    await screen.findByRole('heading', { name: 'Your workspace access is approved' });
+    await screen.findByRole('heading', { name: 'Overview' });
     await userEvent.click(screen.getByRole('button', { name: /Open profile menu/ }));
     await userEvent.click(screen.getByRole('menuitem', { name: 'Sign out' }));
     expect(await screen.findByRole('heading', { name: 'Welcome back to AxiomFlo' })).toBeTruthy();
@@ -304,14 +304,14 @@ describe('sign-in tokens', () => {
     const me = { user: { uid: alice.uid, email: alice.email, emailVerified: true, displayName: alice.displayName }, access: 'active', company: { id: 'co-real', name: 'Real Co', reportingCurrency: 'AUD', reportingTimezone: 'Australia/Sydney' }, membership: { role: 'company_admin', teamIds: [] }, teams: [] };
     const fetchImpl = vi.fn(async (url: string | URL | Request) => {
       const path = new URL(String(url)).pathname;
-      const body = path === '/api/me' ? me : path === '/api/members' ? { members: [] } : path === '/api/keys' ? { keys: [] } : { invitations: [] };
+      const body = path === '/api/me' ? me : path === '/api/members' ? { members: [] } : path === '/api/keys' ? { keys: [] } : path === '/api/exchange-rates' ? { currency: 'AUD', rates: [] } : { invitations: [] };
       return new Response(JSON.stringify(body), { headers: { 'Content-Type': 'application/json' } });
     });
     const api = createApiClient({ baseUrl: 'https://app.example.com', getIdToken: () => client.getIdToken(), fetchImpl });
-    renderApp({ path: '/', client, membershipService: createHttpMembershipService(api), api });
+    renderApp({ path: '/settings', client, membershipService: createHttpMembershipService(api), api });
     await screen.findByRole('heading', { name: 'Your workspace access is approved' });
     await screen.findByText('No invitations yet.');
-    expect(fetchImpl.mock.calls.map(([url]) => new URL(String(url)).pathname).sort()).toEqual(['/api/invitations', '/api/keys', '/api/me', '/api/members']);
+    expect(fetchImpl.mock.calls.map(([url]) => new URL(String(url)).pathname).sort()).toEqual(['/api/exchange-rates', '/api/invitations', '/api/keys', '/api/me', '/api/members']);
     const stored = [window.localStorage, window.sessionStorage].flatMap((s) => Object.keys(s).map((k) => `${k}=${s.getItem(k)}`)).join('\n');
     expect(stored).not.toContain('fake-id-token');
   });
@@ -327,7 +327,7 @@ describe('demo workspace', () => {
 
   it('never changes a real member’s role', async () => {
     window.localStorage.setItem('axiomflo-demo:role', JSON.stringify('company_admin'));
-    renderApp({ path: '/', client: new FakeAuthClient(alice), membershipService: fakeMembershipService({ [alice.uid]: membershipFor(alice, { role: 'individual_user' }) }) });
+    renderApp({ path: '/settings', client: new FakeAuthClient(alice), membershipService: fakeMembershipService({ [alice.uid]: membershipFor(alice, { role: 'individual_user' }) }) });
     await screen.findByRole('heading', { name: 'Your workspace access is approved' });
     expect(screen.queryByLabelText('Demo role')).toBeNull();
     expect(screen.queryByText('Company Admin')).toBeNull();

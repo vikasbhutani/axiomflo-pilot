@@ -111,8 +111,8 @@ export function summarize(records: CostedUsageRecord[]): CostSummary {
 }
 
 /** Groups records by a key and summarizes each group. Keys are returned in first-seen order. */
-export function summarizeBy<K extends string>(records: CostedUsageRecord[], keyOf: (r: CostedUsageRecord) => K): Map<K, CostSummary> {
-  const groups = new Map<K, CostedUsageRecord[]>();
+export function summarizeBy<K extends string, R extends CostedUsageRecord = CostedUsageRecord>(records: R[], keyOf: (r: R) => K): Map<K, CostSummary> {
+  const groups = new Map<K, R[]>();
   for (const r of records) {
     const key = keyOf(r);
     const list = groups.get(key);

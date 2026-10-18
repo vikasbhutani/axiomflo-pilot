@@ -18,6 +18,21 @@ export function formatCurrency(value: number | null | undefined, options: { prec
   return (options.precise ? currency4 : currency2).format(value);
 }
 
+const moneyFormats = new Map<string, Intl.NumberFormat>();
+
+/** Like formatCurrency, for a currency chosen at run time (real workspaces may show USD). */
+export function formatMoney(value: number | null | undefined, currency: string, options: { precise?: boolean } = {}): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return NOT_AVAILABLE;
+  const digits = options.precise ? 4 : 2;
+  const key = `${currency}:${digits}`;
+  let format = moneyFormats.get(key);
+  if (!format) {
+    format = new Intl.NumberFormat('en-AU', { style: 'currency', currency, currencyDisplay: currency === 'AUD' ? 'symbol' : 'code', minimumFractionDigits: digits, maximumFractionDigits: digits });
+    moneyFormats.set(key, format);
+  }
+  return format.format(value);
+}
+
 export function formatNumber(value: number | null | undefined): string {
   if (value === null || value === undefined || Number.isNaN(value)) return NOT_AVAILABLE;
   return integer.format(value);

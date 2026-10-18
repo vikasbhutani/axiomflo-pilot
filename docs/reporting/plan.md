@@ -77,7 +77,7 @@ The gateway also avoids the Anthropic Admin API, which needs a Claude Console *o
 | --- | --- | --- |
 | R1 ✓ | AxiomFlo keys: create, list, revoke, hashed storage, membership checks; key screen in the web app | Nothing |
 | R2 ✓ | Anthropic route on the gateway, streaming included; usage records; price table; tested against a fake Anthropic server ([gateway.md](gateway.md)) | Nothing |
-| R3 | Reports: Overview, Usage Explorer, request detail, Teams (per person) and Showback on real data | Nothing |
+| R3 ✓ | Reports: Overview, Usage Explorer, request detail, Teams (per person), Providers and Showback on real data; USD → AUD rates set by an admin in Settings. The AI Cost Assistant still runs on demo data only | Redeploy the API and the web app |
 | R4 | Gemini on Vertex route | Nothing |
 | R5 | Deploy the gateway; store the Anthropic key in Secret Manager; give the gateway Vertex access; docs for your teams on pointing tools at AxiomFlo | With your approval: Secret Manager, gateway service, Vertex AI User role. An Anthropic API key from the Claude Console |
 
