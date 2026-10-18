@@ -36,6 +36,8 @@ export interface KeyPrincipal {
   uid: string;
   role: Role;
   teamId: string;
+  /** The team's code when the key was used, kept on usage records for historical attribution. */
+  teamCode: string;
 }
 
 export interface NewKey {

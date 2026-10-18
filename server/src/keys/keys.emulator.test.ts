@@ -86,7 +86,7 @@ describe('listing and revoking', () => {
 describe('resolving a key (what the gateway does on every request)', () => {
   it('returns the owner, role and team for a valid key', async () => {
     const { key, secret } = await keys.createKey(C, alice, { name: 'Laptop', teamId: 'product' });
-    expect(await keys.resolveKey(C, secret)).toEqual({ keyId: key.id, uid: alice.uid, role: 'individual_user', teamId: 'product' });
+    expect(await keys.resolveKey(C, secret)).toEqual({ keyId: key.id, uid: alice.uid, role: 'individual_user', teamId: 'product', teamCode: 'PROD' });
   });
 
   it('rejects malformed, unknown and tampered keys', async () => {

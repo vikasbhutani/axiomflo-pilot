@@ -115,9 +115,10 @@ export function createFirestoreKeyService({ db, auth }: { db: Firestore; auth: A
       if (!memberSnap.exists) throw new KeyRejectedError('no_membership');
       const member = parseMembership(c, uid, memberSnap.data() ?? {});
       if (member.status !== 'active') throw new KeyRejectedError('member_suspended');
-      if (!teamSnap.exists || parseTeam(c, teamId, teamSnap.data() ?? {}).status !== 'active') throw new KeyRejectedError('team_inactive');
+      const team = teamSnap.exists ? parseTeam(c, teamId, teamSnap.data() ?? {}) : null;
+      if (!team || team.status !== 'active') throw new KeyRejectedError('team_inactive');
       if (member.role !== 'company_admin' && !member.teamIds.includes(teamId)) throw new KeyRejectedError('team_not_assigned');
-      return { keyId: parsed.id, uid, role: member.role, teamId };
+      return { keyId: parsed.id, uid, role: member.role, teamId, teamCode: team.code };
     },
   };
 }

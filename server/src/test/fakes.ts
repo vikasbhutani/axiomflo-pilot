@@ -140,6 +140,8 @@ export class FakeKeys implements KeyService {
   readonly calls: { method: string; args: unknown[] }[] = [];
   failWith: Error | null = null;
   readonly keys: KeyView[] = [];
+  /** What resolveKey returns (or throws) for each raw key; anything else is unknown. */
+  readonly principals: Record<string, KeyPrincipal | Error> = {};
   private record(method: string, args: unknown[]) {
     this.calls.push({ method, args });
     if (this.failWith) throw this.failWith;
@@ -162,7 +164,10 @@ export class FakeKeys implements KeyService {
   }
   async resolveKey(companyId: string, rawKey: string): Promise<KeyPrincipal> {
     this.record('resolveKey', [companyId, rawKey]);
-    throw new KeyRejectedError('unknown');
+    const outcome = this.principals[rawKey];
+    if (!outcome) throw new KeyRejectedError('unknown');
+    if (outcome instanceof Error) throw outcome;
+    return outcome;
   }
 }
 
