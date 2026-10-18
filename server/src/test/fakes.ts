@@ -6,6 +6,7 @@ import { silentLogger, type Logger } from '../http/logger.js';
 import type { CompanyRecord, MembershipRecord, TeamRecord } from '../membership/records.js';
 import type { MembershipStore } from '../membership/store.js';
 import type { AdminService } from '../admin/service.js';
+import { KeyRejectedError, type KeyActor, type KeyPrincipal, type KeyService, type KeyView, type NewKey } from '../keys/service.js';
 import { testConfig } from './testConfig.js';
 
 export const COMPANY_ID = 'test-company';
@@ -134,12 +135,49 @@ export class FakeAdmin implements AdminService {
   }
 }
 
+/** Keeps keys in memory, with the same visibility rules as the real service. */
+export class FakeKeys implements KeyService {
+  readonly calls: { method: string; args: unknown[] }[] = [];
+  failWith: Error | null = null;
+  readonly keys: KeyView[] = [];
+  /** What resolveKey returns (or throws) for each raw key; anything else is unknown. */
+  readonly principals: Record<string, KeyPrincipal | Error> = {};
+  private record(method: string, args: unknown[]) {
+    this.calls.push({ method, args });
+    if (this.failWith) throw this.failWith;
+  }
+  async listKeys(companyId: string, actor: KeyActor) {
+    this.record('listKeys', [companyId, actor]);
+    return this.keys.filter((k) => actor.role === 'company_admin' || k.ownerUid === actor.uid);
+  }
+  async createKey(companyId: string, actor: KeyActor, input: NewKey) {
+    this.record('createKey', [companyId, actor, input]);
+    const key: KeyView = { id: `${this.keys.length}`.padStart(24, '0'), name: input.name, ownerUid: actor.uid, ownerEmail: null, teamId: input.teamId, status: 'active', hint: 'abcd', createdAt: null, revokedAt: null };
+    this.keys.push(key);
+    return { key, secret: `axf_${key.id}_${'s'.repeat(43)}` };
+  }
+  async revokeKey(companyId: string, actor: KeyActor, keyId: string) {
+    this.record('revokeKey', [companyId, actor, keyId]);
+    const key = this.keys.find((k) => k.id === keyId)!;
+    key.status = 'revoked';
+    return key;
+  }
+  async resolveKey(companyId: string, rawKey: string): Promise<KeyPrincipal> {
+    this.record('resolveKey', [companyId, rawKey]);
+    const outcome = this.principals[rawKey];
+    if (!outcome) throw new KeyRejectedError('unknown');
+    if (outcome instanceof Error) throw outcome;
+    return outcome;
+  }
+}
+
 export function makeApp({
   store = new FakeStore(pilotData()),
   verifier = new FakeVerifier(IDENTITIES),
   admin = new FakeAdmin(),
+  keys = new FakeKeys(),
   config = testConfig(),
   logger = silentLogger,
-}: { store?: FakeStore; verifier?: FakeVerifier; admin?: FakeAdmin; config?: ServerConfig; logger?: Logger } = {}) {
-  return { app: createApp({ config, logger, verifier, store, admin }), store, verifier, admin };
+}: { store?: FakeStore; verifier?: FakeVerifier; admin?: FakeAdmin; keys?: FakeKeys; config?: ServerConfig; logger?: Logger } = {}) {
+  return { app: createApp({ config, logger, verifier, store, admin, keys }), store, verifier, admin, keys };
 }

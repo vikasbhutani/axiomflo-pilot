@@ -54,6 +54,13 @@ A `company_admin` has `teamIds: []` and sees every team; an `individual_user` ne
 
 The web app calls `accept` once, only when `/api/me` says `pending` with reason `no_membership`, then reloads `/api/me`. A `403`, `404`, `409` or `429` from accept simply leaves the person on Access pending; a `5xx` shows the retryable error page.
 
+## AxiomFlo keys (for the gateway)
+
+- Format: `axf_<24 hex>_<43 base64url>`. Only a SHA-256 hash of the secret part is stored, at `companies/{id}/apiKeys/{keyId}`. The full key is returned once, by `POST /api/keys`, with `Cache-Control: no-store`.
+- Each key belongs to one person and one team. Individual users can only choose their own teams.
+- `resolveKey` re-checks everything on every use: the key is active, the secret matches (constant-time), the company is active, the owner is an active member, and the team is still theirs. Suspension or a team change stops the key on the next request.
+- Individual users see and revoke only their own keys. Admins see all keys, with owner emails. At most 10 active keys per person. Creating and revoking keys are audited, and the secret never appears in audit events.
+
 ## AxiomFlo API → AxiomFlo Agent (when the agent's reporting API is built)
 
 1. **The agent's Cloud Run service is private.** Only the API's runtime service account has `Cloud Run Invoker` on it, and the API calls it with a Google-signed ID token for that service (service-to-service auth). The agent never accepts a browser's Firebase token.

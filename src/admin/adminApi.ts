@@ -4,11 +4,11 @@
  * reads answers. It never sends a uid, company or inviter: the API takes those from the
  * sign-in token.
  */
-import type { ApiClient } from "../auth/api";
-import type { Role } from "../types";
+import type { ApiClient } from '../auth/api';
+import type { Role } from '../types';
 
-export type MemberStatus = "active" | "suspended";
-export type InvitationStatus = "pending" | "accepted" | "revoked" | "expired";
+export type MemberStatus = 'active' | 'suspended';
+export type InvitationStatus = 'pending' | 'accepted' | 'revoked' | 'expired';
 
 export interface MemberView {
   uid: string;
@@ -50,35 +50,27 @@ export class AdminApiError extends Error {
     message: string,
   ) {
     super(message);
-    this.name = "AdminApiError";
+    this.name = 'AdminApiError';
   }
 }
 
 const FALLBACK: Record<number, string> = {
-  401: "Your sign-in has expired. Please sign in again.",
-  403: "You don’t have permission to do that.",
-  429: "Too many changes in a short time. Please wait a minute and try again.",
+  401: 'Your sign-in has expired. Please sign in again.',
+  403: 'You don’t have permission to do that.',
+  429: 'Too many changes in a short time. Please wait a minute and try again.',
 };
 
-async function call<T>(
-  api: ApiClient,
-  path: string,
-  init: RequestInit = {},
-): Promise<T> {
+export async function call<T>(api: ApiClient, path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
-  headers.set("Accept", "application/json");
-  if (init.body) headers.set("Content-Type", "application/json");
+  headers.set('Accept', 'application/json');
+  if (init.body) headers.set('Content-Type', 'application/json');
   const response = await api.fetch(path, { ...init, headers });
   const body = (await response.json().catch(() => null)) as {
     error?: { message?: unknown };
   } | null;
   if (!response.ok) {
     // 4xx messages are written by the API for people to read; 5xx details are not shown.
-    const message =
-      response.status < 500 && typeof body?.error?.message === "string"
-        ? body.error.message
-        : (FALLBACK[response.status] ??
-          "We couldn’t complete that just now. Please try again.");
+    const message = response.status < 500 && typeof body?.error?.message === 'string' ? body.error.message : (FALLBACK[response.status] ?? 'We couldn’t complete that just now. Please try again.');
     throw new AdminApiError(response.status, message);
   }
   return body as T;
@@ -86,34 +78,18 @@ async function call<T>(
 
 export function createAdminApi(api: ApiClient) {
   return {
-    listMembers: async () =>
-      (await call<{ members: MemberView[] }>(api, "/api/members")).members,
-    listInvitations: async () =>
-      (await call<{ invitations: InvitationView[] }>(api, "/api/invitations"))
-        .invitations,
+    listMembers: async () => (await call<{ members: MemberView[] }>(api, '/api/members')).members,
+    listInvitations: async () => (await call<{ invitations: InvitationView[] }>(api, '/api/invitations')).invitations,
     createInvitation: async (input: NewInvitation) =>
       (
-        await call<{ invitation: InvitationView }>(api, "/api/invitations", {
-          method: "POST",
+        await call<{ invitation: InvitationView }>(api, '/api/invitations', {
+          method: 'POST',
           body: JSON.stringify(input),
         })
       ).invitation,
-    revokeInvitation: async (id: string) =>
-      (
-        await call<{ invitation: InvitationView }>(
-          api,
-          `/api/invitations/${encodeURIComponent(id)}/revoke`,
-          { method: "POST" },
-        )
-      ).invitation,
+    revokeInvitation: async (id: string) => (await call<{ invitation: InvitationView }>(api, `/api/invitations/${encodeURIComponent(id)}/revoke`, { method: 'POST' })).invitation,
     updateMember: async (uid: string, change: MemberChange) =>
-      (
-        await call<{ member: MemberView }>(
-          api,
-          `/api/members/${encodeURIComponent(uid)}`,
-          { method: "PATCH", body: JSON.stringify(change) },
-        )
-      ).member,
+      (await call<{ member: MemberView }>(api, `/api/members/${encodeURIComponent(uid)}`, { method: 'PATCH', body: JSON.stringify(change) })).member,
   };
 }
 
