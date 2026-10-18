@@ -48,11 +48,11 @@ When access isn't active the response has only `user`, `access` and `reason`:
 | `GET /api/invitations` | active `company_admin` | `{ "invitations": [{ id, email, role, teamIds, status, delivery, expiresAt, createdAt }] }`; `delivery` is always `"Created — email not sent"` |
 | `POST /api/invitations` | active `company_admin` | Body: `email`, `role`, `teamIds`, optional `expiresInDays`. `201`, or `409` if a pending invitation or membership already exists for the email |
 | `POST /api/invitations/:id/revoke` | active `company_admin` | `409` if it isn't pending |
-| `POST /api/invitations/accept` | any valid token | Body ignored. `200 { result: "accepted" \| "already_member", role, teamIds }`; `403` unverified email or suspended member; `404` no unexpired invitation for the token's email |
+| `POST /api/invitations/accept` | any valid token | Body ignored. `200 { result: "accepted" \| "already_member", role, teamIds }`; `403` unverified email, suspended member, or the company isn't set up or active; `404` no unexpired invitation for the token's email |
 
 A `company_admin` has `teamIds: []` and sees every team; an `individual_user` needs at least one team. Unknown body fields are refused with `400`.
 
-The web app calls `accept` once, only when `/api/me` says `pending` with reason `no_membership`, then reloads `/api/me`. A `404` simply leaves the person on Access pending.
+The web app calls `accept` once, only when `/api/me` says `pending` with reason `no_membership`, then reloads `/api/me`. A `403`, `404`, `409` or `429` from accept simply leaves the person on Access pending; a `5xx` shows the retryable error page.
 
 ## AxiomFlo API → AxiomFlo Agent (when the agent's reporting API is built)
 

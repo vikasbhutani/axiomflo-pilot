@@ -200,7 +200,7 @@ Workspace access is decided by the **AxiomFlo API** (`server/`), not by the brow
 1. If you haven't already, open **Firestore Database** (under Build) in the Firebase console and click **Create database**. Choose **Standard edition** if asked, a location close to your users (for example `asia-southeast1`; it can't be changed later), and **Start in production mode**.
 2. Follow **[docs/backend/go-live.md](docs/backend/go-live.md)**. It covers creating the company and your admin membership with the bootstrap script, deploying the API, pointing the web app at it, and publishing the locked-down rules, in that order.
 
-To run everything on your computer, start the API (`cd server && npm run dev`; see [server/README.md](server/README.md)) and then `npm run dev` here. The dev server forwards `/api` to the API on port 8080.
+To run everything on your computer, see [docs/backend/local-development.md](docs/backend/local-development.md). In short: start the API (`cd server && npm run dev`) and then `npm run dev` here; the dev server forwards `/api` to the API on port 8080. Every security rule and the test that proves it is listed in [docs/backend/security-checklist.md](docs/backend/security-checklist.md).
 
 ### 9. Why a signed-in person sees "Access pending"
 
