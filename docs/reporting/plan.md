@@ -1,6 +1,6 @@
 # Real usage and cost data: plan
 
-**Status:** proposal for review. Nothing is built, and no provider is connected.
+**Status:** proposal for review, revised 2026-10-18 for per-person and per-request detail. Nothing is built, and no provider is connected.
 
 **Goal:** the real workspace's tabs (Overview, Usage Explorer, Teams, Providers, Monthly Showback, Assistant) show the company's real AI usage and costs. Each team sees only its own data, and nothing is invented.
 
@@ -28,39 +28,68 @@ The demo is built on one record per AI request: who made it, which team code, wh
 
 **B. A gateway that teams send their AI requests through.** AxiomFlo forwards each request to the provider and records it. This gives per-person and per-request detail, and lets AxiomFlo enforce budgets later. It is a bigger change: every team's code or tools must point at AxiomFlo, AxiomFlo then sits in the path of every AI call, and it must be fast and highly available.
 
-**Recommendation:** build A first. It gives real numbers for Overview, Showback, Teams (per team) and Providers without changing how anyone works. Add B later only if you need per-person or per-request detail.
+**Decision (Vikas, 2026-10-18):** the providers are Gemini on Vertex AI and Anthropic (Claude API). Detail is needed per team, per person and per request, so **the gateway (B) is the main design**. Option A can't attribute usage to a person.
 
-## 3. Design for option A
+The gateway also avoids the Anthropic Admin API, which needs a Claude Console *organisation* and isn't available to individual accounts. The gateway records usage from each response itself, so an ordinary API key is enough.
 
-- **Storage (Firestore, tenant-scoped like memberships):**
-  - `companies/{id}/providerConnections/{id}`: provider, status, last sync, and what maps to which team. No secrets are stored here.
-  - `companies/{id}/usageDaily/{date_provider_model_team}`: date (Australia/Sydney), provider, model, team, input and output tokens, provider cost in USD, AUD cost, and cost status (`reconciled` when the provider reported the cost, `estimated` when calculated from tokens and a price table, `unavailable` when it can't be calculated). Totals never count unknown cost as zero, matching the demo rules.
-  - `companies/{id}/syncRuns/{id}`: when each sync ran and what it fetched. Audited.
-- **Unattributed usage:** usage that maps to no team, such as the default workspace or an unlabelled call, is shown to admins as **Unassigned**, never silently dropped or guessed.
-- **Currency:** providers report USD and your reporting currency is AUD. **Default:** store the USD amount and convert at a monthly rate the admin enters, shown on every page. An automatic exchange-rate feed can come later.
-- **Sync:** a private **Cloud Run job** run hourly by **Cloud Scheduler**. It re-fetches the last 3 days each time, so late or corrected provider data overwrites earlier figures. Running a sync twice gives the same result.
-- **Secrets:**
-  - The Anthropic Admin key lives in **Secret Manager**, readable only by the sync job's service account. Admins enter it once in the Providers tab, the API writes it to Secret Manager, and it is never shown again or sent back to any browser.
-  - Vertex and BigQuery need no key: the job's own service account gets read access to the billing export dataset.
-- **API:** new read-only routes such as `/api/reports/overview`, `/api/reports/showback` and `/api/reports/usage`, with the same checks as today: sign-in, active membership, and team scoping for individual users. The web app's existing pages switch from sample data to these routes in the real workspace only. The demo is unchanged.
-- **Assistant:** the Python agent reads the same report routes through the trusted-context contract in [auth-contract.md](../backend/auth-contract.md).
+**What the gateway can't see:** anything people do directly in the Claude or Gemini chat apps (claude.ai, gemini.google.com), or calls made with their own provider keys. Only requests sent through AxiomFlo are counted. The Providers tab will say so.
+
+## 3. Design for option B (gateway)
+
+### How people and tools call AI
+
+- Each person, or app such as a CI bot, gets an **AxiomFlo key** from the web app, tied to their membership and team. They never get the company's provider credentials.
+- Their code or tools point at the AxiomFlo gateway instead of the provider:
+  - **Anthropic:** set the SDK's base URL to `https://<gateway>/anthropic` and use the AxiomFlo key as the API key. The request and response formats are exactly Anthropic's Messages API, including streaming.
+  - **Gemini on Vertex:** call `https://<gateway>/vertex/.../models/{model}:generateContent` (and `:streamGenerateContent`) with the AxiomFlo key. The request and response formats are Vertex's own.
+- The gateway checks the key, the membership (active, not suspended) and the team, then forwards the call:
+  - to Anthropic with the company's Anthropic API key, held in Secret Manager;
+  - to Vertex as the gateway's own service account, with no key file.
+- From each response it reads the token counts and records **one usage record**: time, person or app, team and team code, provider, model, input and output tokens, success or failure, and latency. **Prompts and answers are never stored or logged.**
+
+### Keys
+
+- An AxiomFlo key is shown once when created, and only a hash of it is stored.
+- Keys can be revoked from the web app. Suspending a member stops their keys on the next request.
+- Admins see and manage every key. Individual users see and manage only their own.
+
+### Storage and cost
+
+- Usage records go to `companies/{id}/usage/{requestId}` in Firestore, matching the demo's `UsageRecord` shape, so Usage Explorer, the request drawer and per-person views work as they do in the demo.
+- Daily totals are kept alongside the records for fast dashboards.
+- **Cost** is estimated from tokens and a dated price table that admins can see (`estimated`), and shown in AUD at a monthly rate set by the admin. Monthly reconciliation against provider bills (`reconciled`) comes later.
+- If a provider doesn't report tokens, cost is `unavailable` and is never counted as zero.
+
+### Running it
+
+- The gateway is a **separate Cloud Run service** (`axiomflo-gateway`), so AI traffic can't slow the web app's API. It uses the same Firestore and membership checks.
+- Per-key rate limits apply. Later, team budgets can block calls once a limit is reached.
+
+### Reporting and the assistant
+
+- New read-only routes such as `/api/reports/overview`, `/api/reports/usage`, `/api/reports/showback` and `/api/keys` use the same sign-in, membership and team scoping as today.
+- The real workspace's pages switch to these routes. The demo is unchanged.
+- The Python assistant reads the same routes through the trusted-context contract.
 
 ## 4. Milestones
 
 | # | What's built | What you configure |
 | --- | --- | --- |
-| R1 | This plan; data model and parsers; Anthropic sync tested against recorded sample responses | Nothing |
-| R2 | Report routes; Overview, Teams and Showback use real data in the real workspace, showing "No data yet" until a sync runs | Nothing |
-| R3 | Providers tab: connect Anthropic (key goes to Secret Manager), map workspaces or keys to teams; sync job | With your approval: Secret Manager, the job and Scheduler. Create the Admin key and team workspaces in the Claude Console |
-| R4 | Gemini on Vertex via the billing export; label or project mapping | With your approval: billing export to BigQuery, dataset access |
-| R5 | Usage Explorer daily view; assistant on real data; docs and checks | Nothing new |
+| R1 | AxiomFlo keys: create, list, revoke, hashed storage, membership checks; key screen in the web app | Nothing |
+| R2 | Anthropic route on the gateway, streaming included; usage records; price table; tested against a fake Anthropic server | Nothing |
+| R3 | Reports: Overview, Usage Explorer, request detail, Teams (per person) and Showback on real data | Nothing |
+| R4 | Gemini on Vertex route | Nothing |
+| R5 | Deploy the gateway; store the Anthropic key in Secret Manager; give the gateway Vertex access; docs for your teams on pointing tools at AxiomFlo | With your approval: Secret Manager, gateway service, Vertex AI User role. An Anthropic API key from the Claude Console |
 
 ## 5. Costs (estimates, to confirm against your bill)
 
-Cloud Scheduler includes a few free jobs a month, and Secret Manager has a small free allowance. An hourly Cloud Run job of a few seconds stays within free compute. The BigQuery billing export stores and queries small amounts of data, likely cents a month at pilot size. The provider APIs themselves don't charge for usage reports.
+- **The gateway** is one more Cloud Run service that scales to zero.
+- **Firestore** does one write per AI request and stays within the free daily allowance (about 20,000 writes a day) at pilot volumes.
+- **Secret Manager** has a small free allowance.
+- **The AI calls themselves** cost the same as today, because the gateway just forwards them.
 
-## 6. Questions for you
+## 6. Open questions
 
-1. Which providers do your teams use today: Anthropic (Claude API), Gemini on Vertex AI, or others?
-2. Is per-team detail enough for now, or do you need per-person and per-request detail (gateway, option B)?
-3. For Anthropic: can you create an Admin API key, and is a workspace per team acceptable?
+1. **How do people use Claude today:** in their own code or tools with an API key, or in the claude.ai chat app? Only API use can go through the gateway.
+2. **Do you have a Claude Console account with an API key?** A personal Console account works for the gateway. The claude.ai chat subscription doesn't include API access.
+3. **Gemini:** is it called from code on Vertex AI in one of your Google Cloud projects, and which one?
