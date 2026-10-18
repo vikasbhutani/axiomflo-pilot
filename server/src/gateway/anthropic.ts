@@ -14,10 +14,10 @@
  *
  * Errors the gateway itself returns use Anthropic's error shape, so SDKs show them normally.
  */
-import { Router, type Request, type Response } from 'express';
+import { Router, type Response } from 'express';
 import type { Logger } from '../http/logger.js';
-import { rateLimit } from '../http/rateLimit.js';
-import { KeyRejectedError, type KeyPrincipal, type KeyService } from '../keys/service.js';
+import type { KeyService } from '../keys/service.js';
+import { getPrincipal, HEADER_VALUE, keyGate, keyRateLimit, saveUsage, type Reject } from './common.js';
 import { estimateAnthropicCostUsd, PRICE_VERSION, type TokenCounts } from './prices.js';
 import type { UsageRecord, UsageRecorder } from './usage.js';
 
@@ -25,16 +25,11 @@ import type { UsageRecord, UsageRecorder } from './usage.js';
 export const GATEWAY_BODY_LIMIT = '20mb';
 /** Longest a single Claude request may run (long answers stream for minutes). */
 export const UPSTREAM_TIMEOUT_MS = 10 * 60_000;
-/** Requests per key per minute, as a guard against a leaked key or a runaway script. */
-export const REQUESTS_PER_KEY_PER_MINUTE = 60;
 
 const DEFAULT_VERSION = '2023-06-01';
-const HEADER_VALUE = /^[\x21-\x7e][\x20-\x7e]{0,199}$/;
 const MODEL_ID = /^[a-z0-9][a-z0-9.@_-]{0,99}$/i;
 /** Response headers passed back to the caller; the rest stay here. */
 const PASS_BACK = ['content-type', 'request-id', 'retry-after'];
-/** Reasons that mean "this key is fine, but its owner isn't allowed right now". */
-const FORBIDDEN_REASONS = new Set(['company_inactive', 'no_membership', 'member_suspended', 'team_inactive', 'team_not_assigned']);
 
 type AnthropicErrorType = 'invalid_request_error' | 'authentication_error' | 'permission_error' | 'not_found_error' | 'rate_limit_error' | 'api_error';
 
@@ -43,13 +38,13 @@ export function sendAnthropicError(res: Response, status: number, type: Anthropi
   res.status(status).json({ type: 'error', error: { type, message }, request_id: res.locals.requestId });
 }
 
-/** The AxiomFlo key, from `x-api-key` (what Anthropic SDKs send) or `Authorization: Bearer`. */
-function presentedKey(req: Request): string | null {
-  const header = req.get('x-api-key')?.trim();
-  if (header) return header;
-  const match = /^Bearer\s+(\S+)\s*$/i.exec(req.get('authorization') ?? '');
-  return match ? match[1] : null;
-}
+const rejectAnthropic: Reject = (res, why) => {
+  if (why === 'missing') return sendAnthropicError(res, 401, 'authentication_error', 'Send your AxiomFlo key in the x-api-key header.');
+  if (why === 'invalid') return sendAnthropicError(res, 401, 'authentication_error', 'This AxiomFlo key is not valid. Create a new one in your AxiomFlo workspace.');
+  if (why === 'forbidden') return sendAnthropicError(res, 403, 'permission_error', 'This AxiomFlo key can’t be used right now. Ask your company admin to check your access.');
+  if (why === 'rate_limited') return sendAnthropicError(res, 429, 'rate_limit_error', 'Too many requests with this AxiomFlo key. Please wait a minute.');
+  return sendAnthropicError(res, 503, 'api_error', 'AxiomFlo couldn’t check this key right now. Please try again shortly.');
+};
 
 interface UsageNumbers {
   input_tokens?: unknown;
@@ -136,31 +131,12 @@ export interface AnthropicRouteDeps {
 
 export function anthropicRouter({ keys, usage, companyId, apiKey, baseUrl, logger, fetchImpl = fetch, now = () => Date.now() }: AnthropicRouteDeps): Router {
   const router = Router();
-  const perKeyLimit = rateLimit({ name: 'gateway', limit: REQUESTS_PER_KEY_PER_MINUTE, windowMs: 60_000, key: (l) => (l.principal as KeyPrincipal).keyId });
-
-  const checkKey = async (req: Request, res: Response, next: (err?: unknown) => void) => {
-    const raw = presentedKey(req);
-    if (!raw) return sendAnthropicError(res, 401, 'authentication_error', 'Send your AxiomFlo key in the x-api-key header.');
-    try {
-      res.locals.principal = await keys.resolveKey(companyId, raw);
-      return next();
-    } catch (error) {
-      if (error instanceof KeyRejectedError) {
-        logger.warn('gateway key rejected', { requestId: res.locals.requestId, reason: error.reason });
-        if (FORBIDDEN_REASONS.has(error.reason)) return sendAnthropicError(res, 403, 'permission_error', 'This AxiomFlo key can’t be used right now. Ask your company admin to check your access.');
-        return sendAnthropicError(res, 401, 'authentication_error', 'This AxiomFlo key is not valid. Create a new one in your AxiomFlo workspace.');
-      }
-      // Never let a database problem through as "allowed".
-      logger.error('gateway key check unavailable', { requestId: res.locals.requestId, errorName: error instanceof Error ? error.name : 'unknown' });
-      return sendAnthropicError(res, 503, 'api_error', 'AxiomFlo couldn’t check this key right now. Please try again shortly.');
-    }
-  };
-
-  const rateLimited = (req: Request, res: Response, next: (err?: unknown) => void) =>
-    perKeyLimit(req, res, (err?: unknown) => (err ? sendAnthropicError(res, 429, 'rate_limit_error', 'Too many requests with this AxiomFlo key. Please wait a minute.') : next()));
+  const checkKey = keyGate({ keys, companyId, logger, reject: rejectAnthropic });
+  const rateLimited = keyRateLimit({ name: 'gateway-anthropic', reject: rejectAnthropic });
 
   router.post('/anthropic/v1/messages', checkKey, rateLimited, async (req, res) => {
-    const principal = res.locals.principal as KeyPrincipal;
+    const principal = getPrincipal(res);
+    if (!apiKey) return sendAnthropicError(res, 503, 'api_error', 'Claude isn’t set up on this AxiomFlo gateway yet. Ask your company admin.');
     const body = req.body as Record<string, unknown> | undefined;
     if (!req.is('application/json') || !body || typeof body !== 'object' || Array.isArray(body)) {
       return sendAnthropicError(res, 400, 'invalid_request_error', 'The request body must be a JSON object.');
@@ -279,12 +255,7 @@ export function anthropicRouter({ keys, usage, companyId, apiKey, baseUrl, logge
         latencyMs: Math.max(0, now() - started),
         providerRequestId: providerRequestId && HEADER_VALUE.test(providerRequestId) ? providerRequestId : null,
       };
-      try {
-        await usage.record(companyId, record);
-      } catch (error) {
-        // The answer has already gone back; the log line is how a missing record is found.
-        logger.error('usage record failed', { requestId: record.id, keyId: record.keyId, modelId, errorName: error instanceof Error ? error.name : 'unknown' });
-      }
+      await saveUsage(usage, companyId, record, logger);
     }
   });
 

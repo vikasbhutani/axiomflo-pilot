@@ -29,9 +29,9 @@ let usage: MemoryUsage;
 let logs: string[];
 
 function gateway(overrides: Partial<GatewayConfig> = {}) {
-  const config: GatewayConfig = { ...testConfig(), anthropicApiKey: COMPANY_KEY, anthropicBaseUrl: upstream.url, ...overrides };
+  const config: GatewayConfig = { ...testConfig(), anthropicApiKey: COMPANY_KEY, anthropicBaseUrl: upstream.url, vertexProjectId: 'axiomflo-test', vertexBaseUrl: upstream.url, ...overrides };
   const logger: Logger = { debug() {}, info: (m, f) => logs.push(JSON.stringify([m, f])), warn: (m, f) => logs.push(JSON.stringify([m, f])), error: (m, f) => logs.push(JSON.stringify([m, f])) };
-  return createGatewayApp({ config, logger, keys, usage });
+  return createGatewayApp({ config, logger, keys, usage, googleTokens: { token: async () => 'google-token' } });
 }
 const ask = (body: object = { model: 'claude-sonnet-5-5', max_tokens: 100, messages: [{ role: 'user', content: 'SECRET PROMPT TEXT' }] }) =>
   request(gateway()).post('/anthropic/v1/messages').set('x-api-key', ALICE_KEY).set('anthropic-version', '2023-06-01').send(body);
@@ -313,8 +313,16 @@ describe('prices', () => {
 
 describe('gateway settings', () => {
   const env = { FIREBASE_PROJECT_ID: 'axiomflo-pilot', PILOT_COMPANY_ID: 'pilot' };
-  it('needs the company Anthropic key', () => {
-    expect(() => loadGatewayConfig(env)).toThrow(/ANTHROPIC_API_KEY/);
+  it('runs without an Anthropic key, and the Claude route then says it isn’t set up', async () => {
+    expect(loadGatewayConfig(env)).toMatchObject({ anthropicApiKey: '', vertexProjectId: 'axiomflo-pilot', vertexBaseUrl: 'https://aiplatform.googleapis.com' });
+    const res = await request(gateway({ anthropicApiKey: '' })).post('/anthropic/v1/messages').set('x-api-key', ALICE_KEY).send({ model: 'claude-sonnet-5-5' });
+    expect(res.status).toBe(503);
+    expect(res.body.error.message).toMatch(/isn’t set up/);
+    expect(upstream.seen).toEqual([]);
+  });
+  it('only calls Vertex AI’s real endpoint on Cloud Run', () => {
+    expect(() => loadGatewayConfig({ ...env, VERTEX_BASE_URL: 'https://example.com', K_SERVICE: 'axiomflo-gateway' })).toThrow(/VERTEX_BASE_URL/);
+    expect(() => loadGatewayConfig({ ...env, VERTEX_PROJECT_ID: 'Bad Project' })).toThrow(/VERTEX_PROJECT_ID/);
   });
   it('only forwards to api.anthropic.com on Cloud Run', () => {
     expect(loadGatewayConfig({ ...env, ANTHROPIC_API_KEY: 'k' }).anthropicBaseUrl).toBe('https://api.anthropic.com');
