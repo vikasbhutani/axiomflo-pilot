@@ -108,7 +108,7 @@ gcloud run deploy axiomflo --source . --region asia-southeast1 --project "$WEB" 
 
 `API_ORIGIN` must be the API's address with no trailing slash and nothing after `.run.app`.
 
-Then open AxiomFlo, sign in, and you should see **Your workspace access is approved** with your company, the Company Admin role and both teams.
+Then open AxiomFlo and sign in. You should land on the **Overview**. **Settings** shows **Your workspace access is approved** with your company, the Company Admin role and both teams.
 
 To undo, open Cloud Run → `axiomflo` (in the web app's project) → **Revisions**, and send 100% of traffic to the previous revision.
 
@@ -146,6 +146,19 @@ These are the same rules the [security checklist](security-checklist.md) tests a
 | In **IAM & Admin → IAM**, find `axiomflo-api@…` | Only **Cloud Datastore User** and **Firebase Authentication Viewer**. No Owner or Editor |
 
 If any row looks different, stop and ask before inviting more people.
+
+## Updating after a change is merged
+
+New features need both services redeployed: the API first, then the web app. In Cloud Shell, from the repo's top folder:
+
+```bash
+git pull
+gcloud run deploy axiomflo-api --source server --region asia-southeast1 --project axiomflo-pilot
+WEB=$(gcloud projects describe 603572706266 --format='value(projectId)')
+gcloud run deploy axiomflo --source . --region asia-southeast1 --project "$WEB"
+```
+
+A redeploy keeps each service's settings: its service account, environment variables and instance limits. To undo, send traffic back to the previous revision, as in step 4.
 
 ## If something goes wrong
 

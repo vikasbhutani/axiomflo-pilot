@@ -58,6 +58,9 @@ npm start            # run the compiled version
 | `GET /api/keys` | active members | Your AxiomFlo keys (Company Admin: every key) |
 | `POST /api/keys` | active members | Create a key `{name, teamId}` for one of your teams. The full key is returned **once** |
 | `POST /api/keys/:id/revoke` | active members | Revoke your key (Company Admin: any key) |
+| `GET /api/usage?month=YYYY-MM` | active members | Usage records for a Sydney calendar month. Company Admin: everyone's. Individual user: their own |
+| `GET /api/exchange-rates` | active members | USD → reporting-currency rates, by month |
+| `PUT /api/exchange-rates/:month` | Company Admin | Set a month's rate `{rate}`. Audited |
 
 Every `/api` call needs `Authorization: Bearer <Firebase ID token>`. The response codes are `401` for no sign-in or an invalid one, `403` when you're signed in but not allowed, `400` for a bad request body, `404` when there's nothing to act on, `409` when a rule would be broken, `429` for too many changes, and `503` when the API can't check right now. See [docs/backend/auth-contract.md](../docs/backend/auth-contract.md) for the exact response shapes.
 
@@ -127,6 +130,7 @@ All settings are environment variables; [`.env.example`](.env.example) explains 
 | `src/admin/` | Request checks (`validation.ts`) and the member and invitation operations, each in a Firestore transaction (`firestoreAdminService.ts`) |
 | `src/http/rateLimit.ts` | Per-user request limits |
 | `src/gateway/` | The AI gateway, a separate service started by `src/gateway/index.ts`: the Claude route (`anthropic.ts`), prices (`prices.ts`) and usage records (`usage.ts`). See [docs/reporting/gateway.md](../docs/reporting/gateway.md) |
+| `src/reports/` | Usage reads (`firestoreUsageService.ts`), Sydney month boundaries (`months.ts`) and exchange rates |
 | `src/keys/` | AxiomFlo keys for the gateway: format and hashing, create, list and revoke, and `resolveKey`, which the gateway runs on every request |
 | `src/bootstrap/` | The bootstrap script (`cli.ts`), its checks (`input.ts`) and the transaction (`bootstrap.ts`) |
 | `src/test/fakes.ts` | Stand-ins for Firebase Auth and Firestore used by unit tests |

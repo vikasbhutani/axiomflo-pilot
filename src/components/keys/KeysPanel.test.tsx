@@ -21,6 +21,7 @@ function fakeApi() {
   const keys: KeyView[] = [];
   const fetch = vi.fn(async (path: string, init: RequestInit = {}) => {
     const method = init.method ?? 'GET';
+    if (path === '/api/exchange-rates' && method === 'GET') return json({ currency: 'AUD', rates: [] });
     if (path === '/api/keys' && method === 'GET') return json({ keys });
     if (path === '/api/keys' && method === 'POST') {
       const body = JSON.parse(String(init.body));
@@ -40,7 +41,7 @@ function fakeApi() {
 }
 
 function renderAsAlice(api: ApiClient) {
-  return renderApp({ path: '/', client: new FakeAuthClient(alice), membershipService: fakeMembershipService({ [alice.uid]: membershipFor(alice) }), api });
+  return renderApp({ path: '/settings', client: new FakeAuthClient(alice), membershipService: fakeMembershipService({ [alice.uid]: membershipFor(alice) }), api });
 }
 
 describe('AxiomFlo keys', () => {

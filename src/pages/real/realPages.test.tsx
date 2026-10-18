@@ -1,0 +1,198 @@
+import { cleanup, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import type { ApiClient } from '../../auth/api';
+import { parseCsv } from '../../lib/csv';
+import { buildDataset, modelDisplayName, rateFor, recentMonths } from '../../reports/realData';
+import type { ExchangeRateView, UsageResponse, UsageView } from '../../reports/reportsApi';
+import { alice, bob, FakeAuthClient, fakeMembershipService, membershipFor, renderApp } from '../../test/authTestUtils';
+import { realShowbackCsv } from './RealShowbackPage';
+
+beforeAll(() => {
+  globalThis.ResizeObserver ??= class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver;
+});
+afterEach(cleanup);
+
+/** Pages offer the last 12 months, so the tests use the current one. */
+const MONTH = recentMonths()[0];
+
+const teams = [
+  { id: 'team-1', name: 'Team One', code: 'TEAM-1' },
+  { id: 'team-2', name: 'Team Two', code: 'TEAM-2' },
+];
+
+function usage(id: string, overrides: Partial<UsageView> = {}): UsageView {
+  return {
+    id,
+    timestamp: `${MONTH}-10T01:00:00.000Z`,
+    principal: { type: 'user', id: alice.uid },
+    keyId: 'k'.repeat(24),
+    teamId: 'team-1',
+    teamCode: 'TEAM-1',
+    providerId: 'anthropic',
+    modelId: 'claude-sonnet-5-5',
+    inputTokens: 1000,
+    outputTokens: 500,
+    cacheWriteTokens: 0,
+    cacheReadTokens: 0,
+    requestStatus: 'succeeded',
+    providerStatus: 200,
+    costStatus: 'estimated',
+    estimatedCostUsd: 0.007,
+    priceVersion: 'anthropic-2026-10-18',
+    stream: false,
+    latencyMs: 800,
+    ...overrides,
+  };
+}
+
+const response = (records: UsageView[]): UsageResponse => ({
+  month: MONTH,
+  startIso: '2026-09-30T14:00:00.000Z',
+  endIso: '2026-10-31T13:00:00.000Z',
+  records,
+  people: { [alice.uid]: { name: 'Alice Example', email: alice.email }, [bob.uid]: { name: 'Bob Example', email: bob.email } },
+  truncated: false,
+  skipped: 0,
+});
+const rate = (month: string, value: number): ExchangeRateView => ({ month, rate: value, currency: 'AUD', setBy: 'x', setAt: null });
+
+describe('turning usage records into report figures', () => {
+  it('converts USD estimates with the month’s rate, falling back to the latest earlier one', () => {
+    expect(rateFor('2026-10', [rate('2026-08', 1.4), rate('2026-09', 1.5), rate('2026-11', 1.6)])).toBe(1.5);
+    expect(rateFor('2026-01', [rate('2026-08', 1.4)])).toBe(1.4);
+    const data = buildDataset(response([usage('r1')]), [rate(MONTH, 1.5)], 'AUD', teams);
+    expect(data.money).toEqual({ currency: 'AUD', usingUsdFallback: false, reportingCurrency: 'AUD' });
+    expect(data.records[0]).toMatchObject({
+      estimatedCost: 0.007 * 1.5,
+      estimatedCostUsd: 0.007,
+      exchangeRate: 1.5,
+      teamName: 'Team One',
+      modelName: 'Claude Sonnet 5.5',
+      principalName: 'Alice Example',
+      localDate: `${MONTH}-10`,
+    });
+  });
+
+  it('stays in USD, and says so, when no rate is set', () => {
+    const data = buildDataset(response([usage('r1')]), [], 'AUD', teams);
+    expect(data.money).toMatchObject({ currency: 'USD', usingUsdFallback: true });
+    expect(data.records[0].estimatedCost).toBe(0.007);
+  });
+
+  it('never turns a missing cost into zero', () => {
+    const data = buildDataset(response([usage('r1', { inputTokens: null, estimatedCostUsd: null, costStatus: 'unavailable' })]), [rate(MONTH, 1.5)], 'AUD', teams);
+    expect(data.records[0].estimatedCost).toBeNull();
+    const rows = parseCsv(realShowbackCsv(data));
+    expect(rows[1][rows[0].indexOf('estimated_cost')]).toBe('');
+    expect(rows[1][rows[0].indexOf('cost_status')]).toBe('unavailable');
+  });
+
+  it('names models readably', () => {
+    expect(modelDisplayName('claude-opus-5-5')).toBe('Claude Opus 5.5');
+    expect(modelDisplayName('claude-sonnet-4-5-20250929')).toBe('Claude Sonnet 4.5');
+    expect(modelDisplayName('claude-fable-5-1')).toBe('Claude Fable 5.1');
+    expect(modelDisplayName('gemini-2.5-pro')).toBe('Gemini 2.5 Pro');
+    expect(modelDisplayName('something-else')).toBe('something-else');
+  });
+});
+
+const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+
+function fakeApi(records: UsageView[], rates: ExchangeRateView[] = []) {
+  const fetch = vi.fn(async (path: string, init: RequestInit = {}) => {
+    const method = init.method ?? 'GET';
+    if (path.startsWith('/api/usage?')) return json({ ...response(records), month: new URLSearchParams(path.split('?')[1]).get('month') });
+    if (path === '/api/exchange-rates' && method === 'GET') return json({ currency: 'AUD', rates });
+    if (path.startsWith('/api/exchange-rates/') && method === 'PUT') {
+      const view = rate(path.split('/').pop()!, JSON.parse(String(init.body)).rate);
+      rates.push(view);
+      return json({ rate: view });
+    }
+    if (path === '/api/keys') return json({ keys: [] });
+    if (path === '/api/members') return json({ members: [] });
+    if (path === '/api/invitations') return json({ invitations: [] });
+    return json({ error: { message: 'Not found.' } }, 404);
+  });
+  return { api: { fetch } as ApiClient, fetch };
+}
+
+const admin = membershipFor(alice, { role: 'company_admin', teamIds: [], teams });
+const render = (path: string, api: ApiClient, membership = admin) => renderApp({ path, client: new FakeAuthClient(alice), membershipService: fakeMembershipService({ [alice.uid]: membership }), api });
+
+describe('real workspace pages', () => {
+  const records = [usage('r1'), usage('r2', { principal: { type: 'user', id: bob.uid }, teamId: 'team-2', teamCode: 'TEAM-2', modelId: 'claude-opus-5-5', estimatedCostUsd: 0.03 })];
+
+  it('Overview shows the month’s real totals by team and person, never sample data', async () => {
+    const { api, fetch } = fakeApi(records, [rate(MONTH, 1.5)]);
+    render(`/?month=${MONTH}`, api);
+    expect(await screen.findByText('Spend by person')).toBeTruthy();
+    // (0.007 + 0.03) USD × 1.5
+    expect(screen.getAllByText('$0.06').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Bob Example').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Team Two').length).toBeGreaterThan(0);
+    expect(screen.queryByText(/sample/i)).toBeNull();
+    expect(fetch.mock.calls.map(([p]) => p)).toContain(`/api/usage?month=${MONTH}`);
+  });
+
+  it('says plainly when there are no requests yet', async () => {
+    const { api } = fakeApi([]);
+    render('/', api);
+    expect(await screen.findByText(/No AI requests in .* yet/)).toBeTruthy();
+  });
+
+  it('warns that amounts are USD until an admin sets a rate', async () => {
+    const { api } = fakeApi(records);
+    render(`/?month=${MONTH}`, api);
+    expect(await screen.findByText(/Amounts are in USD/)).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Set one in Settings' })).toBeTruthy();
+  });
+
+  it('Usage Explorer lists requests and opens one without any prompt or answer', async () => {
+    const { api } = fakeApi(records, [rate(MONTH, 1.5)]);
+    render(`/usage?month=${MONTH}`, api);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'Open details for request r2' }));
+    const drawer = await screen.findByRole('dialog');
+    expect(within(drawer).getByText('r2')).toBeTruthy();
+    expect(within(drawer).getByText('Claude Opus 5.5 (claude-opus-5-5)')).toBeTruthy();
+    expect(within(drawer).getByText(/never stored/)).toBeTruthy();
+  });
+
+  it('Usage Explorer filters by team for an admin', async () => {
+    const { api } = fakeApi(records);
+    render(`/usage?month=${MONTH}&team=team-2`, api);
+    await screen.findByRole('button', { name: 'Open details for request r2' });
+    expect(screen.queryByRole('button', { name: 'Open details for request r1' })).toBeNull();
+  });
+
+  it('an individual user gets no team filter or per-person ranking', async () => {
+    const { api } = fakeApi([usage('r1')]);
+    render(`/?month=${MONTH}`, api, membershipFor(alice, { teams: [teams[0]] }));
+    expect(await screen.findByText('Spend by your teams')).toBeTruthy();
+    expect(screen.queryByText('Spend by person')).toBeNull();
+  });
+
+  it('an admin sets a month’s exchange rate; nothing else is sent', async () => {
+    const { api, fetch } = fakeApi([]);
+    render('/settings', api);
+    const user = userEvent.setup();
+    await user.type(await screen.findByLabelText('AUD per 1 USD'), '1.52');
+    await user.click(screen.getByRole('button', { name: 'Save rate' }));
+    expect(await screen.findByText('1.52')).toBeTruthy();
+    const put = fetch.mock.calls.find(([, i]) => i?.method === 'PUT')!;
+    expect(put[0]).toMatch(/^\/api\/exchange-rates\/\d{4}-\d{2}$/);
+    expect(JSON.parse(String(put[1]!.body))).toEqual({ rate: 1.52 });
+  });
+
+  it('an individual user can see rates but not set them', async () => {
+    const { api } = fakeApi([], [rate(MONTH, 1.5)]);
+    render('/settings', api, membershipFor(alice));
+    expect(await screen.findByText('1.5')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Save rate' })).toBeNull();
+  });
+});

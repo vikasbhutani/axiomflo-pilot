@@ -7,6 +7,7 @@ import { createFirebaseTokenVerifier } from './auth/tokenVerifier.js';
 import { initFirebase } from './firebase.js';
 import { createLogger } from './http/logger.js';
 import { createFirestoreMembershipStore } from './membership/firestoreStore.js';
+import { createFirestoreUsageService } from './reports/firestoreUsageService.js';
 
 function main() {
   let config;
@@ -29,6 +30,7 @@ function main() {
     store: createFirestoreMembershipStore(db),
     admin: createFirestoreAdminService({ db, auth }),
     keys: createFirestoreKeyService({ db, auth }),
+    usage: createFirestoreUsageService({ db, auth, logger }),
   });
 
   const server = app.listen(config.port, '0.0.0.0', () => {

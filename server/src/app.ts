@@ -15,10 +15,12 @@ import { requireActiveMember } from './membership/requireMember.js';
 import type { MembershipStore } from './membership/store.js';
 import type { AdminService } from './admin/service.js';
 import type { KeyService } from './keys/service.js';
+import type { UsageService } from './reports/service.js';
 import { adminRouter } from './routes/admin.js';
 import { healthRouter } from './routes/health.js';
 import { keysRouter } from './routes/keys.js';
 import { meRouter } from './routes/me.js';
+import { reportsRouter } from './routes/reports.js';
 import { workspaceRouter } from './routes/workspace.js';
 
 /** Largest JSON body accepted. The API's requests are small (an email, a role, a few team IDs). */
@@ -31,9 +33,10 @@ export interface AppDeps {
   store: MembershipStore;
   admin: AdminService;
   keys: KeyService;
+  usage: UsageService;
 }
 
-export function createApp({ config, logger, verifier, store, admin, keys }: AppDeps): express.Express {
+export function createApp({ config, logger, verifier, store, admin, keys, usage }: AppDeps): express.Express {
   const app = express();
   app.disable('x-powered-by');
   // Cloud Run puts one Google front end in front of the container; trust exactly that hop.
@@ -56,6 +59,7 @@ export function createApp({ config, logger, verifier, store, admin, keys }: AppD
   app.use(workspaceRouter({ authenticate: auth, requireMember }));
   app.use(adminRouter({ authenticate: auth, requireMember, admin, companyId, logger }));
   app.use(keysRouter({ authenticate: auth, requireMember, keys, companyId, logger }));
+  app.use(reportsRouter({ authenticate: auth, requireMember, usage, companyId, logger }));
 
   app.use(notFoundHandler);
   app.use(errorHandler(logger));

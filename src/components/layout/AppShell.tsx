@@ -2,7 +2,6 @@ import { Suspense, useCallback, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { RequireWorkspace } from '../../auth/guards';
 import { useWorkspaceSession } from '../../auth/WorkspaceSession';
-import { RealWorkspaceNotice } from '../auth/RealWorkspaceNotice';
 import { SidebarContent } from './Sidebar';
 import { MobileNav } from './MobileNav';
 import { TopBar } from './TopBar';
@@ -32,14 +31,10 @@ function Shell() {
       <div className="lg:pl-64">
         <TopBar onOpenNav={() => setNavOpen(true)} />
         <main id="main" className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:py-8">
-          {/* Demo pages read sample data, so they only render in demo mode. */}
-          {session.mode === 'real' ? (
-            <RealWorkspaceNotice />
-          ) : (
-            <Suspense fallback={<LoadingState label="Loading page…" />}>
-              <Outlet />
-            </Suspense>
-          )}
+          {/* Each route shows its demo page only in demo mode, and its real page only for an approved member. */}
+          <Suspense fallback={<LoadingState label="Loading page…" />}>
+            <Outlet key={session.mode === 'real' ? `real-${session.user.uid}` : 'demo'} />
+          </Suspense>
         </main>
       </div>
     </div>

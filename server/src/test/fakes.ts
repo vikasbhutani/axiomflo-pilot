@@ -7,6 +7,7 @@ import type { CompanyRecord, MembershipRecord, TeamRecord } from '../membership/
 import type { MembershipStore } from '../membership/store.js';
 import type { AdminService } from '../admin/service.js';
 import { KeyRejectedError, type KeyActor, type KeyPrincipal, type KeyService, type KeyView, type NewKey } from '../keys/service.js';
+import type { ExchangeRateView, UsageResult, UsageService, UsageViewer } from '../reports/service.js';
 import { testConfig } from './testConfig.js';
 
 export const COMPANY_ID = 'test-company';
@@ -171,13 +172,37 @@ export class FakeKeys implements KeyService {
   }
 }
 
+export class FakeUsage implements UsageService {
+  readonly calls: { method: string; args: unknown[] }[] = [];
+  failWith: Error | null = null;
+  result: UsageResult = { records: [], people: {}, truncated: false, skipped: 0 };
+  readonly rates: ExchangeRateView[] = [];
+  private record(method: string, args: unknown[]) {
+    this.calls.push({ method, args });
+    if (this.failWith) throw this.failWith;
+  }
+  async listUsage(companyId: string, viewer: UsageViewer, range: { startIso: string; endIso: string }) {
+    this.record('listUsage', [companyId, viewer, range]);
+    return this.result;
+  }
+  async listRates(companyId: string) {
+    this.record('listRates', [companyId]);
+    return this.rates;
+  }
+  async setRate(companyId: string, actorUid: string, month: string, rate: number, currency: string) {
+    this.record('setRate', [companyId, actorUid, month, rate, currency]);
+    return { month, rate, currency, setBy: actorUid, setAt: null };
+  }
+}
+
 export function makeApp({
   store = new FakeStore(pilotData()),
   verifier = new FakeVerifier(IDENTITIES),
   admin = new FakeAdmin(),
   keys = new FakeKeys(),
+  usage = new FakeUsage(),
   config = testConfig(),
   logger = silentLogger,
-}: { store?: FakeStore; verifier?: FakeVerifier; admin?: FakeAdmin; keys?: FakeKeys; config?: ServerConfig; logger?: Logger } = {}) {
-  return { app: createApp({ config, logger, verifier, store, admin, keys }), store, verifier, admin, keys };
+}: { store?: FakeStore; verifier?: FakeVerifier; admin?: FakeAdmin; keys?: FakeKeys; usage?: FakeUsage; config?: ServerConfig; logger?: Logger } = {}) {
+  return { app: createApp({ config, logger, verifier, store, admin, keys, usage }), store, verifier, admin, keys, usage };
 }
