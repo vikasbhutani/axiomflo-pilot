@@ -69,8 +69,8 @@ export function createFirebaseAuthClient(app: FirebaseApp): AuthClient {
 
     signOut: () => signOut(auth),
 
-    async getIdToken() {
-      return auth.currentUser ? auth.currentUser.getIdToken() : null;
+    async getIdToken(forceRefresh = false) {
+      return auth.currentUser ? auth.currentUser.getIdToken(forceRefresh) : null;
     },
   };
 }

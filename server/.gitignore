@@ -6,3 +6,7 @@ coverage
 # Never commit service-account keys. The API uses Application Default Credentials.
 *-key.json
 service-account*.json
+# Your filled-in bootstrap settings (company details); keep them out of the repo.
+bootstrap.json
+# Firebase emulator logs
+*-debug.log

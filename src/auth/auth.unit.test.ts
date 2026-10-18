@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApiClient, NotSignedInError } from './api';
 import { readAppSettings, readFirebaseConfig } from './config';
 import { describeSignInError } from './errors';
-import { createHttpMembershipService, noBackendMembershipService, parseMembership } from './membershipService';
+import { createHttpMembershipService, noBackendMembershipService, parseMeResponse } from './membershipService';
 import { destinationFor, loginPathFor, safeReturnTo } from './redirects';
 
 const user = { uid: 'u1', displayName: 'A', email: 'a@example.com', emailVerified: true };
@@ -107,19 +107,69 @@ describe('createApiClient', () => {
 });
 
 describe('membership services', () => {
+  const me = {
+    user: { uid: 'u1', email: 'a@example.com', emailVerified: true, displayName: 'A' },
+    access: 'active',
+    company: { id: 'c1', name: 'Co', reportingCurrency: 'AUD', reportingTimezone: 'Australia/Sydney' },
+    membership: { role: 'company_admin', teamIds: [] },
+    teams: [{ id: 't1', name: 'Team 1', code: 'T-1', departmentId: 'd1', status: 'active' }],
+  };
+
   it('gives nobody a membership while there is no backend', async () => {
     expect(await noBackendMembershipService.getMembership(user)).toBeNull();
   });
 
-  it('reads membership from the backend and rejects malformed answers', async () => {
-    const good = { userId: 'u1', companyId: 'c1', role: 'company_admin', teamIds: [], status: 'active' };
-    const api = { fetch: vi.fn(async () => new Response(JSON.stringify(good))) };
-    expect(await createHttpMembershipService(api).getMembership(user)).toMatchObject(good);
-    expect(() => parseMembership({ ...good, role: 'super_admin' })).toThrow();
-    api.fetch.mockResolvedValueOnce(new Response('', { status: 404 }));
-    expect(await createHttpMembershipService(api).getMembership(user)).toBeNull();
-    api.fetch.mockResolvedValueOnce(new Response('', { status: 500 }));
-    await expect(createHttpMembershipService(api).getMembership(user)).rejects.toThrow();
+  it('reads an active membership from GET /api/me', async () => {
+    const api = { fetch: vi.fn(async () => new Response(JSON.stringify(me))) };
+    expect(await createHttpMembershipService(api).getMembership(user)).toEqual({
+      userId: 'u1',
+      companyId: 'c1',
+      companyName: 'Co',
+      role: 'company_admin',
+      teamIds: [],
+      teams: [{ id: 't1', name: 'Team 1', code: 'T-1' }],
+      status: 'active',
+    });
+    expect(api.fetch).toHaveBeenCalledWith('/api/me', expect.anything());
+  });
+
+  it('maps pending to no membership and suspended to a suspended membership', () => {
+    expect(parseMeResponse({ user: me.user, access: 'pending', reason: 'no_membership' })).toBeNull();
+    expect(parseMeResponse({ user: me.user, access: 'suspended', reason: 'company_suspended' })).toMatchObject({ status: 'suspended' });
+  });
+
+  it('rejects malformed answers rather than guessing', () => {
+    expect(() => parseMeResponse({ ...me, membership: { role: 'super_admin', teamIds: [] } })).toThrow();
+    expect(() => parseMeResponse({ ...me, access: 'approved' })).toThrow();
+    expect(() => parseMeResponse({ ...me, user: undefined })).toThrow();
+    expect(() => parseMeResponse({ ...me, teams: 'all' })).toThrow();
+  });
+
+  it('treats any error status, including 403 and 503, as a failed lookup, never as access', async () => {
+    for (const status of [401, 403, 404, 500, 503]) {
+      const api = { fetch: vi.fn(async () => new Response('{}', { status })) };
+      await expect(createHttpMembershipService(api).getMembership(user)).rejects.toThrow();
+    }
+  });
+});
+
+describe('createApiClient token refresh', () => {
+  it('refreshes the token and retries exactly once after a 401', async () => {
+    const getIdToken = vi.fn(async (force?: boolean) => (force ? 'fresh' : 'stale'));
+    const fetchImpl = vi.fn(async () => new Response('', { status: 401 }));
+    const res = await createApiClient({ baseUrl: 'https://api.example.com', getIdToken, fetchImpl }).fetch('/api/me');
+    expect(res.status).toBe(401);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(getIdToken.mock.calls).toEqual([[false], [true]]);
+    const second = fetchImpl.mock.calls[1] as unknown as [string, RequestInit];
+    expect(new Headers(second[1].headers).get('Authorization')).toBe('Bearer fresh');
+  });
+
+  it('never retries a 403 and sends no cookies', async () => {
+    const fetchImpl = vi.fn(async () => new Response('', { status: 403 }));
+    await createApiClient({ baseUrl: 'https://api.example.com', getIdToken: async () => 'tok', fetchImpl }).fetch('/api/me');
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect((fetchImpl.mock.calls[0] as unknown as [string, RequestInit])[1].credentials).toBe('omit');
   });
 });
 
@@ -127,7 +177,6 @@ describe('Firebase client', () => {
   afterEach(() => {
     vi.resetModules();
     vi.doUnmock('firebase/auth');
-    vi.doUnmock('firebase/firestore');
   });
 
   function mockAuth() {
@@ -175,23 +224,5 @@ describe('Firebase client', () => {
     expect(fns.createUserWithEmailAndPassword).toHaveBeenCalledWith(expect.anything(), 'a@example.com', 'long-password');
     expect(fns.updateProfile).toHaveBeenCalledWith({ uid: 'new' }, { displayName: 'Ann' });
     expect(fns.sendEmailVerification).toHaveBeenCalledWith({ uid: 'new' });
-  });
-
-  it('reads only the signed-in person’s own membership document from Firestore', async () => {
-    const getDoc = vi.fn();
-    const docFn = vi.fn((_db: unknown, ...path: string[]) => path.join('/'));
-    vi.doMock('firebase/firestore', () => ({ getFirestore: () => ({}), doc: docFn, getDoc }));
-    const { createFirestoreMembershipService } = await import('./membershipService');
-    const service = createFirestoreMembershipService({} as never);
-
-    getDoc.mockResolvedValueOnce({ exists: () => false });
-    expect(await service.getMembership(user)).toBeNull();
-    expect(docFn).toHaveBeenCalledWith(expect.anything(), 'memberships', 'u1');
-
-    getDoc.mockResolvedValueOnce({ exists: () => true, id: 'u1', data: () => ({ userId: 'someone-else', companyId: 'c1', role: 'individual_user', teamIds: ['t1'], status: 'active' }) });
-    expect(await service.getMembership(user)).toMatchObject({ userId: 'u1', role: 'individual_user', status: 'active' });
-
-    getDoc.mockResolvedValueOnce({ exists: () => true, id: 'u1', data: () => ({ companyId: 'c1', role: 'owner', teamIds: [], status: 'active' }) });
-    await expect(service.getMembership(user)).rejects.toThrow();
   });
 });

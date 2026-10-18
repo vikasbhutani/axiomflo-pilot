@@ -13,7 +13,10 @@ import { TokenRejectedError, TokenVerificationUnavailableError, type TokenVerifi
 
 // Firebase ID tokens are JWTs, about 1 KB. Anything far larger isn't one.
 const MAX_TOKEN_LENGTH = 8192;
-const BEARER = /^Bearer ([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)$/;
+// header.payload.signature. The signature may be empty here only so the local Auth
+// emulator's unsigned tokens reach the Admin SDK; the SDK rejects unsigned tokens in
+// production, and config.ts refuses to run the emulator setting on Cloud Run.
+const BEARER = /^Bearer ([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*)$/;
 
 export function getIdentity(locals: Record<string, unknown>): VerifiedIdentity {
   const identity = locals.identity as VerifiedIdentity | undefined;

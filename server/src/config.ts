@@ -73,6 +73,10 @@ export function parseAllowedOrigins(raw: string): string[] {
 }
 
 export function loadConfig(env: Env = process.env): ServerConfig {
+  // The Auth emulator accepts unsigned tokens. It must never be switched on in a deployed service.
+  if (value(env, 'FIREBASE_AUTH_EMULATOR_HOST') && value(env, 'K_SERVICE')) {
+    throw new ConfigError('FIREBASE_AUTH_EMULATOR_HOST is set on Cloud Run. Remove it: it would accept fake sign-in tokens.');
+  }
   const firebaseProjectId = required(env, 'FIREBASE_PROJECT_ID');
   if (!PROJECT_ID.test(firebaseProjectId)) throw new ConfigError('FIREBASE_PROJECT_ID is not a valid Firebase project ID.');
 

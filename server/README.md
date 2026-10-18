@@ -2,7 +2,7 @@
 
 The backend that decides who may enter an AxiomFlo workspace. A Google (or verified email) sign-in tells it **who** someone is; a membership record in Firestore tells it **which company, role and teams** they get. See [docs/backend/plan.md](../docs/backend/plan.md) for the full design and milestones.
 
-> **Milestone 2: sign-in checks and membership lookup.** The API verifies Firebase ID tokens and reads memberships from Firestore for `/api/me`, `/api/company` and `/api/teams`. The web app doesn't call it yet (Milestone 3), and nothing is deployed. All tests use stand-ins for Firebase; it hasn't been tried against your real project yet.
+> **Milestone 3: bootstrap and web app connection.** The API verifies Firebase ID tokens and reads memberships for `/api/me`, `/api/company` and `/api/teams`, and the web app now uses `/api/me`. The bootstrap script creates the company and first admin. It's tested against the local Firebase emulators, **not yet against your real project**, and nothing is deployed. To go live, follow [docs/backend/go-live.md](../docs/backend/go-live.md).
 
 ## What's real and what isn't yet
 
@@ -13,7 +13,8 @@ The backend that decides who may enter an AxiomFlo workspace. A Google (or verif
 | Request IDs, JSON logs with redaction, security headers, 16 KB body limit | Real |
 | Firebase token verification (signature, expiry, project, revoked and disabled accounts) | Real code, tested with stand-ins |
 | `/api/me`, `/api/company`, `/api/teams` and membership checks on every request | Real code, tested with stand-ins |
-| Bootstrap script, frontend connection | Milestone 3 |
+| Bootstrap script (`npm run bootstrap`) | Real code, tested against the Firestore emulator |
+| Web app uses `/api/me` (and refreshes the sign-in token once after a 401) | Real code, tested |
 | Invitations, member changes, audit events | Milestone 4 |
 | Deployment | Milestone 5, with your approval |
 
@@ -50,9 +51,26 @@ npm start            # run the compiled version
 
 Every `/api` call needs `Authorization: Bearer <Firebase ID token>`. The response codes are `401` for no sign-in or an invalid one, `403` when you're signed in but not allowed, and `503` when the API can't check right now. See [docs/backend/auth-contract.md](../docs/backend/auth-contract.md) for the exact response shapes.
 
-### Trying `/api/me` against your real Firebase project
+## Bootstrap the company and first admin
 
-This needs two things from Milestone 3, the bootstrap script and the web app connection, so you won't need to do it by hand. If you want to try it earlier, the API on your computer has to read Firestore as you, which needs the gcloud CLI once (`gcloud auth application-default login`). Cloud Shell in the Cloud Console already has this set up.
+There's no web endpoint that can create a company or an administrator. You do it once, by hand, with your own Google credentials:
+
+```bash
+cp bootstrap.example.json bootstrap.json      # then replace every REPLACE… value
+npm run bootstrap -- --config bootstrap.json --admin-uid YOUR_FIREBASE_UID --project axiomflo-pilot
+```
+
+It checks the UID exists, isn't disabled and has a verified email. It then shows the email and every record it will create, and waits for you to type `yes`. It's safe to run again: matching records are left alone, and if anything differs it refuses and writes nothing. The full walk-through, including running it in Cloud Shell, is step 1 of [go-live.md](../docs/backend/go-live.md).
+
+## Tests against the Firebase emulators
+
+```bash
+npm run test:emulator
+```
+
+This starts local, throwaway copies of Firebase Authentication and Firestore (project `demo-axiomflo`, which can't touch real data) and runs the tests that need them. They cover the bootstrap's idempotency and conflict handling, plus real sign-in tokens going through `/api/me`, including disabled and revoked accounts. It needs Java 11+; the first run downloads the Firestore emulator.
+
+The API on your computer can also use real Firestore as you, but only with the gcloud CLI (`gcloud auth application-default login`). Cloud Shell already has this set up.
 
 ## Settings
 
@@ -86,4 +104,6 @@ All settings are environment variables; [`.env.example`](.env.example) explains 
 | `src/membership/access.ts` | Decides active / pending / suspended and which teams are visible |
 | `src/membership/requireMember.ts` | Route guards: active member, required role |
 | `src/routes/` | `/health`, `/api/me`, `/api/company`, `/api/teams` |
-| `src/test/fakes.ts` | Stand-ins for Firebase Auth and Firestore used by tests |
+| `src/bootstrap/` | The bootstrap script (`cli.ts`), its checks (`input.ts`) and the transaction (`bootstrap.ts`) |
+| `src/test/fakes.ts` | Stand-ins for Firebase Auth and Firestore used by unit tests |
+| `src/test/emulator.ts`, `*.emulator.test.ts` | Tests against the local Firebase emulators |
