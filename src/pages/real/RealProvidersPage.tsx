@@ -23,8 +23,8 @@ const PROVIDERS = [
   {
     id: 'gemini_vertex' as const,
     name: 'Gemini on Vertex AI',
-    how: 'Requests will go through the gateway’s /vertex address with your AxiomFlo key, and the gateway calls Vertex AI with its own Google Cloud identity.',
-    status: 'Not built yet. This is the next gateway route.',
+    how: 'Point the Google Gen AI SDK at the AxiomFlo gateway’s /vertex address and use your AxiomFlo key as the API key. The gateway calls Vertex AI in your company’s Google Cloud project with its own identity, so you never need Google Cloud access.',
+    status: 'Built. The gateway goes live once your Company Admin approves its deployment.',
   },
 ];
 

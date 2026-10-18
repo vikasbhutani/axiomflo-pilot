@@ -129,7 +129,7 @@ All settings are environment variables; [`.env.example`](.env.example) explains 
 | `src/routes/` | `/health`, `/api/me`, `/api/company`, `/api/teams`, and the member and invitation routes (`admin.ts`) |
 | `src/admin/` | Request checks (`validation.ts`) and the member and invitation operations, each in a Firestore transaction (`firestoreAdminService.ts`) |
 | `src/http/rateLimit.ts` | Per-user request limits |
-| `src/gateway/` | The AI gateway, a separate service started by `src/gateway/index.ts`: the Claude route (`anthropic.ts`), prices (`prices.ts`) and usage records (`usage.ts`). See [docs/reporting/gateway.md](../docs/reporting/gateway.md) |
+| `src/gateway/` | The AI gateway, a separate service started by `src/gateway/index.ts`: the Claude route (`anthropic.ts`), the Gemini on Vertex AI route (`vertex.ts`), shared key checks (`common.ts`), prices (`prices.ts`, `vertexPrices.ts`) and usage records (`usage.ts`). See [docs/reporting/gateway.md](../docs/reporting/gateway.md) |
 | `src/reports/` | Usage reads (`firestoreUsageService.ts`), Sydney month boundaries (`months.ts`) and exchange rates |
 | `src/keys/` | AxiomFlo keys for the gateway: format and hashing, create, list and revoke, and `resolveKey`, which the gateway runs on every request |
 | `src/bootstrap/` | The bootstrap script (`cli.ts`), its checks (`input.ts`) and the transaction (`bootstrap.ts`) |

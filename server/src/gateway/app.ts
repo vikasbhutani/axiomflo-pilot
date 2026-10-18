@@ -13,16 +13,19 @@ import { healthRouter } from '../routes/health.js';
 import { anthropicRouter, GATEWAY_BODY_LIMIT, sendAnthropicError } from './anthropic.js';
 import type { GatewayConfig } from './config.js';
 import type { UsageRecorder } from './usage.js';
+import { vertexRouter, type TokenSource } from './vertex.js';
 
 export interface GatewayDeps {
   config: GatewayConfig;
   logger: Logger;
   keys: KeyService;
   usage: UsageRecorder;
+  /** Google Cloud access tokens for calling Vertex AI as the gateway's own identity. */
+  googleTokens: TokenSource;
   fetchImpl?: typeof fetch;
 }
 
-export function createGatewayApp({ config, logger, keys, usage, fetchImpl }: GatewayDeps): express.Express {
+export function createGatewayApp({ config, logger, keys, usage, googleTokens, fetchImpl }: GatewayDeps): express.Express {
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
@@ -34,8 +37,9 @@ export function createGatewayApp({ config, logger, keys, usage, fetchImpl }: Gat
   app.use(express.json({ limit: GATEWAY_BODY_LIMIT }));
 
   app.use(anthropicRouter({ keys, usage, companyId: config.pilotCompanyId, apiKey: config.anthropicApiKey, baseUrl: config.anthropicBaseUrl, logger, fetchImpl }));
+  app.use(vertexRouter({ keys, usage, companyId: config.pilotCompanyId, projectId: config.vertexProjectId, baseUrl: config.vertexBaseUrl, tokens: googleTokens, logger, fetchImpl }));
 
-  app.use((_req, res) => sendAnthropicError(res, 404, 'not_found_error', 'Not found. AxiomFlo forwards POST /anthropic/v1/messages.'));
+  app.use((_req, res) => sendAnthropicError(res, 404, 'not_found_error', 'Not found. AxiomFlo forwards POST /anthropic/v1/messages and POST /vertex/v1beta/models/{model}:generateContent.'));
   // Bad JSON and too-large bodies, in Anthropic's error shape; anything else falls through.
   app.use((err: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {
     const type = (err as { type?: unknown })?.type;

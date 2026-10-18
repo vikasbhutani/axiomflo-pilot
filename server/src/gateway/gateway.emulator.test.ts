@@ -29,7 +29,7 @@ let aliceKey: string;
 let aliceKeyId: string;
 
 const gateway = () =>
-  createGatewayApp({ config: { ...testConfig({ pilotCompanyId: C }), anthropicApiKey: 'sk-ant-company', anthropicBaseUrl: upstream.url }, logger: silentLogger, keys, usage: createFirestoreUsageRecorder(db) });
+  createGatewayApp({ config: { ...testConfig({ pilotCompanyId: C }), anthropicApiKey: 'sk-ant-company', anthropicBaseUrl: upstream.url, vertexProjectId: 'axiomflo-test', vertexBaseUrl: upstream.url }, logger: silentLogger, keys, usage: createFirestoreUsageRecorder(db), googleTokens: { token: async () => 'google-token' } });
 const ask = (key: string) => request(gateway()).post('/anthropic/v1/messages').set('x-api-key', key).send({ model: 'claude-sonnet-5-5', max_tokens: 10, messages: [{ role: 'user', content: 'SECRET PROMPT TEXT' }] });
 const usageDocs = async () => (await db.collection(`companies/${C}/usage`).get()).docs.map((d) => ({ id: d.id, ...d.data() }));
 
@@ -81,6 +81,19 @@ describe('gateway with real keys', () => {
 
     expect(upstream.seen).toEqual([]);
     expect(await usageDocs()).toEqual([]);
+  });
+
+  it('records a Gemini request the same way', async () => {
+    upstream.respond = (_r, res) => {
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({ candidates: [{ content: { parts: [{ text: 'SECRET' }] }, finishReason: 'STOP' }], usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 20 }, modelVersion: 'gemini-2.5-flash' }));
+    };
+    const res = await request(gateway()).post('/vertex/v1beta/models/gemini-2.5-flash:generateContent').set('x-goog-api-key', aliceKey).send({ contents: [{ role: 'user', parts: [{ text: 'SECRET PROMPT TEXT' }] }] });
+    expect(res.status).toBe(200);
+    const docs = await usageDocs();
+    expect(docs).toHaveLength(1);
+    expect(docs[0]).toMatchObject({ providerId: 'gemini_vertex', modelId: 'gemini-2.5-flash', teamCode: 'PROD', inputTokens: 100, outputTokens: 20, costStatus: 'estimated' });
+    expect(JSON.stringify(docs)).not.toContain('SECRET');
   });
 
   it('refuses a key once its team is taken off the member', async () => {
