@@ -173,3 +173,17 @@ def test_the_agent_answers_from_the_snapshot_and_says_which_rate_it_used(snapsho
     answer = asyncio.run(service.ask(snapshot_ctx(ws), "What did we spend this month?", snapshot=ws))
     assert answer.status == "ok" and not answer.is_mock
     assert "$25.61" in answer.text and "rate set for September 2026" in answer.text
+
+
+def test_the_model_cannot_label_real_figures_as_sample_data(snapshot_raw):
+    ws = load_snapshot(snapshot_raw)
+    model = ScriptedModel(
+        steps=[
+            {"call": "get_savings_suggestions", "args": {"period": "2026-10"}},
+            {"text": "[Sample data] Nothing stands out for this period."},
+        ],
+        requests=[],
+    )
+    answer = asyncio.run(AgentService(API, model=model).ask(snapshot_ctx(ws), "How can we lower our AI spend?", snapshot=ws))
+    assert answer.status == "ok" and not answer.is_mock
+    assert answer.text == "Nothing stands out for this period."

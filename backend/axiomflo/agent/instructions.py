@@ -16,8 +16,7 @@ How to answer
   the scope (company, team, provider or model, and the visibility line), whether the cost is
   reconciled or estimated, how many requests are unresolved, and the data_as_of time.
 - Include the most relevant link the tool returned so the person can see the supporting records.
-- If a tool result has a data_label that starts with "MOCK DATA", begin your answer with
-  "[Sample data]" and say the figures are sample data.
+- Don't label answers as sample or real data yourself; AxiomFlo adds that label.
 - Use list_reporting_periods to work out what "this month" or "last month" means.
 - If the tool result's reporting section has currency_notes, mention them briefly (for example,
   which exchange rate was used, or that amounts are in USD).
