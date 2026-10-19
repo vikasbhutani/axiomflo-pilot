@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
-import { Bot, Lightbulb, RotateCcw, SendHorizontal, ShieldCheck, Table2, User as UserIcon } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Bot, Gauge, Lightbulb, RotateCcw, SendHorizontal, ShieldCheck, Table2, User as UserIcon } from 'lucide-react';
 import { PageHeader } from '../components/layout/PageHeader';
 import { Card } from '../components/ui/Card';
 import { useDemo } from '../context/DemoContext';
@@ -62,6 +62,22 @@ export function AssistantPage() {
       inputRef.current?.focus({ preventScroll: true });
     }
   };
+
+  // A question handed over in the link (e.g. from the FinOps Scorecard) is asked once, then removed from the address.
+  const [params, setParams] = useSearchParams();
+  const handedOver = params.get('q');
+  const askedHandover = useRef<string | null>(null);
+  useEffect(() => {
+    if (!handedOver || askedHandover.current === handedOver) return;
+    askedHandover.current = handedOver;
+    setParams((p) => {
+      const next = new URLSearchParams(p);
+      next.delete('q');
+      return next;
+    }, { replace: true });
+    void ask(handedOver);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [handedOver]);
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -283,6 +299,11 @@ function AssistantAnswer({ response, onAsk, disabled }: { response: AssistantRes
           {r.supporting && (
             <Link to={usageHref(r.supporting.filters)} className="btn-secondary mt-3">
               <Table2 className="h-4 w-4" aria-hidden /> {r.supporting.label}
+            </Link>
+          )}
+          {r.page && (
+            <Link to={r.page.to} className="btn-secondary mt-3">
+              <Gauge className="h-4 w-4" aria-hidden /> {r.page.label}
             </Link>
           )}
         </div>

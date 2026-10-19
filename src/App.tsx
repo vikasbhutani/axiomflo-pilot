@@ -14,6 +14,7 @@ const UsageExplorerPage = lazy(() => import('./pages/UsageExplorerPage').then((m
 const TeamsPage = lazy(() => import('./pages/TeamsPage').then((m) => ({ default: m.TeamsPage })));
 const ProvidersPage = lazy(() => import('./pages/ProvidersPage').then((m) => ({ default: m.ProvidersPage })));
 const ShowbackPage = lazy(() => import('./pages/ShowbackPage').then((m) => ({ default: m.ShowbackPage })));
+const ScorecardPage = lazy(() => import('./pages/ScorecardPage').then((m) => ({ default: m.ScorecardPage })));
 const AssistantPage = lazy(() => import('./pages/AssistantPage').then((m) => ({ default: m.AssistantPage })));
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })));
 // The real workspace's pages, built on the AxiomFlo API's usage records.
@@ -22,6 +23,7 @@ const RealUsagePage = lazy(() => import('./pages/real/RealUsagePage').then((m) =
 const RealTeamsPage = lazy(() => import('./pages/real/RealTeamsPage').then((m) => ({ default: m.RealTeamsPage })));
 const RealProvidersPage = lazy(() => import('./pages/real/RealProvidersPage').then((m) => ({ default: m.RealProvidersPage })));
 const RealShowbackPage = lazy(() => import('./pages/real/RealShowbackPage').then((m) => ({ default: m.RealShowbackPage })));
+const RealScorecardPage = lazy(() => import('./pages/real/RealScorecardPage').then((m) => ({ default: m.RealScorecardPage })));
 const RealAssistantPage = lazy(() => import('./pages/real/RealAssistantPage').then((m) => ({ default: m.RealAssistantPage })));
 const RealSettingsPage = lazy(() => import('./pages/real/RealSettingsPage').then((m) => ({ default: m.RealSettingsPage })));
 const SlackLinkPage = lazy(() => import('./pages/real/SlackLinkPage').then((m) => ({ default: m.SlackLinkPage })));
@@ -42,6 +44,7 @@ export function App() {
         <Route path="teams" element={<ByMode demo={<TeamsPage />} real={<RealTeamsPage />} />} />
         <Route path="providers" element={<ByMode demo={<ProvidersPage />} real={<RealProvidersPage />} />} />
         <Route path="showback" element={<ByMode demo={<ShowbackPage />} real={<RealShowbackPage />} />} />
+        <Route path="scorecard" element={<ByMode demo={<ScorecardPage />} real={<RealScorecardPage />} />} />
         <Route path="assistant" element={<ByMode demo={<AssistantPage />} real={<RealAssistantPage />} />} />
         <Route path="settings" element={<ByMode demo={<SettingsPage />} real={<RealSettingsPage />} />} />
         <Route path="slack/link" element={<ByMode demo={<NotFoundPage />} real={<SlackLinkPage />} />} />
