@@ -18,6 +18,8 @@ beforeAll(() => {
 afterEach(() => {
   cleanup();
   Object.assign(assistantReply, defaultAssistantReply);
+  slack.links = [];
+  slack.peek = { slackName: 'ava', emailMatches: true };
 });
 
 /** Pages offer the last 12 months, so the tests use the current one. */
@@ -113,6 +115,12 @@ const assistantReply = {
 };
 const defaultAssistantReply = { ...assistantReply };
 
+/** Slack links the fake API holds, and what it says about a link code. */
+const slack = {
+  links: [] as { id: string; uid: string; slackTeamId: string; slackUserId: string; slackName: string | null; linkedAt: string | null }[],
+  peek: { slackName: 'ava' as string | null, emailMatches: true },
+};
+
 function fakeApi(records: UsageView[], rates: ExchangeRateView[] = []) {
   const fetch = vi.fn(async (path: string, init: RequestInit = {}) => {
     const method = init.method ?? 'GET';
@@ -125,6 +133,17 @@ function fakeApi(records: UsageView[], rates: ExchangeRateView[] = []) {
     }
     if (path.startsWith('/api/assistant/suggestions?')) return assistantReply.suggestions();
     if (path === '/api/assistant/ask' && method === 'POST') return assistantReply.ask(JSON.parse(String(init.body)));
+    if (path.startsWith('/api/slack/link?')) return json(slack.peek);
+    if (path === '/api/slack/link' && method === 'POST') {
+      const link = { id: 'T1_U1', uid: alice.uid, slackTeamId: 'T1', slackUserId: 'U1', slackName: slack.peek.slackName, linkedAt: '2026-10-18T00:00:00.000Z' };
+      slack.links.push(link);
+      return json({ link }, 201);
+    }
+    if (path === '/api/slack/links') return json({ links: slack.links });
+    if (path.startsWith('/api/slack/links/') && method === 'DELETE') {
+      slack.links = slack.links.filter((l) => l.id !== decodeURIComponent(path.split('/').pop()!));
+      return json({ deleted: true });
+    }
     if (path === '/api/keys') return json({ keys: [] });
     if (path === '/api/members') return json({ members: [] });
     if (path === '/api/invitations') return json({ invitations: [] });
@@ -262,5 +281,37 @@ describe('real AI Cost Assistant', () => {
     const { api } = fakeApi([]);
     render('/assistant', api, membershipFor(alice, { teams: [teams[0]] }));
     expect(await screen.findByRole('button', { name: 'What did I spend this month?' })).toBeTruthy();
+  });
+});
+
+describe('linking a Slack account', () => {
+  it('links after the person confirms, then lists it in Settings with Unlink', async () => {
+    const { api, fetch } = fakeApi([]);
+    render('/slack/link?code=abc123', api);
+    const user = userEvent.setup();
+    expect(await screen.findByRole('heading', { name: `Link Slack user ava to ${alice.email}?` })).toBeTruthy();
+    expect(fetch.mock.calls.some(([, i]) => i?.method === 'POST')).toBe(false);
+    await user.click(screen.getByRole('button', { name: 'Link my Slack account' }));
+    expect(await screen.findByRole('heading', { name: 'Your Slack account is linked' })).toBeTruthy();
+    const post = fetch.mock.calls.find(([p, i]) => p === '/api/slack/link' && i?.method === 'POST')!;
+    expect(JSON.parse(String(post[1]!.body))).toEqual({ code: 'abc123' });
+
+    await user.click(screen.getByRole('link', { name: 'Go to Settings' }));
+    await user.click(await screen.findByRole('button', { name: 'Unlink Slack user ava' }));
+    expect(await screen.findByText('No Slack accounts are linked yet.')).toBeTruthy();
+  });
+
+  it('won’t link when the Slack email doesn’t match the sign-in email', async () => {
+    slack.peek = { slackName: 'someone', emailMatches: false };
+    const { api } = fakeApi([]);
+    render('/slack/link?code=abc123', api);
+    expect(await screen.findByText(/email doesn’t match/)).toBeTruthy();
+    expect((screen.getByRole('button', { name: 'Link my Slack account' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('explains a link with no code', async () => {
+    const { api } = fakeApi([]);
+    render('/slack/link', api);
+    expect(await screen.findByText(/isn’t valid/)).toBeTruthy();
   });
 });

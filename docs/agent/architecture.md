@@ -6,7 +6,7 @@ The target design is one shared agent and tool layer that every channel calls. C
 flowchart LR
   subgraph Channels
     Web[AxiomFlo web app<br/>Firebase sign-in]
-    Slack[Slack app<br/>Milestones 3-4]
+    Slack[Slack app<br/>axiomflo-slack service]
     MS[Microsoft 365 Copilot / Teams<br/>Milestone 6]
   end
   subgraph CloudRun["Cloud Run: protected APIs and channel adapters"]
@@ -58,5 +58,5 @@ flowchart LR
 
 ## Decisions for later milestones
 
-- **Real data:** the AxiomFlo API and gateway now exist, and real usage records are in Firestore. The agent gets them as a per-question usage snapshot from the API ([usage-snapshot.md](usage-snapshot.md)), never by reading the database. The API's `/api/assistant/*` routes build the snapshot and call the agent's private Cloud Run service ([deploy.md](deploy.md)), and the real AI Cost Assistant page uses them. Next: Slack.
+- **Real data:** the AxiomFlo API and gateway now exist, and real usage records are in Firestore. The agent gets them as a per-question usage snapshot from the API ([usage-snapshot.md](usage-snapshot.md)), never by reading the database. The API's `/api/assistant/*` routes build the snapshot and call the agent's private Cloud Run service ([deploy.md](deploy.md)), and the real AI Cost Assistant page uses them. The Slack bot (`server/src/slack/`, its own Cloud Run service `axiomflo-slack`) verifies Slack's signature, finds the AxiomFlo member linked to that Slack user (same email required), and asks the agent the same way ([slack.md](slack.md)).
 - **Milestone 5:** controls change only through Request → Proposal → Review → Explicit approval on an authenticated AxiomFlo page → Execution → Audit. The model will be able to create a proposal; it will never have a tool that applies one.

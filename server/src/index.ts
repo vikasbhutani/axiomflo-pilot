@@ -9,6 +9,7 @@ import { createLogger } from './http/logger.js';
 import { createFirestoreMembershipStore } from './membership/firestoreStore.js';
 import { createFirestoreUsageService } from './reports/firestoreUsageService.js';
 import { agentClientFor } from './assistant/agentClient.js';
+import { createFirestoreSlackLinkService } from './slack/links.js';
 
 function main() {
   let config;
@@ -33,6 +34,7 @@ function main() {
     keys: createFirestoreKeyService({ db, auth }),
     usage: createFirestoreUsageService({ db, auth, logger }),
     agent: agentClientFor(config.agentUrl),
+    slackLinks: createFirestoreSlackLinkService({ db }),
   });
 
   const server = app.listen(config.port, '0.0.0.0', () => {

@@ -1,8 +1,9 @@
-/** Settings for a real workspace: your access, exchange rates, members (admins) and AxiomFlo keys. */
+/** Settings for a real workspace: your access, exchange rates, members (admins), AxiomFlo keys and Slack. */
 import { PageHeader } from '../../components/layout/PageHeader';
 import { AdminPanel } from '../../components/admin/AdminPanel';
 import { RealWorkspaceNotice } from '../../components/auth/RealWorkspaceNotice';
 import { KeysPanel } from '../../components/keys/KeysPanel';
+import { SlackLinksCard } from '../../components/slack/SlackLinksCard';
 import { useRealMember } from '../../reports/useRealReport';
 import { ExchangeRatesCard } from './ExchangeRatesCard';
 
@@ -17,6 +18,7 @@ export function RealSettingsPage() {
         {/* Keyed by user, so a different admin signing in never sees the previous one's data. */}
         {isAdmin && <AdminPanel key={user.uid} currentUid={user.uid} teams={teams} />}
         <KeysPanel key={`keys-${user.uid}`} currentUid={user.uid} teams={teams} isAdmin={isAdmin} />
+        <SlackLinksCard key={`slack-${user.uid}`} currentUid={user.uid} isAdmin={isAdmin} />
       </div>
     </>
   );

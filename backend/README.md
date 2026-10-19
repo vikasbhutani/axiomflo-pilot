@@ -11,13 +11,14 @@ How it fits together: [docs/agent/architecture.md](../docs/agent/architecture.md
 | Piece | Status |
 | --- | --- |
 | Cost calculations | **Real.** A Python port of the web app's `src/lib/calculations.ts`. Tests prove every total matches the web app's demo pages and real pages. |
-| Usage data | **Sample by default** (`backend/fixtures/`, labelled `MOCK DATA`). **Real** when the AxiomFlo API sends a usage snapshot (the AI Cost Assistant page and, later, Slack). |
+| Usage data | **Sample by default** (`backend/fixtures/`, labelled `MOCK DATA`). **Real** when the AxiomFlo API sends a usage snapshot (the AI Cost Assistant page and the Slack bot). |
 | Savings suggestions | **Real rules** over whichever data is in use (`get_savings_suggestions`). |
 | Gateway controls, notification subscriptions | **Mocked**, read-only, always shown as "Draft, not enforced" (`fixtures/controls.json`). |
 | Sign-in / identity | **Mocked.** Local runs use a demo persona. Firebase token checks arrive in Milestone 2. |
 | Gemini on Vertex AI | **Real, but off by default.** Only called if you set the three variables in "Try one live question". Tests use a scripted stand-in. |
 | Real data without a snapshot | `AXIOMFLO_DATA_SOURCE=axiomflo_api` with no snapshot answers "unavailable" and never falls back to sample data. |
-| Slack, Microsoft 365, Scheduler, Secret Manager | Not started (Milestones 3 to 6). |
+| Slack | Built: the bot lives in `server/src/slack/` and calls this agent with `channel: "slack"`. Setup: [docs/agent/slack.md](../docs/agent/slack.md). |
+| Microsoft 365, Scheduler | Not started. |
 
 ## Run it on your computer
 

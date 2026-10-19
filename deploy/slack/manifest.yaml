@@ -1,0 +1,37 @@
+# Step 5 of docs/agent/slack.md. SLACK_URL is replaced with the axiomflo-slack service's address.
+display_information:
+  name: AxiomFlo
+  description: Answers questions about your AI spend, privately, from AxiomFlo.
+  background_color: "#0f766e"
+features:
+  app_home:
+    home_tab_enabled: false
+    messages_tab_enabled: true
+    messages_tab_read_only_enabled: false
+  bot_user:
+    display_name: AxiomFlo
+    always_online: true
+  slash_commands:
+    - command: /axiomflo
+      url: SLACK_URL/slack/commands
+      description: Ask AxiomFlo about AI spend (only you see the answer)
+      usage_hint: what did my team spend this month?
+      should_escape: false
+oauth_config:
+  scopes:
+    bot:
+      - app_mentions:read
+      - chat:write
+      - commands
+      - im:history
+      - users:read
+      - users:read.email
+settings:
+  event_subscriptions:
+    request_url: SLACK_URL/slack/events
+    bot_events:
+      - app_mention
+      - message.im
+  org_deploy_enabled: false
+  socket_mode_enabled: false
+  token_rotation_enabled: false
