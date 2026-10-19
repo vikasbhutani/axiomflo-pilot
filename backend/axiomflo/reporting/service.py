@@ -212,8 +212,12 @@ class ReportingService:
     # -- links to supporting records in the web app ------------------------------
 
     def usage_link(self, period: str, scope: Scope) -> str:
-        start, end = period_bounds(period)
-        params = {"from": start, "to": end}
+        if scope.workspace.is_sample:
+            start, end = period_bounds(period)
+            params = {"from": start, "to": end}
+        else:
+            # The real Usage Explorer takes a reporting month.
+            params = {"month": period}
         if scope.team:
             params["team"] = scope.team.id
         if scope.provider_id:
@@ -222,8 +226,9 @@ class ReportingService:
             params["cost"] = scope.cost_status
         return f"{self.settings.web_base_url}/usage?{urlencode(params)}"
 
-    def request_link(self, c: CostedRecord) -> str:
-        return f"{self.settings.web_base_url}/usage?{urlencode({'from': c.local_date, 'to': c.local_date, 'request': c.record.id})}"
+    def request_link(self, c: CostedRecord, ws: Workspace) -> str:
+        params = {"from": c.local_date, "to": c.local_date} if ws.is_sample else {"month": c.local_date[:7]}
+        return f"{self.settings.web_base_url}/usage?{urlencode({**params, 'request': c.record.id})}"
 
 
 def period_bounds(period: str) -> tuple[str, str]:

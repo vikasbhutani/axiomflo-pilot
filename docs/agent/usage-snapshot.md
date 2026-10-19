@@ -1,6 +1,6 @@
 # Real data for the agent: the usage snapshot
 
-**Status:** the agent side is built and tested (`backend/axiomflo/reporting/snapshot.py`). The AxiomFlo API side, the route that builds the snapshot and calls the agent, comes in the next step (A3 of the Slack and assistant plan).
+**Status:** built and tested on both sides: the API builds the snapshot (`server/src/assistant/snapshot.ts`) and the agent reads it (`backend/axiomflo/reporting/snapshot.py`). Turning it on: [deploy.md](deploy.md).
 
 ## The idea
 

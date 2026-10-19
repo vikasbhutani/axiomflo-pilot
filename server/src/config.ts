@@ -21,6 +21,8 @@ export interface ServerConfig {
   allowedOrigins: string[];
   port: number;
   logLevel: LogLevel;
+  /** Private address of the AxiomFlo Agent service. Null = the AI Cost Assistant isn't set up. */
+  agentUrl: string | null;
 }
 
 export class ConfigError extends Error {
@@ -101,5 +103,20 @@ export function loadConfig(env: Env = process.env): ServerConfig {
     allowedOrigins: parseAllowedOrigins(value(env, 'ALLOWED_ORIGINS')),
     port,
     logLevel: logLevelText as LogLevel,
+    agentUrl: parseAgentUrl(value(env, 'AGENT_URL')),
   };
+}
+
+/** The agent's base address: https, or http only for localhost. No path, so routes can't be redirected. */
+export function parseAgentUrl(raw: string): string | null {
+  if (!raw) return null;
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    throw new ConfigError(`AGENT_URL is not a valid address: "${raw}".`);
+  }
+  if (url.origin !== raw.replace(/\/$/, '')) throw new ConfigError('AGENT_URL must be just scheme://host[:port], with no path.');
+  if (url.protocol !== 'https:' && !(url.protocol === 'http:' && isLocalhost(url.hostname))) throw new ConfigError('AGENT_URL must use https (http is only allowed for localhost).');
+  return url.origin;
 }

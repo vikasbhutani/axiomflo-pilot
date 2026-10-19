@@ -35,7 +35,7 @@ def test_admin_sees_every_rule_that_applies(snapshot_raw):
     small = found["premium_model_small_jobs"]
     assert small["figures"]["model"] == "Claude Opus 5.5" and small["figures"]["team"] == "Platform Engineering"
     assert "doesn't mean the same quality" in small["detail"]
-    assert "team=team-platform" in small["link"]["url"]
+    assert "team=team-platform" in small["link"]["url"] and "month=2026-10" in small["link"]["url"]
     assert found["unresolved_costs"]["figures"]["unresolved_requests"] == 17
     assert "October 2026 has no exchange rate" in found["exchange_rate"]["detail"]
 

@@ -155,7 +155,7 @@ def make_read_only_tools(rt: ToolRuntime) -> list[Callable]:
                 "estimated_cost": money(c.estimated_cost, precise=True),
                 "cost_status": c.record.cost_status,
                 "request_status": c.record.request_status,
-                "link": rep.request_link(c),
+                "link": rep.request_link(c, ws),
             }
             for c in newest[:limit]
         ]

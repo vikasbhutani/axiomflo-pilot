@@ -58,5 +58,5 @@ flowchart LR
 
 ## Decisions for later milestones
 
-- **Real data:** the AxiomFlo API and gateway now exist, and real usage records are in Firestore. The agent gets them as a per-question usage snapshot from the API ([usage-snapshot.md](usage-snapshot.md)), never by reading the database. Next: the API route that builds the snapshot and calls the agent, the agent's own Cloud Run service, and the real assistant page; then Slack.
+- **Real data:** the AxiomFlo API and gateway now exist, and real usage records are in Firestore. The agent gets them as a per-question usage snapshot from the API ([usage-snapshot.md](usage-snapshot.md)), never by reading the database. The API's `/api/assistant/*` routes build the snapshot and call the agent's private Cloud Run service ([deploy.md](deploy.md)), and the real AI Cost Assistant page uses them. Next: Slack.
 - **Milestone 5:** controls change only through Request → Proposal → Review → Explicit approval on an authenticated AxiomFlo page → Execution → Audit. The model will be able to create a proposal; it will never have a tool that applies one.

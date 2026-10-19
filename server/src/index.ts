@@ -8,6 +8,7 @@ import { initFirebase } from './firebase.js';
 import { createLogger } from './http/logger.js';
 import { createFirestoreMembershipStore } from './membership/firestoreStore.js';
 import { createFirestoreUsageService } from './reports/firestoreUsageService.js';
+import { agentClientFor } from './assistant/agentClient.js';
 
 function main() {
   let config;
@@ -31,10 +32,11 @@ function main() {
     admin: createFirestoreAdminService({ db, auth }),
     keys: createFirestoreKeyService({ db, auth }),
     usage: createFirestoreUsageService({ db, auth, logger }),
+    agent: agentClientFor(config.agentUrl),
   });
 
   const server = app.listen(config.port, '0.0.0.0', () => {
-    logger.info('AxiomFlo API listening', { port: config.port, companyId: config.pilotCompanyId });
+    logger.info('AxiomFlo API listening', { port: config.port, companyId: config.pilotCompanyId, assistant: config.agentUrl ? 'connected' : 'not set up' });
   });
 
   // Cloud Run sends SIGTERM before stopping an instance: finish in-flight requests, then exit.

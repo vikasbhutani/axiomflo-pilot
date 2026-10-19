@@ -15,7 +15,10 @@ beforeAll(() => {
     disconnect() {}
   } as unknown as typeof ResizeObserver;
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  Object.assign(assistantReply, defaultAssistantReply);
+});
 
 /** Pages offer the last 12 months, so the tests use the current one. */
 const MONTH = recentMonths()[0];
@@ -103,6 +106,13 @@ describe('turning usage records into report figures', () => {
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
+/** What the fake API answers for the assistant; tests replace these. */
+const assistantReply = {
+  suggestions: (): Response => json({ status: 'ok', suggestions: [], message: 'Nothing stands out for this period under AxiomFlo’s rules.' }),
+  ask: (_body: unknown): Response => json({ status: 'ok', text: 'Done.', sessionId: null, links: [] }),
+};
+const defaultAssistantReply = { ...assistantReply };
+
 function fakeApi(records: UsageView[], rates: ExchangeRateView[] = []) {
   const fetch = vi.fn(async (path: string, init: RequestInit = {}) => {
     const method = init.method ?? 'GET';
@@ -113,6 +123,8 @@ function fakeApi(records: UsageView[], rates: ExchangeRateView[] = []) {
       rates.push(view);
       return json({ rate: view });
     }
+    if (path.startsWith('/api/assistant/suggestions?')) return assistantReply.suggestions();
+    if (path === '/api/assistant/ask' && method === 'POST') return assistantReply.ask(JSON.parse(String(init.body)));
     if (path === '/api/keys') return json({ keys: [] });
     if (path === '/api/members') return json({ members: [] });
     if (path === '/api/invitations') return json({ invitations: [] });
@@ -194,5 +206,61 @@ describe('real workspace pages', () => {
     render('/settings', api, membershipFor(alice));
     expect(await screen.findByText('1.5')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Save rate' })).toBeNull();
+  });
+});
+
+describe('real AI Cost Assistant', () => {
+  it('shows savings suggestions for the month, with links that stay in the app', async () => {
+    assistantReply.suggestions = () =>
+      json({
+        status: 'ok',
+        suggestions: [
+          { kind: 'spend_jump', title: 'Team Two spend jumped', detail: 'Team Two spent $10.71, up from $3.33 (+221.4%).', link: { label: 'Requests this month', url: `https://evil.example/usage?month=${MONTH}&team=team-2` } },
+        ],
+      });
+    const { api, fetch } = fakeApi([]);
+    render('/assistant', api);
+    expect(await screen.findByText('Team Two spend jumped')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Requests this month' }).getAttribute('href')).toBe(`/usage?month=${MONTH}&team=team-2`);
+    expect(fetch.mock.calls.map(([p]) => p)).toContain(`/api/assistant/suggestions?month=${MONTH}`);
+  });
+
+  it('sends only the question, then keeps the conversation going', async () => {
+    const asked: unknown[] = [];
+    assistantReply.ask = (body) => {
+      asked.push(body);
+      return json({ status: 'ok', text: 'Team One spent $0.06 AUD in October.', sessionId: `s_${'b'.repeat(32)}`, links: [{ label: 'Supporting requests', url: `/usage?month=${MONTH}` }] });
+    };
+    const { api } = fakeApi([]);
+    render('/assistant', api);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'What did each team spend this month?' }));
+    expect(await screen.findByText('Team One spent $0.06 AUD in October.')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Supporting requests' })).toBeTruthy();
+    await user.type(screen.getByLabelText('Ask a question about AI costs'), 'And last month?{Enter}');
+    await screen.findAllByText('Team One spent $0.06 AUD in October.');
+    expect(asked).toEqual([{ question: 'What did each team spend this month?' }, { question: 'And last month?', sessionId: `s_${'b'.repeat(32)}` }]);
+  });
+
+  it('shows a withheld answer as a warning, not as figures', async () => {
+    assistantReply.ask = () => json({ status: 'withheld', text: 'I couldn’t verify every figure, so I’ve withheld it.', sessionId: null, links: [] });
+    const { api } = fakeApi([]);
+    render('/assistant', api);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'How can we lower our AI spend?' }));
+    expect(await screen.findByText(/withheld it/)).toBeTruthy();
+  });
+
+  it('says plainly when the assistant isn’t set up', async () => {
+    assistantReply.suggestions = () => json({ error: { code: 'assistant_unavailable', message: 'The AI Cost Assistant isn’t set up yet. A Company Admin can follow docs/agent/deploy.md.' } }, 503);
+    const { api } = fakeApi([]);
+    render('/assistant', api);
+    expect(await screen.findByText('The assistant isn’t set up yet')).toBeTruthy();
+  });
+
+  it('an individual user gets questions about their own spend', async () => {
+    const { api } = fakeApi([]);
+    render('/assistant', api, membershipFor(alice, { teams: [teams[0]] }));
+    expect(await screen.findByRole('button', { name: 'What did I spend this month?' })).toBeTruthy();
   });
 });

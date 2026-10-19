@@ -16,6 +16,8 @@ import type { MembershipStore } from './membership/store.js';
 import type { AdminService } from './admin/service.js';
 import type { KeyService } from './keys/service.js';
 import type { UsageService } from './reports/service.js';
+import type { AgentClient } from './assistant/agentClient.js';
+import { assistantRouter } from './routes/assistant.js';
 import { adminRouter } from './routes/admin.js';
 import { healthRouter } from './routes/health.js';
 import { keysRouter } from './routes/keys.js';
@@ -34,9 +36,11 @@ export interface AppDeps {
   admin: AdminService;
   keys: KeyService;
   usage: UsageService;
+  /** The AxiomFlo Agent; absent or null when AGENT_URL isn't set. */
+  agent?: AgentClient | null;
 }
 
-export function createApp({ config, logger, verifier, store, admin, keys, usage }: AppDeps): express.Express {
+export function createApp({ config, logger, verifier, store, admin, keys, usage, agent = null }: AppDeps): express.Express {
   const app = express();
   app.disable('x-powered-by');
   // Cloud Run puts one Google front end in front of the container; trust exactly that hop.
@@ -60,6 +64,7 @@ export function createApp({ config, logger, verifier, store, admin, keys, usage 
   app.use(adminRouter({ authenticate: auth, requireMember, admin, companyId, logger }));
   app.use(keysRouter({ authenticate: auth, requireMember, keys, companyId, logger }));
   app.use(reportsRouter({ authenticate: auth, requireMember, usage, companyId, logger }));
+  app.use(assistantRouter({ authenticate: auth, requireMember, usage, agent, companyId, logger }));
 
   app.use(notFoundHandler);
   app.use(errorHandler(logger));

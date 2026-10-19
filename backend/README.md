@@ -2,7 +2,7 @@
 
 AxiomFlo Agent is a cost assistant built with Google's [Agent Development Kit (ADK)](https://google.github.io/adk-docs/) for Python. Gemini on Vertex AI reads the question, picks a read-only tool, and explains the figures the tool calculated. Gemini never calculates or invents an amount.
 
-> **Two data sources.** By default every figure comes from the demo workspace the web app already uses (Acme Innovation, Aug and Sep 2026), and every answer is labelled as sample data. With `AXIOMFLO_DATA_SOURCE=axiomflo_api` the agent answers from real usage that the AxiomFlo API sends with each question (a "usage snapshot"). The agent isn't deployed yet, it uses no database, and nothing can be changed through it.
+> **Two data sources.** By default every figure comes from the demo workspace the web app already uses (Acme Innovation, Aug and Sep 2026), and every answer is labelled as sample data. With `AXIOMFLO_DATA_SOURCE=axiomflo_api` the agent answers from real usage that the AxiomFlo API sends with each question (a "usage snapshot"). It never reads a database, and nothing can be changed through it.
 
 How it fits together: [docs/agent/architecture.md](../docs/agent/architecture.md). Real data: [docs/agent/usage-snapshot.md](../docs/agent/usage-snapshot.md).
 
@@ -11,7 +11,7 @@ How it fits together: [docs/agent/architecture.md](../docs/agent/architecture.md
 | Piece | Status |
 | --- | --- |
 | Cost calculations | **Real.** A Python port of the web app's `src/lib/calculations.ts`. Tests prove every total matches the web app's demo pages and real pages. |
-| Usage data | **Sample by default** (`backend/fixtures/`, labelled `MOCK DATA`). **Real** when the AxiomFlo API sends a usage snapshot; the API route that does so comes next. |
+| Usage data | **Sample by default** (`backend/fixtures/`, labelled `MOCK DATA`). **Real** when the AxiomFlo API sends a usage snapshot (the AI Cost Assistant page and, later, Slack). |
 | Savings suggestions | **Real rules** over whichever data is in use (`get_savings_suggestions`). |
 | Gateway controls, notification subscriptions | **Mocked**, read-only, always shown as "Draft, not enforced" (`fixtures/controls.json`). |
 | Sign-in / identity | **Mocked.** Local runs use a demo persona. Firebase token checks arrive in Milestone 2. |
@@ -105,6 +105,15 @@ adk web adk_apps                     # then open http://localhost:8000
 
 If something is wrong, you get a clear message instead of an answer. For example: "model not configured", "could not reach its AI model", or a Google permission error in the terminal. That's usually step 2 or 3 above.
 
+## The private web service
+
+On Cloud Run the agent runs as `axiomflo-agent`, a private service only the AxiomFlo API can call (`axiomflo/http_service.py`, `Dockerfile`). Setup steps: [docs/agent/deploy.md](../docs/agent/deploy.md). To run it locally next to the API:
+
+```bash
+AXIOMFLO_DATA_SOURCE=axiomflo_api uvicorn axiomflo.http_service:app --port 8090
+# then start the API with AGENT_URL=http://localhost:8090
+```
+
 ## Environment variables
 
 None of these are secrets. Never put keys or tokens in this repo; later milestones keep those in Google Secret Manager.
@@ -117,6 +126,8 @@ None of these are secrets. Never put keys or tokens in this repo; later mileston
 | `GOOGLE_CLOUD_LOCATION` | none | Vertex AI region for Gemini calls. |
 | `AXIOMFLO_WEB_BASE_URL` | `http://localhost:5173` | Where links to supporting records point. |
 | `AXIOMFLO_DEV_PERSONA` | `maya` | Persona for `adk web` only. |
+| `AXIOMFLO_AGENT_ALLOWED_CALLERS` | none | Web service only: service accounts allowed to call it, comma-separated. Required on Cloud Run. |
+| `AXIOMFLO_AGENT_AUDIENCE` | the address it's called on | Web service only: the address callers' ID tokens must be made for. |
 
 ## Tools (all read-only)
 
@@ -147,7 +158,7 @@ Every result includes the period and timezone, currency, scope, cost status, unr
 
 ## Acceptance tests
 
-`pytest` runs 75 tests. The important ones:
+`pytest` runs 89 tests. The important ones:
 
 | Requirement | Test |
 | --- | --- |
