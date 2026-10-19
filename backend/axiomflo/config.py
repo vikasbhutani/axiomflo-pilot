@@ -20,8 +20,9 @@ DATA_SOURCES = (DATA_SOURCE_FIXTURES, DATA_SOURCE_API)
 @dataclass(frozen=True)
 class Settings:
     # Where cost data comes from. "fixtures" = labelled sample data. "axiomflo_api" =
-    # the authenticated AxiomFlo reporting API, which arrives in Milestone 2; until
-    # then it reports "unavailable" and never falls back to sample data.
+    # real data: the AxiomFlo API sends a usage snapshot with each question
+    # (docs/agent/usage-snapshot.md). Without one the answer is "unavailable"; it never
+    # falls back to sample data.
     data_source: str = DATA_SOURCE_FIXTURES
     fixtures_dir: Path = DEFAULT_FIXTURES_DIR
     # Gemini model ID on Vertex AI, e.g. one listed on Google's "Model versions" page

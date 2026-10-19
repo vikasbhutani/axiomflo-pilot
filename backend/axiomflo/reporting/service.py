@@ -4,8 +4,10 @@ Every query starts from the server-supplied TrustedContext. Tenant and visibilit
 are applied here, never by the model:
 
 - Company Admin: every record in their own company.
-- Individual User: only requests they made themselves, within their own team (the same
-  rule the web app uses in src/lib/permissions.ts).
+- Individual User: only requests they made themselves. In the demo workspace that is also
+  limited to their own team (src/lib/permissions.ts); with real data it matches the API,
+  which shows all of a person's own requests. The API has already applied this before
+  sending a snapshot; it is applied again here as a second line of defence.
 
 Queries are fixed templates with validated parameters and hard limits; there is no way to
 run arbitrary filters or SQL.
@@ -14,6 +16,7 @@ from __future__ import annotations
 
 import calendar
 import re
+import threading
 from dataclasses import dataclass
 from urllib.parse import urlencode
 
@@ -21,7 +24,7 @@ from ..config import DATA_SOURCE_API, Settings
 from ..context import TrustedContext
 from ..errors import AccessDenied, AgentToolError, InvalidArgument, ServiceUnavailable
 from .calculations import CostedRecord
-from .dataset import Person, Team, Workspace, WorkspaceStore
+from .dataset import SCOPE_OWN_REQUESTS, Person, Team, Workspace, WorkspaceStore
 
 PERIOD_RE = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
 COST_STATUSES = ("reconciled", "estimated", "unavailable")
@@ -63,11 +66,13 @@ class Scope:
             parts["model"] = ws.models.get(self.model_id, ("", self.model_id))[1]
         if self.cost_status:
             parts["cost_status_filter"] = self.cost_status
-        visibility = (
-            "Company Admin: all requests in the company"
-            if is_admin
-            else f"Individual User: only your own requests in {ws.team(self.viewer.team_id).name if ws.team(self.viewer.team_id) else 'your team'}"
-        )
+        if is_admin:
+            visibility = "Company Admin: all requests in the company"
+        elif ws.individual_scope == SCOPE_OWN_REQUESTS:
+            visibility = "Individual User: only your own requests"
+        else:
+            own_team = ws.team(self.viewer.team_id)
+            visibility = f"Individual User: only your own requests in {own_team.name if own_team else 'your team'}"
         return {"level": self.level, **parts, "visibility": visibility}
 
 
@@ -75,21 +80,50 @@ def _norm(text: str) -> str:
     return re.sub(r"\s+", " ", text.strip().lower())
 
 
+class TurnWorkspaces:
+    """Real data for one question: request ID -> the snapshot the API sent with it.
+
+    A snapshot lives for exactly one turn, like the trusted context it was sent with.
+    """
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._by_request: dict[str, Workspace] = {}
+
+    def bind(self, ctx: TrustedContext, ws: Workspace) -> None:
+        if ws.tenant_id != ctx.tenant_id:
+            raise ValueError("A snapshot can only be used for its own company.")
+        if ws.snapshot_viewer_id != ctx.user_id or ws.person(ctx.user_id) is None:
+            raise ValueError("A snapshot can only be used by the person it was made for.")
+        with self._lock:
+            self._by_request[ctx.request_id] = ws
+
+    def lookup(self, ctx: TrustedContext) -> Workspace | None:
+        with self._lock:
+            return self._by_request.get(ctx.request_id)
+
+    def release(self, ctx: TrustedContext) -> None:
+        with self._lock:
+            self._by_request.pop(ctx.request_id, None)
+
+
 class ReportingService:
-    def __init__(self, settings: Settings, store: WorkspaceStore) -> None:
+    def __init__(self, settings: Settings, store: WorkspaceStore | None, turns: TurnWorkspaces | None = None) -> None:
         self.settings = settings
         self.store = store
+        self.turns = turns or TurnWorkspaces()
 
     # -- access ---------------------------------------------------------------
 
     def workspace_for(self, ctx: TrustedContext) -> tuple[Workspace, Person]:
         if self.settings.data_source == DATA_SOURCE_API:
-            # Milestone 2 connects the authenticated reporting API. Never fall back to fixtures.
-            raise ServiceUnavailable(
-                "AxiomFlo reporting is not connected yet, so cost data is unavailable. No sample data was used."
-            )
-        ws = self.store.get(ctx.tenant_id)
-        if ws is None:
+            # Real data only ever comes from the snapshot sent with this question. Never fall back to fixtures.
+            ws = self.turns.lookup(ctx)
+            if ws is None:
+                raise ServiceUnavailable("AxiomFlo didn't send any usage data with this question, so cost data is unavailable. No sample data was used.")
+        else:
+            ws = self.store.get(ctx.tenant_id) if self.store else None
+        if ws is None or ws.tenant_id != ctx.tenant_id:
             raise AccessDenied("There is no AxiomFlo workspace for this account.")
         person = ws.person(ctx.user_id)
         if person is None or person.status != "active" or person.role != ctx.role:
@@ -104,9 +138,9 @@ class ReportingService:
         key = _norm(team)
         match = next((t for t in ws.teams if key in (_norm(t.id), _norm(t.code), _norm(t.name))), None)
         if match is None:
-            visible = ws.teams if ctx.is_admin else [t for t in ws.teams if t.id == viewer.team_id]
+            visible = ws.teams if ctx.is_admin else [t for t in ws.teams if t.id in viewer.team_ids]
             raise InvalidArgument(f"Unknown team {team!r}. Teams you can ask about: {', '.join(t.name for t in visible)}.")
-        if not ctx.is_admin and match.id != viewer.team_id:
+        if not ctx.is_admin and match.id not in viewer.team_ids:
             raise AccessDenied("Individual Users can only see their own requests in their own team.")
         return match
 
@@ -144,6 +178,11 @@ class ReportingService:
     def coverage_message(ws: Workspace, period: str) -> str:
         if not ws.periods:
             return "There is no usage data yet."
+        if not ws.is_sample:
+            return (
+                f"The assistant can look at {ws.periods[0]} to {ws.periods[-1]}, so {period} isn't available here. "
+                "The Overview and Monthly Showback pages cover other months."
+            )
         return f"There is no usage data for {period}. Data covers {ws.periods[0]} to {ws.periods[-1]}."
 
     # -- record selection -------------------------------------------------------
@@ -154,8 +193,11 @@ class ReportingService:
             r = c.record
             if not c.local_date.startswith(period):
                 continue
-            if not ctx.is_admin and not (r.principal_type == "user" and r.principal_id == viewer.id and r.team_id == viewer.team_id):
-                continue
+            if not ctx.is_admin:
+                if not (r.principal_type == "user" and r.principal_id == viewer.id):
+                    continue
+                if ws.individual_scope != SCOPE_OWN_REQUESTS and r.team_id not in viewer.team_ids:
+                    continue
             if scope.team and r.team_id != scope.team.id:
                 continue
             if scope.provider_id and r.provider_id != scope.provider_id:

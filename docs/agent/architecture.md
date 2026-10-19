@@ -31,8 +31,8 @@ flowchart LR
 | Box | Code | State |
 | --- | --- | --- |
 | Agent | `backend/axiomflo/agent/` | ADK `LlmAgent`, Gemini model from settings, instructions, figure check |
-| Tools | `backend/axiomflo/tools/` | 8 read-only tools, context lookup, audit |
-| Reporting | `backend/axiomflo/reporting/` | Python port of the web app's calculations over sample fixtures |
+| Tools | `backend/axiomflo/tools/` | 9 read-only tools (including savings suggestions), context lookup, audit |
+| Reporting | `backend/axiomflo/reporting/` | Python port of the web app's calculations, over sample fixtures or a real usage snapshot sent by the API ([usage-snapshot.md](usage-snapshot.md)) |
 | TrustedContext | `backend/axiomflo/context.py` | Built by server code; local runs use demo personas |
 | Audit | `backend/axiomflo/observability/audit.py` | In memory and Python log; no chat content |
 | Everything else | | Later milestones |
@@ -58,5 +58,5 @@ flowchart LR
 
 ## Decisions for later milestones
 
-- **Milestone 2:** add the AxiomFlo API (Cloud Run) with Firebase Admin token verification, a membership and policy store (Firestore is the likely fit for the pilot), the `axiomflo_api` data source, durable audit, and deploy-ready (but undeployed) Runtime configuration. The real source of usage records has to be decided, because no gateway or ingestion exists yet.
+- **Real data:** the AxiomFlo API and gateway now exist, and real usage records are in Firestore. The agent gets them as a per-question usage snapshot from the API ([usage-snapshot.md](usage-snapshot.md)), never by reading the database. Next: the API route that builds the snapshot and calls the agent, the agent's own Cloud Run service, and the real assistant page; then Slack.
 - **Milestone 5:** controls change only through Request → Proposal → Review → Explicit approval on an authenticated AxiomFlo page → Execution → Audit. The model will be able to create a proposal; it will never have a tool that applies one.

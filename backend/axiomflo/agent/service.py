@@ -20,8 +20,8 @@ from google.genai import types
 from ..config import Settings
 from ..context import ContextRegistry, TrustedContext
 from ..observability.audit import AuditEvent, AuditLog
-from ..reporting.dataset import WorkspaceStore, load_fixture_workspace
-from ..reporting.service import ReportingService
+from ..reporting.dataset import Workspace, WorkspaceStore, load_fixture_workspace
+from ..reporting.service import ReportingService, TurnWorkspaces
 from ..tools.read_only import make_read_only_tools
 from ..tools.runtime import DirectToolContext, ToolRuntime
 from .guardrails import unverified_figures
@@ -80,10 +80,11 @@ def build_agent(tools: list, model: BaseLlm) -> LlmAgent:
     )
 
 
-def default_store(settings: Settings) -> WorkspaceStore:
+def default_store(settings: Settings) -> WorkspaceStore | None:
     if settings.data_source == "fixtures":
         return WorkspaceStore([load_fixture_workspace(settings.fixtures_dir)])
-    return WorkspaceStore([])
+    # Real data arrives with each question as a snapshot; there is no stored workspace.
+    return None
 
 
 class AgentService:
@@ -98,28 +99,34 @@ class AgentService:
         self.settings = settings
         self.registry = registry or ContextRegistry()
         self.audit = audit or AuditLog()
-        self.runtime = ToolRuntime(settings, ReportingService(settings, store or default_store(settings)), self.registry, self.audit)
+        self.turns = TurnWorkspaces()
+        self.runtime = ToolRuntime(settings, ReportingService(settings, store or default_store(settings), self.turns), self.registry, self.audit)
         self.tools = {t.__name__: t for t in make_read_only_tools(self.runtime)}
         self.model = model or build_model(settings)
         self.sessions = InMemorySessionService()
         self.runner = Runner(agent=build_agent(list(self.tools.values()), self.model), app_name=APP_NAME, session_service=self.sessions) if self.model else None
 
-    def call_tool(self, ctx: TrustedContext, name: str, **args) -> dict:
-        """Runs one read-only tool without the model (local CLI and tests).
+    def call_tool(self, ctx: TrustedContext, name: str, *, snapshot: Workspace | None = None, **args) -> dict:
+        """Runs one read-only tool without the model (the suggestions panel, the local CLI and tests).
 
         Uses the same registry lookup, scoping and audit as a model-initiated call.
+        `snapshot` is the real data the API sent for this request, if any.
         """
         tool = self.tools.get(name)
         if tool is None:
             raise KeyError(f"Unknown tool {name!r}. Available: {', '.join(self.tools)}.")
         session_id = f"direct_{uuid.uuid4().hex}"
+        if snapshot is not None:
+            self.turns.bind(ctx, snapshot)
         self.registry.bind(ctx.session_user_id, session_id, ctx)
         try:
             return tool(tool_context=DirectToolContext(ctx.session_user_id, session_id), **args)
         finally:
             self.registry.release(ctx.session_user_id, session_id)
+            self.turns.release(ctx)
 
-    async def ask(self, ctx: TrustedContext, question: str, session_id: str | None = None) -> AgentAnswer:
+    async def ask(self, ctx: TrustedContext, question: str, session_id: str | None = None, *, snapshot: Workspace | None = None) -> AgentAnswer:
+        """Answers one question. `snapshot` is the real data the API sent with it, if any."""
         question = (question or "").strip()
         if not question:
             return AgentAnswer("invalid", "Please type a question.", ctx.request_id)
@@ -130,6 +137,8 @@ class AgentService:
             return AgentAnswer("unavailable", (self.settings.model_problem() or "The AI model is not available.") + " No answer was generated.", ctx.request_id)
 
         session = await self._session_for(ctx, session_id)
+        if snapshot is not None:
+            self.turns.bind(ctx, snapshot)
         self.registry.bind(ctx.session_user_id, session.id, ctx)
         started = time.monotonic()
         tool_results: list[dict] = []
@@ -163,8 +172,9 @@ class AgentService:
             answer = self._finish(ctx, session.id, final_text, tool_results, tools_called)
             outcome = answer.status
         finally:
-            # Authority lasts for one turn only; the next turn binds a fresh context.
+            # Authority and data last for one turn only; the next turn brings fresh ones.
             self.registry.release(ctx.session_user_id, session.id)
+            self.turns.release(ctx)
 
         answer.assistant_usage = {
             "workload": ASSISTANT_WORKLOAD,

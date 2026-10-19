@@ -23,6 +23,7 @@ from ..errors import InvalidArgument
 from ..reporting.calculations import CostSummary, CostedRecord, cost_status_label, summarize, summarize_by
 from ..reporting.dataset import Workspace
 from ..reporting.service import InsufficientData, Scope, period_bounds, previous_period
+from ..reporting.suggestions import build_suggestions
 from .runtime import ToolRuntime
 
 GROUP_BYS = ("provider", "team", "model")
@@ -73,16 +74,26 @@ def summary_figures(s: CostSummary) -> dict:
     }
 
 
+SUGGESTIONS_NOTE = (
+    "AxiomFlo works these suggestions out from usage records with fixed rules. They point at places worth a look; "
+    "they don't judge answer quality or know why spending changed."
+)
+
+
 def envelope(ws: Workspace, ctx: TrustedContext, scope: Scope, periods: list[str], **body) -> dict:
+    reporting = {
+        "periods": [{"period": p, "start": period_bounds(p)[0], "end": period_bounds(p)[1]} for p in periods],
+        "timezone": ws.timezone,
+        "currency": ws.currency,
+        "data_as_of": ws.data_as_of,
+    }
+    currency_notes = [ws.currency_notes[p] for p in periods if p in ws.currency_notes]
+    if currency_notes:
+        reporting["currency_notes"] = currency_notes
     return {
         "status": "ok",
         "data_label": ws.data_label,
-        "reporting": {
-            "periods": [{"period": p, "start": period_bounds(p)[0], "end": period_bounds(p)[1]} for p in periods],
-            "timezone": ws.timezone,
-            "currency": ws.currency,
-            "data_as_of": ws.data_as_of,
-        },
+        "reporting": reporting,
         "scope": scope.describe(ctx.is_admin),
         **body,
     }
@@ -406,7 +417,7 @@ def make_read_only_tools(rt: ToolRuntime) -> list[Callable]:
             elif ctx.is_admin:
                 team_ids = [t.id for t in ws.teams]
             else:
-                team_ids = [viewer.team_id]
+                team_ids = list(viewer.team_ids)
             out = []
             for policy in ws.controls:
                 if policy["teamId"] not in team_ids:
@@ -430,7 +441,9 @@ def make_read_only_tools(rt: ToolRuntime) -> list[Callable]:
                 ws, ctx, scope, [],
                 team_controls=out,
                 notes=[
-                    "No AxiomFlo gateway is connected yet, so these controls are drafts: requests are not being limited or blocked.",
+                    "No team controls are set up in AxiomFlo yet, so requests are not being limited or blocked."
+                    if not ws.is_sample
+                    else "No AxiomFlo gateway is connected yet, so these controls are drafts: requests are not being limited or blocked.",
                     "These are AxiomFlo gateway settings, not provider account controls.",
                     "A spend alert is a notification, not a spending cap.",
                 ],
@@ -465,6 +478,57 @@ def make_read_only_tools(rt: ToolRuntime) -> list[Callable]:
 
         return rt.run(tool_context, "list_notification_subscriptions", {}, body)
 
+    def get_savings_suggestions(period: str, tool_context: ToolContext, team: str | None = None) -> dict:
+        """Finds places where AI spend could be lower or needs a look, worked out by AxiomFlo's own rules:
+        costly models used for small jobs, spend jumps, long prompts without caching, failed requests
+        that still cost money, requests with no cost yet, and missing exchange rates.
+
+        Use this for "how can we save money?", "any recommendations?" or "anything unusual?".
+        Relay each suggestion's detail as written; don't add suggestions of your own.
+
+        Args:
+          period: Calendar month as YYYY-MM, for example 2026-10.
+          team: Optional team name or code.
+        """
+
+        def body(ctx, ws, viewer):
+            p = rep.validate_period(ws, period)
+            scope = build_scope(ctx, ws, viewer, team)
+            prev = previous_period(p)
+            current = rep.select(ctx, ws, viewer, p, scope)
+            earlier = rep.select(ctx, ws, viewer, prev, scope) if prev in ws.periods else None
+
+            def link(team_id=None, provider_id=None, cost_status=None) -> str:
+                t = ws.team(team_id) if team_id else scope.team
+                return rep.usage_link(p, Scope(ws, viewer, t, provider_id, None, cost_status))
+
+            found = build_suggestions(
+                period=p,
+                previous=prev if earlier is not None else None,
+                current=current,
+                earlier=earlier,
+                is_admin=ctx.is_admin,
+                own_scope=not ctx.is_admin,
+                team_name=lambda k: group_name(ws, "team", k),
+                model_name=lambda k: group_name(ws, "model", k),
+                person_name=ws.principal_name_of,
+                money=money,
+                share=share,
+                percent=percent,
+                usage_link=link,
+                currency_note=ws.currency_notes.get(p),
+                rate_missing=p in ws.rate_missing_periods,
+            )
+            return envelope(
+                ws, ctx, scope, [p] if earlier is None else [prev, p],
+                suggestions=[s.as_dict() for s in found],
+                message=None if found else "Nothing stands out for this period under AxiomFlo's rules.",
+                links=[{"label": "Supporting requests in AxiomFlo", "url": rep.usage_link(p, scope)}],
+                notes=[SUGGESTIONS_NOTE, ESTIMATE_NOTE],
+            )
+
+        return rt.run(tool_context, "get_savings_suggestions", {"period": period, "team": team}, body)
+
     return [
         list_reporting_periods,
         get_cost_summary,
@@ -474,6 +538,7 @@ def make_read_only_tools(rt: ToolRuntime) -> list[Callable]:
         list_unresolved_records,
         get_team_controls,
         list_notification_subscriptions,
+        get_savings_suggestions,
     ]
 
 
@@ -486,4 +551,5 @@ READ_ONLY_TOOL_NAMES = (
     "list_unresolved_records",
     "get_team_controls",
     "list_notification_subscriptions",
+    "get_savings_suggestions",
 )
