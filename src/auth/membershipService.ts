@@ -76,6 +76,7 @@ export function parseMeResponse(value: unknown): Membership | null {
     teamIds: membership.teamIds as string[],
     teams: parseTeams(value.teams),
     status: 'active',
+    ...(membership.readOnly === true ? { readOnly: true } : {}),
   };
 }
 

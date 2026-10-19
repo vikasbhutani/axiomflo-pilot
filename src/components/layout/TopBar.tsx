@@ -1,4 +1,4 @@
-import { FlaskConical, Menu } from 'lucide-react';
+import { Eye, FlaskConical, Menu } from 'lucide-react';
 import { useWorkspaceSession } from '../../auth/WorkspaceSession';
 import { useDemo } from '../../context/DemoContext';
 import { useToast } from '../../context/ToastContext';
@@ -22,7 +22,9 @@ export function TopBar({ onOpenNav }: { onOpenNav: () => void }) {
   const notify = useToast();
   // The demo label, period and role switcher belong to the sample workspace only.
   // A real member's role comes from their membership and can't be changed here.
-  const isDemo = useWorkspaceSession().mode === 'demo';
+  const session = useWorkspaceSession();
+  const isDemo = session.mode === 'demo';
+  const isViewOnly = session.mode === 'real' && session.membership.readOnly === true;
 
   const changeRole = (next: string) => {
     setRole(next as Role);
@@ -36,6 +38,12 @@ export function TopBar({ onOpenNav }: { onOpenNav: () => void }) {
           <Menu className="h-5 w-5" aria-hidden />
         </button>
         {isDemo && <DemoDataLabel />}
+        {isViewOnly && (
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-900">
+            <Eye className="h-3.5 w-3.5" aria-hidden />
+            View-only access
+          </span>
+        )}
         {isDemo && (
           <div className="order-last flex w-full gap-2 sm:order-none sm:ml-auto sm:w-auto">
             <SelectField

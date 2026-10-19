@@ -41,7 +41,7 @@ export function meRouter({ authenticate, store, companyId, logger }: { authentic
       user,
       access: 'active',
       company: companyView(decision.company),
-      membership: { role: decision.membership.role, teamIds: decision.membership.teamIds },
+      membership: { role: decision.membership.role, teamIds: decision.membership.teamIds, readOnly: decision.membership.readOnly === true },
       teams: decision.teams.map(teamView),
     });
   });

@@ -15,6 +15,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "bootstrap": "tsx src/bootstrap/cli.ts",
+    "add-viewer": "tsx src/viewer/cli.ts",
     "test:emulator": "firebase emulators:exec --only auth,firestore --project demo-axiomflo \"vitest run --config vitest.emulator.config.ts\""
   },
   "dependencies": {
