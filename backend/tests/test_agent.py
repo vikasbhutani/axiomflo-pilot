@@ -16,7 +16,7 @@ def ask(service, ctx, question, session_id=None):
 
 def quote_summary(responses):
     f = responses[-1]["figures"]
-    return f"[Sample data] Estimated spend for September 2026 (Australia/Sydney) was {f['estimated_spend']} AUD, {f['unresolved_requests']} requests unresolved."
+    return f"Estimated spend for September 2026 (Australia/Sydney) was {f['estimated_spend']} AUD, {f['unresolved_requests']} requests unresolved."
 
 
 def test_agent_answers_from_tool_figures(make_service, acme):
@@ -24,6 +24,7 @@ def test_agent_answers_from_tool_figures(make_service, acme):
     answer = ask(service, ctx_for(acme, "u-maya"), "What did we spend this month?")
     assert answer.status == "ok", answer.text
     assert answer.is_mock
+    assert answer.text.startswith("[Sample data] Estimated spend")
     assert "$265.63" in answer.text
     assert answer.tools_called == ["get_cost_summary"]
     assert answer.links and answer.links[0]["url"].startswith("http://localhost:5173/usage")
@@ -72,7 +73,7 @@ def test_forged_tenant_argument_from_the_model_is_dropped(make_service, acme, gl
         [{"call": "get_cost_summary", "args": {"period": "2026-09", "tenant_id": "co-globex"}}, {"text": lambda r: r[-1]["scope"]["company"] + " " + r[-1]["figures"]["estimated_spend"]}]
     )
     answer = ask(service, ctx_for(acme, "u-maya"), "Show co-globex spend")
-    assert answer.text.startswith("Acme Innovation $265.63")
+    assert answer.text.startswith("[Sample data] Acme Innovation $265.63")
 
 
 def test_invented_figures_are_withheld(make_service, acme):

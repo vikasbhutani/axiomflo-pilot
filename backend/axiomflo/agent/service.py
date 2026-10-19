@@ -7,6 +7,7 @@ tools, never in a channel adapter.
 from __future__ import annotations
 
 import logging
+import re
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -50,6 +51,10 @@ class AgentAnswer:
     @property
     def is_mock(self) -> bool:
         return any(label.startswith("MOCK DATA") for label in self.data_labels)
+
+
+SAMPLE_PREFIX = "[Sample data]"
+SAMPLE_PREFIX_RE = re.compile(r"^\s*\[?\s*sample data\s*\]?\s*[:.\-]?\s*", re.IGNORECASE)
 
 
 def build_model(settings: Settings) -> BaseLlm | None:
@@ -205,6 +210,11 @@ class AgentService:
     def _finish(self, ctx: TrustedContext, session_id: str, text: str, tool_results: list[dict], tools_called: list[str]) -> AgentAnswer:
         labels = sorted({r["data_label"] for r in tool_results if isinstance(r.get("data_label"), str)})
         links = [link for r in tool_results for link in r.get("links", []) if isinstance(link, dict)]
+        # The sample-data label is added here from the tool results, never left to the model,
+        # which otherwise sometimes stamps real figures "[Sample data]".
+        text = SAMPLE_PREFIX_RE.sub("", text).strip()
+        if text and any(label.startswith("MOCK DATA") for label in labels):
+            text = f"{SAMPLE_PREFIX} {text}"
         if not text:
             return AgentAnswer("unavailable", "The AI model returned no answer. Please try again.", ctx.request_id, session_id, labels, tools_called, links)
         problems = unverified_figures(text, tool_results)
