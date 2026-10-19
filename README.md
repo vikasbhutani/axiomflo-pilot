@@ -24,11 +24,11 @@ This repository is the working pilot, built for one company and running on Googl
 
 | Part | What it does | Where |
 | --- | --- | --- |
-| **Dashboard** | Overview, Usage Explorer, Teams & Users, AI Providers, Monthly Showback (with CSV export), AI Cost Assistant and Settings. React + TypeScript, served by nginx on **Cloud Run**. | `src/` |
+| **Dashboard** | Overview, Usage Explorer, Teams & Users, AI Providers, Monthly Showback (with CSV export), FinOps Scorecard, AI Cost Assistant and Settings. React + TypeScript, served by nginx on **Cloud Run**. | `src/` |
 | **Sign-in and access** | **Firebase Authentication** with Google or email and password. Signing in only proves who you are; what you can see comes from a membership record in **Firestore**, checked by the API on every request. Company Admins invite people and manage roles. | `src/auth/`, `server/src/membership/` |
 | **AxiomFlo API** | Node.js + Express on Cloud Run. Verifies Firebase sign-in tokens, enforces roles and teams, serves reports, manages AxiomFlo keys and records audit events. | `server/` |
 | **Gateway** | A separate Cloud Run service. People point their tools at it with an **AxiomFlo key** instead of a provider key. It forwards requests to **Anthropic (Claude)** or **Gemini on Vertex AI**, returns the answer unchanged, and writes one usage record with tokens and estimated cost. Prompts and answers are never stored. | `server/src/gateway/` |
-| **AI Cost Assistant** | Built with Google's **Agent Development Kit (ADK)** and **Gemini on Vertex AI**, called through the **global endpoint** so busy regions don't cause errors. Gemini picks read-only tools and explains the figures they return; it never calculates or invents an amount, and any number not backed by a tool is withheld. Also gives savings suggestions. | `backend/` |
+| **AI Cost Assistant** | Built with Google's **Agent Development Kit (ADK)** and **Gemini on Vertex AI**, called through the **global endpoint** so busy regions don't cause errors. Gemini picks read-only tools and explains the figures they return; it never calculates or invents an amount, and any number not backed by a tool is withheld. Also gives savings suggestions and the FinOps Scorecard (unit economics, token cost per workflow, five optimisation levers ranked by savings). | `backend/` |
 | **Slack bot** | Ask about AI spend by direct message, `@AxiomFlo` or `/axiomflo`. Answers come from the same assistant and only the person who asked sees them. Accounts are linked only when the Slack email matches the AxiomFlo sign-in email. | `server/src/slack/`, `deploy/slack/` |
 | **Demo workspace** | Sample data that runs fully in the browser, so anyone can explore without an account. | `src/data/`, `src/services/` |
 
@@ -100,6 +100,7 @@ All cost totals come from one set of rules (`src/lib/calculations.ts`, mirrored 
 | The gateway and deploying it | [docs/reporting/gateway.md](docs/reporting/gateway.md), [docs/reporting/gateway-deploy.md](docs/reporting/gateway-deploy.md) |
 | AI Cost Assistant design and deployment | [docs/agent/architecture.md](docs/agent/architecture.md), [docs/agent/deploy.md](docs/agent/deploy.md) |
 | Slack bot | [docs/agent/slack.md](docs/agent/slack.md) |
+| FinOps Scorecard (rules, assumptions, score) | [docs/agent/finops-scorecard.md](docs/agent/finops-scorecard.md) |
 | View-only login for judges | [docs/backend/view-only-login.md](docs/backend/view-only-login.md) |
 
 ## Quality

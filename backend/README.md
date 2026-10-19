@@ -13,6 +13,7 @@ How it fits together: [docs/agent/architecture.md](../docs/agent/architecture.md
 | Cost calculations | **Real.** A Python port of the web app's `src/lib/calculations.ts`. Tests prove every total matches the web app's demo pages and real pages. |
 | Usage data | **Sample by default** (`backend/fixtures/`, labelled `MOCK DATA`). **Real** when the AxiomFlo API sends a usage snapshot (the AI Cost Assistant page and the Slack bot). |
 | Savings suggestions | **Real rules** over whichever data is in use (`get_savings_suggestions`). |
+| FinOps Scorecard | **Real rules** (`get_finops_scorecard`): score, unit economics, token cost per workflow and five optimisation levers ranked by savings. A port of `src/lib/finops.ts`, checked against it by `tests/test_finops_parity.py` ([details](../docs/agent/finops-scorecard.md)). |
 | Gateway controls, notification subscriptions | **Mocked**, read-only, always shown as "Draft, not enforced" (`fixtures/controls.json`). |
 | Sign-in / identity | **Mocked.** Local runs use a demo persona. Firebase token checks arrive in Milestone 2. |
 | Gemini on Vertex AI | **Real, but off by default.** Only called if you set the three variables in "Try one live question". Tests use a scripted stand-in. |
@@ -143,6 +144,7 @@ None of these are secrets. Never put keys or tokens in this repo; later mileston
 | `get_team_controls` | Gateway controls per team, always "Draft, not enforced" until a gateway exists |
 | `list_notification_subscriptions` | Cost-update subscriptions (yours, or all for an admin); nothing is sent yet |
 | `get_savings_suggestions` | Places to look for savings, worked out by fixed rules: costly models for small jobs, spend jumps, long prompts without caching, failed requests that cost money, missing costs, missing exchange rates ([rules](../docs/agent/usage-snapshot.md#savings-suggestions)) |
+| `get_finops_scorecard` | The FinOps Scorecard for a month: score and grade, unit economics, token cost per workflow, and five optimisation levers (model right-sizing, prompt caching, batch processing, context trimming, output limits) ranked by estimated savings, each with what to do and its assumption ([details](../docs/agent/finops-scorecard.md)) |
 
 Every result includes the period and timezone, currency, scope, cost status, unresolved count, data freshness (`data_as_of`) and links to the records in the AxiomFlo web app.
 

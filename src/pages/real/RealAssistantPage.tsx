@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertTriangle, Bot, Lightbulb, RotateCcw, SendHorizontal, ShieldCheck, Table2, User as UserIcon } from 'lucide-react';
+import { AlertTriangle, Bot, Gauge, Lightbulb, RotateCcw, SendHorizontal, ShieldCheck, Table2, User as UserIcon } from 'lucide-react';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Card, CardHeader } from '../../components/ui/Card';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
@@ -13,8 +13,8 @@ import { MonthSelect } from './RealParts';
 
 const MAX_QUESTION_LENGTH = 2000;
 
-const ADMIN_QUESTIONS = ['What did each team spend this month?', 'How can we lower our AI spend?', 'Why did spending change compared with last month?', 'Which models cost the most this month?'];
-const USER_QUESTIONS = ['What did I spend this month?', 'How can I lower my AI spend?', 'Which models did I use most this month?', 'What does estimated cost mean?'];
+const ADMIN_QUESTIONS = ['What did each team spend this month?', 'How can we lower our AI spend?', 'What’s our FinOps score and the biggest savings levers?', 'What does each workflow cost in tokens?', 'Why did spending change compared with last month?'];
+const USER_QUESTIONS = ['What did I spend this month?', 'How can I lower my AI spend?', 'What’s my cost per request, and how could I cut it?', 'Which models did I use most this month?'];
 
 type ChatMessage = { id: number; from: 'user'; text: string } | { id: number; from: 'assistant'; answer: AssistantAnswer } | { id: number; from: 'error'; text: string };
 
@@ -183,6 +183,9 @@ export function RealAssistantPage() {
           <CardHeader title="Savings suggestions" description="Worked out by AxiomFlo’s own rules, not by the AI." />
           <div className="p-4 sm:p-5">
             <MonthSelect month={month} months={months} onChange={setMonth} />
+            <Link to={`/scorecard?month=${month}`} className="btn-secondary mt-3 w-full justify-center">
+              <Gauge className="h-4 w-4" aria-hidden /> Open the FinOps Scorecard
+            </Link>
             <div className="mt-4">
               {suggestions.status === 'loading' && !suggestions.data && <LoadingState label="Looking for savings…" />}
               {suggestions.status === 'error' && <ErrorState message={suggestions.error.message} onRetry={suggestions.reload} />}

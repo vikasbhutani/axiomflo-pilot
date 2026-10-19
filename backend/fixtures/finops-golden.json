@@ -1,0 +1,2790 @@
+{
+  "label": "FinOps Scorecard figures calculated by src/lib/finops.ts for the demo workspace and the sample snapshot.",
+  "rows": [
+    {
+      "source": "demo",
+      "scope": "company",
+      "period": "2026-08",
+      "scorecard": {
+        "economics": {
+          "spend": 156.7249732200004,
+          "requests": 2728,
+          "costedRequests": 2662,
+          "unresolvedRequests": 66,
+          "succeededCostedRequests": 2618,
+          "inputTokens": 68288147,
+          "outputTokens": 3156202,
+          "costPerRequest": 0.058874896025544854,
+          "costPerSuccessfulRequest": 0.05986439007639435,
+          "costPerMillionTokens": 2.1936650751762103,
+          "activePeople": 6,
+          "costPerActivePerson": 26.120828870000068,
+          "outputToInputRatio": 0.046218884808808765,
+          "failedSpend": 2.6617465399999993,
+          "failedSpendShare": 0.016983550772496296
+        },
+        "previousEconomics": null,
+        "workflows": [
+          {
+            "id": "team:team-platform",
+            "label": "Interactive use · Platform Engineering",
+            "kind": "interactive",
+            "requests": 521,
+            "spend": 94.48976568000003,
+            "inputSpend": 79.54550248000005,
+            "outputSpend": 14.944263200000009
+          },
+          {
+            "id": "app:app-ci-review",
+            "label": "CI code-review bot",
+            "kind": "automated",
+            "requests": 1014,
+            "spend": 25.259551440000017,
+            "inputSpend": 18.80293343999999,
+            "outputSpend": 6.456617999999988
+          },
+          {
+            "id": "team:team-product",
+            "label": "Interactive use · Product Experience",
+            "kind": "interactive",
+            "requests": 516,
+            "spend": 24.525577959999993,
+            "inputSpend": 18.025579159999968,
+            "outputSpend": 6.4999988000000055
+          },
+          {
+            "id": "app:app-support-summary",
+            "label": "Support ticket summariser",
+            "kind": "automated",
+            "requests": 677,
+            "spend": 12.450078140000008,
+            "inputSpend": 9.434576740000008,
+            "outputSpend": 3.0155013999999976
+          }
+        ],
+        "levers": [
+          {
+            "id": "prompt_caching",
+            "rank": 1,
+            "affectedRequests": 2502,
+            "affectedSpend": 152.74200950000045,
+            "savings": 55.20848449500001
+          },
+          {
+            "id": "context_trimming",
+            "rank": 2,
+            "affectedRequests": 255,
+            "affectedSpend": 82.4088368,
+            "savings": 28.881106480000007
+          },
+          {
+            "id": "batch_processing",
+            "rank": 3,
+            "affectedRequests": 1651,
+            "affectedSpend": 37.70962957999997,
+            "savings": 18.854814789999985
+          },
+          {
+            "id": "output_limits",
+            "rank": 4,
+            "affectedRequests": 300,
+            "affectedSpend": 62.950378379999975,
+            "savings": 4.060188480000001
+          },
+          {
+            "id": "model_right_sizing",
+            "rank": 5,
+            "affectedRequests": 38,
+            "affectedSpend": 2.0050263000000004,
+            "savings": 1.5173245199999998
+          }
+        ],
+        "combinedSavings": 86.45238774617727,
+        "score": 61,
+        "grade": "C",
+        "components": {
+          "headroom": 10.580349012680198,
+          "model_fit": 19.147114737021745,
+          "waste": 13.206579691001483,
+          "visibility": 17.58064516129032
+        }
+      }
+    },
+    {
+      "source": "demo",
+      "scope": "company",
+      "period": "2026-09",
+      "scorecard": {
+        "economics": {
+          "spend": 265.6274732800007,
+          "requests": 3651,
+          "costedRequests": 3571,
+          "unresolvedRequests": 80,
+          "succeededCostedRequests": 3500,
+          "inputTokens": 93735455,
+          "outputTokens": 4297573,
+          "costPerRequest": 0.07438461867264091,
+          "costPerSuccessfulRequest": 0.07589356379428591,
+          "costPerMillionTokens": 2.7095712404191032,
+          "activePeople": 6,
+          "costPerActivePerson": 44.27124554666678,
+          "outputToInputRatio": 0.045847891814255345,
+          "failedSpend": 4.38836292,
+          "failedSpendShare": 0.01652074187135824
+        },
+        "previousEconomics": {
+          "spend": 156.7249732200004,
+          "requests": 2728,
+          "costedRequests": 2662,
+          "unresolvedRequests": 66,
+          "succeededCostedRequests": 2618,
+          "inputTokens": 68288147,
+          "outputTokens": 3156202,
+          "costPerRequest": 0.058874896025544854,
+          "costPerSuccessfulRequest": 0.05986439007639435,
+          "costPerMillionTokens": 2.1936650751762103,
+          "activePeople": 6,
+          "costPerActivePerson": 26.120828870000068,
+          "outputToInputRatio": 0.046218884808808765,
+          "failedSpend": 2.6617465399999993,
+          "failedSpendShare": 0.016983550772496296
+        },
+        "workflows": [
+          {
+            "id": "team:team-platform",
+            "label": "Interactive use · Platform Engineering",
+            "kind": "interactive",
+            "requests": 688,
+            "spend": 131.16908726,
+            "inputSpend": 110.12830305999991,
+            "outputSpend": 21.040784200000008
+          },
+          {
+            "id": "team:team-product",
+            "label": "Interactive use · Product Experience",
+            "kind": "interactive",
+            "requests": 697,
+            "spend": 67.84997022,
+            "inputSpend": 49.849179819999975,
+            "outputSpend": 18.0007904
+          },
+          {
+            "id": "app:app-ci-review",
+            "label": "CI code-review bot",
+            "kind": "automated",
+            "requests": 1360,
+            "spend": 37.11668149999995,
+            "inputSpend": 28.13889650000003,
+            "outputSpend": 8.977784999999995
+          },
+          {
+            "id": "app:app-support-summary",
+            "label": "Support ticket summariser",
+            "kind": "automated",
+            "requests": 906,
+            "spend": 29.491734299999983,
+            "inputSpend": 22.7917387,
+            "outputSpend": 6.699995599999998
+          }
+        ],
+        "levers": [
+          {
+            "id": "prompt_caching",
+            "rank": 1,
+            "affectedRequests": 3351,
+            "affectedSpend": 258.1026657000005,
+            "savings": 92.42317156499995
+          },
+          {
+            "id": "context_trimming",
+            "rank": 2,
+            "affectedRequests": 358,
+            "affectedSpend": 131.73260040000005,
+            "savings": 45.95674767999999
+          },
+          {
+            "id": "batch_processing",
+            "rank": 3,
+            "affectedRequests": 2221,
+            "affectedSpend": 66.60841579999997,
+            "savings": 33.30420789999999
+          },
+          {
+            "id": "output_limits",
+            "rank": 4,
+            "affectedRequests": 453,
+            "affectedSpend": 112.06110790000005,
+            "savings": 7.525476839999998
+          },
+          {
+            "id": "model_right_sizing",
+            "rank": 5,
+            "affectedRequests": 173,
+            "affectedSpend": 10.814767800000002,
+            "savings": 7.516328119999999
+          }
+        ],
+        "combinedSavings": 147.34246118815116,
+        "score": 59,
+        "grade": "C",
+        "components": {
+          "headroom": 10.41622050736478,
+          "model_fit": 17.285730609499105,
+          "waste": 13.391703251456704,
+          "visibility": 17.808819501506434
+        }
+      }
+    },
+    {
+      "source": "demo",
+      "scope": "viewer:u-maya",
+      "period": "2026-08",
+      "scorecard": {
+        "economics": {
+          "spend": 156.7249732200004,
+          "requests": 2728,
+          "costedRequests": 2662,
+          "unresolvedRequests": 66,
+          "succeededCostedRequests": 2618,
+          "inputTokens": 68288147,
+          "outputTokens": 3156202,
+          "costPerRequest": 0.058874896025544854,
+          "costPerSuccessfulRequest": 0.05986439007639435,
+          "costPerMillionTokens": 2.1936650751762103,
+          "activePeople": 6,
+          "costPerActivePerson": 26.120828870000068,
+          "outputToInputRatio": 0.046218884808808765,
+          "failedSpend": 2.6617465399999993,
+          "failedSpendShare": 0.016983550772496296
+        },
+        "previousEconomics": null,
+        "workflows": [
+          {
+            "id": "team:team-platform",
+            "label": "Interactive use · Platform Engineering",
+            "kind": "interactive",
+            "requests": 521,
+            "spend": 94.48976568000003,
+            "inputSpend": 79.54550248000005,
+            "outputSpend": 14.944263200000009
+          },
+          {
+            "id": "app:app-ci-review",
+            "label": "CI code-review bot",
+            "kind": "automated",
+            "requests": 1014,
+            "spend": 25.259551440000017,
+            "inputSpend": 18.80293343999999,
+            "outputSpend": 6.456617999999988
+          },
+          {
+            "id": "team:team-product",
+            "label": "Interactive use · Product Experience",
+            "kind": "interactive",
+            "requests": 516,
+            "spend": 24.525577959999993,
+            "inputSpend": 18.025579159999968,
+            "outputSpend": 6.4999988000000055
+          },
+          {
+            "id": "app:app-support-summary",
+            "label": "Support ticket summariser",
+            "kind": "automated",
+            "requests": 677,
+            "spend": 12.450078140000008,
+            "inputSpend": 9.434576740000008,
+            "outputSpend": 3.0155013999999976
+          }
+        ],
+        "levers": [
+          {
+            "id": "prompt_caching",
+            "rank": 1,
+            "affectedRequests": 2502,
+            "affectedSpend": 152.74200950000045,
+            "savings": 55.20848449500001
+          },
+          {
+            "id": "context_trimming",
+            "rank": 2,
+            "affectedRequests": 255,
+            "affectedSpend": 82.4088368,
+            "savings": 28.881106480000007
+          },
+          {
+            "id": "batch_processing",
+            "rank": 3,
+            "affectedRequests": 1651,
+            "affectedSpend": 37.70962957999997,
+            "savings": 18.854814789999985
+          },
+          {
+            "id": "output_limits",
+            "rank": 4,
+            "affectedRequests": 300,
+            "affectedSpend": 62.950378379999975,
+            "savings": 4.060188480000001
+          },
+          {
+            "id": "model_right_sizing",
+            "rank": 5,
+            "affectedRequests": 38,
+            "affectedSpend": 2.0050263000000004,
+            "savings": 1.5173245199999998
+          }
+        ],
+        "combinedSavings": 86.45238774617727,
+        "score": 61,
+        "grade": "C",
+        "components": {
+          "headroom": 10.580349012680198,
+          "model_fit": 19.147114737021745,
+          "waste": 13.206579691001483,
+          "visibility": 17.58064516129032
+        }
+      }
+    },
+    {
+      "source": "demo",
+      "scope": "viewer:u-maya",
+      "period": "2026-09",
+      "scorecard": {
+        "economics": {
+          "spend": 265.6274732800007,
+          "requests": 3651,
+          "costedRequests": 3571,
+          "unresolvedRequests": 80,
+          "succeededCostedRequests": 3500,
+          "inputTokens": 93735455,
+          "outputTokens": 4297573,
+          "costPerRequest": 0.07438461867264091,
+          "costPerSuccessfulRequest": 0.07589356379428591,
+          "costPerMillionTokens": 2.7095712404191032,
+          "activePeople": 6,
+          "costPerActivePerson": 44.27124554666678,
+          "outputToInputRatio": 0.045847891814255345,
+          "failedSpend": 4.38836292,
+          "failedSpendShare": 0.01652074187135824
+        },
+        "previousEconomics": {
+          "spend": 156.7249732200004,
+          "requests": 2728,
+          "costedRequests": 2662,
+          "unresolvedRequests": 66,
+          "succeededCostedRequests": 2618,
+          "inputTokens": 68288147,
+          "outputTokens": 3156202,
+          "costPerRequest": 0.058874896025544854,
+          "costPerSuccessfulRequest": 0.05986439007639435,
+          "costPerMillionTokens": 2.1936650751762103,
+          "activePeople": 6,
+          "costPerActivePerson": 26.120828870000068,
+          "outputToInputRatio": 0.046218884808808765,
+          "failedSpend": 2.6617465399999993,
+          "failedSpendShare": 0.016983550772496296
+        },
+        "workflows": [
+          {
+            "id": "team:team-platform",
+            "label": "Interactive use · Platform Engineering",
+            "kind": "interactive",
+            "requests": 688,
+            "spend": 131.16908726,
+            "inputSpend": 110.12830305999991,
+            "outputSpend": 21.040784200000008
+          },
+          {
+            "id": "team:team-product",
+            "label": "Interactive use · Product Experience",
+            "kind": "interactive",
+            "requests": 697,
+            "spend": 67.84997022,
+            "inputSpend": 49.849179819999975,
+            "outputSpend": 18.0007904
+          },
+          {
+            "id": "app:app-ci-review",
+            "label": "CI code-review bot",
+            "kind": "automated",
+            "requests": 1360,
+            "spend": 37.11668149999995,
+            "inputSpend": 28.13889650000003,
+            "outputSpend": 8.977784999999995
+          },
+          {
+            "id": "app:app-support-summary",
+            "label": "Support ticket summariser",
+            "kind": "automated",
+            "requests": 906,
+            "spend": 29.491734299999983,
+            "inputSpend": 22.7917387,
+            "outputSpend": 6.699995599999998
+          }
+        ],
+        "levers": [
+          {
+            "id": "prompt_caching",
+            "rank": 1,
+            "affectedRequests": 3351,
+            "affectedSpend": 258.1026657000005,
+            "savings": 92.42317156499995
+          },
+          {
+            "id": "context_trimming",
+            "rank": 2,
+            "affectedRequests": 358,
+            "affectedSpend": 131.73260040000005,
+            "savings": 45.95674767999999
+          },
+          {
+            "id": "batch_processing",
+            "rank": 3,
+            "affectedRequests": 2221,
+            "affectedSpend": 66.60841579999997,
+            "savings": 33.30420789999999
+          },
+          {
+            "id": "output_limits",
+            "rank": 4,
+            "affectedRequests": 453,
+            "affectedSpend": 112.06110790000005,
+            "savings": 7.525476839999998
+          },
+          {
+            "id": "model_right_sizing",
+            "rank": 5,
+            "affectedRequests": 173,
+            "affectedSpend": 10.814767800000002,
+            "savings": 7.516328119999999
+          }
+        ],
+        "combinedSavings": 147.34246118815116,
+        "score": 59,
+        "grade": "C",
+        "components": {
+          "headroom": 10.41622050736478,
+          "model_fit": 17.285730609499105,
+          "waste": 13.391703251456704,
+          "visibility": 17.808819501506434
+        }
+      }
+    },
+    {
+      "source": "demo",
+      "scope": "viewer:u-liam",
+      "period": "2026-08",
+      "scorecard": {
+        "economics": {
+          "spend": 87.95715299999998,
+          "requests": 272,
+          "costedRequests": 266,
+          "unresolvedRequests": 6,
+          "succeededCostedRequests": 260,
+          "inputTokens": 19726035,
+          "outputTokens": 596463,
+          "costPerRequest": 0.3306659887218044,
+          "costPerSuccessfulRequest": 0.33829674230769224,
+          "costPerMillionTokens": 4.328067986524096,
+          "activePeople": 1,
+          "costPerActivePerson": 87.95715299999998,
+          "outputToInputRatio": 0.030237348762688496,
+          "failedSpend": 1.9469223999999996,
+          "failedSpendShare": 0.022134895612185176
+        },
+        "previousEconomics": null,
+        "workflows": [
+          {
+            "id": "team:team-platform",
+            "label": "Interactive use · Platform Engineering",
+            "kind": "interactive",
+            "requests": 272,
+            "spend": 87.95715299999998,
+            "inputSpend": 75.56341200000003,
+            "outputSpend": 12.393740999999999
+          }
+        ],
+        "levers": [
+          {
+            "id": "prompt_caching",
+            "rank": 1,
+            "affectedRequests": 260,
+            "affectedSpend": 86.0102306,
+            "savings": 33.12742031999998
+          },
+          {
+            "id": "context_trimming",
+            "rank": 2,
+            "affectedRequests": 176,
+            "affectedSpend": 71.09487320000001,
+            "savings": 25.124938959999998
+          },
+          {
+            "id": "output_limits",
+            "rank": 3,
+            "affectedRequests": 151,
+            "affectedSpend": 50.842585199999974,
+            "savings": 2.8087821599999994
+          },
+          {
+            "id": "model_right_sizing",
+            "rank": 4,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "batch_processing",
+            "rank": 5,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          }
+        ],
+        "combinedSavings": 50.040280561755054,
+        "score": 59,
+        "grade": "C",
+        "components": {
+          "headroom": 9.657783679132912,
+          "model_fit": 20,
+          "waste": 11.14604175512593,
+          "visibility": 17.794117647058815
+        }
+      }
+    },
+    {
+      "source": "demo",
+      "scope": "viewer:u-liam",
+      "period": "2026-09",
+      "scorecard": {
+        "economics": {
+          "spend": 122.44092350000003,
+          "requests": 359,
+          "costedRequests": 351,
+          "unresolvedRequests": 8,
+          "succeededCostedRequests": 345,
+          "inputTokens": 27016788,
+          "outputTokens": 835765,
+          "costPerRequest": 0.34883453988603996,
+          "costPerSuccessfulRequest": 0.35490122753623193,
+          "costPerMillionTokens": 4.396039512069146,
+          "activePeople": 1,
+          "costPerActivePerson": 122.44092350000003,
+          "outputToInputRatio": 0.030935024548440028,
+          "failedSpend": 2.1894571999999997,
+          "failedSpendShare": 0.017881743598577148
+        },
+        "previousEconomics": {
+          "spend": 87.95715299999998,
+          "requests": 272,
+          "costedRequests": 266,
+          "unresolvedRequests": 6,
+          "succeededCostedRequests": 260,
+          "inputTokens": 19726035,
+          "outputTokens": 596463,
+          "costPerRequest": 0.3306659887218044,
+          "costPerSuccessfulRequest": 0.33829674230769224,
+          "costPerMillionTokens": 4.328067986524096,
+          "activePeople": 1,
+          "costPerActivePerson": 87.95715299999998,
+          "outputToInputRatio": 0.030237348762688496,
+          "failedSpend": 1.9469223999999996,
+          "failedSpendShare": 0.022134895612185176
+        },
+        "workflows": [
+          {
+            "id": "team:team-platform",
+            "label": "Interactive use · Platform Engineering",
+            "kind": "interactive",
+            "requests": 359,
+            "spend": 122.44092350000003,
+            "inputSpend": 104.85397289999997,
+            "outputSpend": 17.586950599999984
+          }
+        ],
+        "levers": [
+          {
+            "id": "prompt_caching",
+            "rank": 1,
+            "affectedRequests": 345,
+            "affectedSpend": 120.2514663,
+            "savings": 46.19903206500003
+          },
+          {
+            "id": "context_trimming",
+            "rank": 2,
+            "affectedRequests": 244,
+            "affectedSpend": 102.7009857,
+            "savings": 36.06229163999999
+          },
+          {
+            "id": "output_limits",
+            "rank": 3,
+            "affectedRequests": 219,
+            "affectedSpend": 78.95470240000004,
+            "savings": 4.183237680000001
+          },
+          {
+            "id": "model_right_sizing",
+            "rank": 4,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "batch_processing",
+            "rank": 5,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          }
+        ],
+        "combinedSavings": 70.49204624035846,
+        "score": 60,
+        "grade": "C",
+        "components": {
+          "headroom": 9.29477749744526,
+          "model_fit": 20,
+          "waste": 12.84730256056914,
+          "visibility": 17.771587743732585
+        }
+      }
+    },
+    {
+      "source": "demo",
+      "scope": "viewer:u-aisha",
+      "period": "2026-08",
+      "scorecard": {
+        "economics": {
+          "spend": 2.8326580799999994,
+          "requests": 181,
+          "costedRequests": 178,
+          "unresolvedRequests": 3,
+          "succeededCostedRequests": 176,
+          "inputTokens": 2865170,
+          "outputTokens": 205195,
+          "costPerRequest": 0.015913809438202243,
+          "costPerSuccessfulRequest": 0.016094648181818178,
+          "costPerMillionTokens": 0.9225802404600103,
+          "activePeople": 1,
+          "costPerActivePerson": 2.8326580799999994,
+          "outputToInputRatio": 0.07161704192072373,
+          "failedSpend": 0.031086759999999998,
+          "failedSpendShare": 0.01097441312083808
+        },
+        "previousEconomics": null,
+        "workflows": [
+          {
+            "id": "team:team-platform",
+            "label": "Interactive use · Platform Engineering",
+            "kind": "interactive",
+            "requests": 181,
+            "spend": 2.8326580799999994,
+            "inputSpend": 1.90145668,
+            "outputSpend": 0.9312014000000003
+          }
+        ],
+        "levers": [
+          {
+            "id": "prompt_caching",
+            "rank": 1,
+            "affectedRequests": 171,
+            "affectedSpend": 2.767537539999999,
+            "savings": 0.8362384829999999
+          },
+          {
+            "id": "model_right_sizing",
+            "rank": 2,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "batch_processing",
+            "rank": 3,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "context_trimming",
+            "rank": 4,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "output_limits",
+            "rank": 5,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          }
+        ],
+        "combinedSavings": 0.836238483,
+        "score": 78,
+        "grade": "B",
+        "components": {
+          "headroom": 24.255287966135324,
+          "model_fit": 20,
+          "waste": 15.61023475166477,
+          "visibility": 18.34254143646409
+        }
+      }
+    },
+    {
+      "source": "demo",
+      "scope": "viewer:u-aisha",
+      "period": "2026-09",
+      "scorecard": {
+        "economics": {
+          "spend": 3.73003996,
+          "requests": 241,
+          "costedRequests": 236,
+          "unresolvedRequests": 5,
+          "succeededCostedRequests": 230,
+          "inputTokens": 3811148,
+          "outputTokens": 261424,
+          "costPerRequest": 0.01580525406779661,
+          "costPerSuccessfulRequest": 0.016217565043478262,
+          "costPerMillionTokens": 0.915892944311359,
+          "activePeople": 1,
+          "costPerActivePerson": 3.73003996,
+          "outputToInputRatio": 0.06859455471159871,
+          "failedSpend": 0.05066762,
+          "failedSpendShare": 0.013583666808759871
+        },
+        "previousEconomics": {
+          "spend": 2.8326580799999994,
+          "requests": 181,
+          "costedRequests": 178,
+          "unresolvedRequests": 3,
+          "succeededCostedRequests": 176,
+          "inputTokens": 2865170,
+          "outputTokens": 205195,
+          "costPerRequest": 0.015913809438202243,
+          "costPerSuccessfulRequest": 0.016094648181818178,
+          "costPerMillionTokens": 0.9225802404600103,
+          "activePeople": 1,
+          "costPerActivePerson": 2.8326580799999994,
+          "outputToInputRatio": 0.07161704192072373,
+          "failedSpend": 0.031086759999999998,
+          "failedSpendShare": 0.01097441312083808
+        },
+        "workflows": [
+          {
+            "id": "team:team-platform",
+            "label": "Interactive use · Platform Engineering",
+            "kind": "interactive",
+            "requests": 241,
+            "spend": 3.73003996,
+            "inputSpend": 2.5383561600000024,
+            "outputSpend": 1.1916837999999998
+          }
+        ],
+        "levers": [
+          {
+            "id": "prompt_caching",
+            "rank": 1,
+            "affectedRequests": 219,
+            "affectedSpend": 3.5951655600000008,
+            "savings": 1.107940122000001
+          },
+          {
+            "id": "model_right_sizing",
+            "rank": 2,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "batch_processing",
+            "rank": 3,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "context_trimming",
+            "rank": 4,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "output_limits",
+            "rank": 5,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          }
+        ],
+        "combinedSavings": 1.1079401220000007,
+        "score": 77,
+        "grade": "B",
+        "components": {
+          "headroom": 24.158309167283008,
+          "model_fit": 20,
+          "waste": 14.566533276496052,
+          "visibility": 17.925311203319495
+        }
+      }
+    },
+    {
+      "source": "demo",
+      "scope": "viewer:u-noah",
+      "period": "2026-08",
+      "scorecard": {
+        "economics": {
+          "spend": 5.51879438,
+          "requests": 223,
+          "costedRequests": 214,
+          "unresolvedRequests": 9,
+          "succeededCostedRequests": 212,
+          "inputTokens": 2844585,
+          "outputTokens": 333372,
+          "costPerRequest": 0.02578875878504673,
+          "costPerSuccessfulRequest": 0.026032048962264152,
+          "costPerMillionTokens": 1.7365856051545066,
+          "activePeople": 1,
+          "costPerActivePerson": 5.51879438,
+          "outputToInputRatio": 0.11719530265398995,
+          "failedSpend": 0.043007540000000004,
+          "failedSpendShare": 0.007792923062301155
+        },
+        "previousEconomics": null,
+        "workflows": [
+          {
+            "id": "team:team-product",
+            "label": "Interactive use · Product Experience",
+            "kind": "interactive",
+            "requests": 223,
+            "spend": 5.51879438,
+            "inputSpend": 3.351882380000001,
+            "outputSpend": 2.1669119999999995
+          }
+        ],
+        "levers": [
+          {
+            "id": "prompt_caching",
+            "rank": 1,
+            "affectedRequests": 190,
+            "affectedSpend": 5.193064680000001,
+            "savings": 1.454702076
+          },
+          {
+            "id": "output_limits",
+            "rank": 2,
+            "affectedRequests": 65,
+            "affectedSpend": 2.152491579999999,
+            "savings": 0.3236733599999999
+          },
+          {
+            "id": "model_right_sizing",
+            "rank": 3,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "batch_processing",
+            "rank": 4,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "context_trimming",
+            "rank": 5,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          }
+        ],
+        "combinedSavings": 1.6930581952554924,
+        "score": 76,
+        "grade": "B",
+        "components": {
+          "headroom": 23.638376271541226,
+          "model_fit": 20,
+          "waste": 16.882830775079537,
+          "visibility": 15.964125560538111
+        }
+      }
+    },
+    {
+      "source": "demo",
+      "scope": "viewer:u-noah",
+      "period": "2026-09",
+      "scorecard": {
+        "economics": {
+          "spend": 22.304193099999992,
+          "requests": 302,
+          "costedRequests": 291,
+          "unresolvedRequests": 11,
+          "succeededCostedRequests": 289,
+          "inputTokens": 3780860,
+          "outputTokens": 477016,
+          "costPerRequest": 0.07664671168384878,
+          "costPerSuccessfulRequest": 0.07717713875432523,
+          "costPerMillionTokens": 5.238337870806944,
+          "activePeople": 1,
+          "costPerActivePerson": 22.304193099999992,
+          "outputToInputRatio": 0.12616600455980914,
+          "failedSpend": 0.08077599999999999,
+          "failedSpendShare": 0.0036215611852822424
+        },
+        "previousEconomics": {
+          "spend": 5.51879438,
+          "requests": 223,
+          "costedRequests": 214,
+          "unresolvedRequests": 9,
+          "succeededCostedRequests": 212,
+          "inputTokens": 2844585,
+          "outputTokens": 333372,
+          "costPerRequest": 0.02578875878504673,
+          "costPerSuccessfulRequest": 0.026032048962264152,
+          "costPerMillionTokens": 1.7365856051545066,
+          "activePeople": 1,
+          "costPerActivePerson": 5.51879438,
+          "outputToInputRatio": 0.11719530265398995,
+          "failedSpend": 0.043007540000000004,
+          "failedSpendShare": 0.007792923062301155
+        },
+        "workflows": [
+          {
+            "id": "team:team-product",
+            "label": "Interactive use · Product Experience",
+            "kind": "interactive",
+            "requests": 302,
+            "spend": 22.304193099999992,
+            "inputSpend": 13.640884699999992,
+            "outputSpend": 8.663308399999996
+          }
+        ],
+        "levers": [
+          {
+            "id": "prompt_caching",
+            "rank": 1,
+            "affectedRequests": 265,
+            "affectedSpend": 21.228281899999985,
+            "savings": 5.984956214999999
+          },
+          {
+            "id": "output_limits",
+            "rank": 2,
+            "affectedRequests": 110,
+            "affectedSpend": 9.896022599999998,
+            "savings": 1.4808463200000002
+          },
+          {
+            "id": "model_right_sizing",
+            "rank": 3,
+            "affectedRequests": 23,
+            "affectedSpend": 1.7756275999999998,
+            "savings": 1.1955395000000002
+          },
+          {
+            "id": "batch_processing",
+            "rank": 4,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "context_trimming",
+            "rank": 5,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          }
+        ],
+        "combinedSavings": 7.885102238760863,
+        "score": 71,
+        "grade": "B",
+        "components": {
+          "headroom": 21.145303747067807,
+          "model_fit": 14.69269420316607,
+          "waste": 18.551375525887103,
+          "visibility": 16.357615894039736
+        }
+      }
+    },
+    {
+      "source": "demo",
+      "scope": "viewer:u-sofia",
+      "period": "2026-08",
+      "scorecard": {
+        "economics": {
+          "spend": 1.2196141799999995,
+          "requests": 136,
+          "costedRequests": 130,
+          "unresolvedRequests": 6,
+          "succeededCostedRequests": 126,
+          "inputTokens": 872467,
+          "outputTokens": 108867,
+          "costPerRequest": 0.009381647538461536,
+          "costPerSuccessfulRequest": 0.009679477619047616,
+          "costPerMillionTokens": 1.2428125184697558,
+          "activePeople": 1,
+          "costPerActivePerson": 1.2196141799999995,
+          "outputToInputRatio": 0.12478065072948318,
+          "failedSpend": 0.02770694,
+          "failedSpendShare": 0.022717790965664248
+        },
+        "previousEconomics": null,
+        "workflows": [
+          {
+            "id": "team:team-product",
+            "label": "Interactive use · Product Experience",
+            "kind": "interactive",
+            "requests": 136,
+            "spend": 1.2196141799999995,
+            "inputSpend": 0.6678389799999996,
+            "outputSpend": 0.5517751999999999
+          }
+        ],
+        "levers": [
+          {
+            "id": "prompt_caching",
+            "rank": 1,
+            "affectedRequests": 95,
+            "affectedSpend": 0.9665011400000002,
+            "savings": 0.257176143
+          },
+          {
+            "id": "model_right_sizing",
+            "rank": 2,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "batch_processing",
+            "rank": 3,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "context_trimming",
+            "rank": 4,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "output_limits",
+            "rank": 5,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          }
+        ],
+        "combinedSavings": 0.25717614299999997,
+        "score": 75,
+        "grade": "B",
+        "components": {
+          "headroom": 28.753770507981464,
+          "model_fit": 20,
+          "waste": 10.912883613734301,
+          "visibility": 15.588235294117647
+        }
+      }
+    },
+    {
+      "source": "demo",
+      "scope": "viewer:u-sofia",
+      "period": "2026-09",
+      "scorecard": {
+        "economics": {
+          "spend": 3.3173112199999975,
+          "requests": 180,
+          "costedRequests": 173,
+          "unresolvedRequests": 7,
+          "succeededCostedRequests": 169,
+          "inputTokens": 1071223,
+          "outputTokens": 149411,
+          "costPerRequest": 0.019175209364161835,
+          "costPerSuccessfulRequest": 0.019629060473372765,
+          "costPerMillionTokens": 2.717695246896283,
+          "activePeople": 1,
+          "costPerActivePerson": 3.3173112199999975,
+          "outputToInputRatio": 0.1394770276590402,
+          "failedSpend": 0.03260112,
+          "failedSpendShare": 0.009827573549158895
+        },
+        "previousEconomics": {
+          "spend": 1.2196141799999995,
+          "requests": 136,
+          "costedRequests": 130,
+          "unresolvedRequests": 6,
+          "succeededCostedRequests": 126,
+          "inputTokens": 872467,
+          "outputTokens": 108867,
+          "costPerRequest": 0.009381647538461536,
+          "costPerSuccessfulRequest": 0.009679477619047616,
+          "costPerMillionTokens": 1.2428125184697558,
+          "activePeople": 1,
+          "costPerActivePerson": 1.2196141799999995,
+          "outputToInputRatio": 0.12478065072948318,
+          "failedSpend": 0.02770694,
+          "failedSpendShare": 0.022717790965664248
+        },
+        "workflows": [
+          {
+            "id": "team:team-product",
+            "label": "Interactive use · Product Experience",
+            "kind": "interactive",
+            "requests": 180,
+            "spend": 3.3173112199999975,
+            "inputSpend": 1.8466502199999992,
+            "outputSpend": 1.470661
+          }
+        ],
+        "levers": [
+          {
+            "id": "prompt_caching",
+            "rank": 1,
+            "affectedRequests": 116,
+            "affectedSpend": 2.431875019999999,
+            "savings": 0.6664607189999998
+          },
+          {
+            "id": "model_right_sizing",
+            "rank": 2,
+            "affectedRequests": 18,
+            "affectedSpend": 0.4977199999999999,
+            "savings": 0.24885999999999994
+          },
+          {
+            "id": "batch_processing",
+            "rank": 3,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "context_trimming",
+            "rank": 4,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "output_limits",
+            "rank": 5,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          }
+        ],
+        "combinedSavings": 0.8653237776426739,
+        "score": 68,
+        "grade": "C",
+        "components": {
+          "headroom": 26.087949422401202,
+          "model_fit": 9.997521747949428,
+          "waste": 16.06897058033644,
+          "visibility": 16.11111111111111
+        }
+      }
+    },
+    {
+      "source": "demo",
+      "scope": "viewer:u-ethan",
+      "period": "2026-08",
+      "scorecard": {
+        "economics": {
+          "spend": 17.787169400000007,
+          "requests": 157,
+          "costedRequests": 157,
+          "unresolvedRequests": 0,
+          "succeededCostedRequests": 154,
+          "inputTokens": 8068226,
+          "outputTokens": 304047,
+          "costPerRequest": 0.11329407261146501,
+          "costPerSuccessfulRequest": 0.11550110000000005,
+          "costPerMillionTokens": 2.124532895666446,
+          "activePeople": 1,
+          "costPerActivePerson": 17.787169400000007,
+          "outputToInputRatio": 0.03768449222914678,
+          "failedSpend": 0.151668,
+          "failedSpendShare": 0.008526820461944886
+        },
+        "previousEconomics": null,
+        "workflows": [
+          {
+            "id": "team:team-product",
+            "label": "Interactive use · Product Experience",
+            "kind": "interactive",
+            "requests": 157,
+            "spend": 17.787169400000007,
+            "inputSpend": 14.005857799999992,
+            "outputSpend": 3.7813115999999978
+          }
+        ],
+        "levers": [
+          {
+            "id": "prompt_caching",
+            "rank": 1,
+            "affectedRequests": 154,
+            "affectedSpend": 17.635501400000006,
+            "savings": 6.234385410000002
+          },
+          {
+            "id": "context_trimming",
+            "rank": 2,
+            "affectedRequests": 79,
+            "affectedSpend": 11.313963599999997,
+            "savings": 3.7561675200000004
+          },
+          {
+            "id": "output_limits",
+            "rank": 3,
+            "affectedRequests": 72,
+            "affectedSpend": 9.076896000000003,
+            "savings": 0.77112792
+          },
+          {
+            "id": "model_right_sizing",
+            "rank": 4,
+            "affectedRequests": 4,
+            "affectedSpend": 0.22330129999999998,
+            "savings": 0.11165064999999999
+          },
+          {
+            "id": "batch_processing",
+            "rank": 5,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          }
+        ],
+        "combinedSavings": 9.123826257366428,
+        "score": 68,
+        "grade": "C",
+        "components": {
+          "headroom": 12.642973363735845,
+          "model_fit": 19.163062261422365,
+          "waste": 16.589271815222048,
+          "visibility": 19.999999999999996
+        }
+      }
+    },
+    {
+      "source": "demo",
+      "scope": "viewer:u-ethan",
+      "period": "2026-09",
+      "scorecard": {
+        "economics": {
+          "spend": 42.228465899999996,
+          "requests": 215,
+          "costedRequests": 211,
+          "unresolvedRequests": 4,
+          "succeededCostedRequests": 209,
+          "inputTokens": 11020576,
+          "outputTokens": 417967,
+          "costPerRequest": 0.20013490947867296,
+          "costPerSuccessfulRequest": 0.202050076076555,
+          "costPerMillionTokens": 3.6917696510823097,
+          "activePeople": 1,
+          "costPerActivePerson": 42.228465899999996,
+          "outputToInputRatio": 0.037926057585374845,
+          "failedSpend": 0.6958834,
+          "failedSpendShare": 0.0164790120874365
+        },
+        "previousEconomics": {
+          "spend": 17.787169400000007,
+          "requests": 157,
+          "costedRequests": 157,
+          "unresolvedRequests": 0,
+          "succeededCostedRequests": 154,
+          "inputTokens": 8068226,
+          "outputTokens": 304047,
+          "costPerRequest": 0.11329407261146501,
+          "costPerSuccessfulRequest": 0.11550110000000005,
+          "costPerMillionTokens": 2.124532895666446,
+          "activePeople": 1,
+          "costPerActivePerson": 17.787169400000007,
+          "outputToInputRatio": 0.03768449222914678,
+          "failedSpend": 0.151668,
+          "failedSpendShare": 0.008526820461944886
+        },
+        "workflows": [
+          {
+            "id": "team:team-product",
+            "label": "Interactive use · Product Experience",
+            "kind": "interactive",
+            "requests": 215,
+            "spend": 42.228465899999996,
+            "inputSpend": 34.36164489999999,
+            "outputSpend": 7.866821000000001
+          }
+        ],
+        "levers": [
+          {
+            "id": "prompt_caching",
+            "rank": 1,
+            "affectedRequests": 209,
+            "affectedSpend": 41.5325825,
+            "savings": 15.149592674999996
+          },
+          {
+            "id": "context_trimming",
+            "rank": 2,
+            "affectedRequests": 114,
+            "affectedSpend": 29.031614699999988,
+            "savings": 9.89445604
+          },
+          {
+            "id": "output_limits",
+            "rank": 3,
+            "affectedRequests": 103,
+            "affectedSpend": 21.658139899999995,
+            "savings": 1.6031647199999997
+          },
+          {
+            "id": "model_right_sizing",
+            "rank": 4,
+            "affectedRequests": 8,
+            "affectedSpend": 0.9731424999999998,
+            "savings": 0.4865712499999999
+          },
+          {
+            "id": "batch_processing",
+            "rank": 5,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          }
+        ],
+        "combinedSavings": 22.511367967061894,
+        "score": 62,
+        "grade": "C",
+        "components": {
+          "headroom": 11.568792140833267,
+          "model_fit": 18.463686395326366,
+          "waste": 13.408395165025402,
+          "visibility": 18.13953488372092
+        }
+      }
+    },
+    {
+      "source": "snapshot",
+      "scope": "company",
+      "period": "2026-08",
+      "scorecard": {
+        "economics": {
+          "spend": 17.3621218036,
+          "requests": 246,
+          "costedRequests": 237,
+          "unresolvedRequests": 9,
+          "succeededCostedRequests": 225,
+          "inputTokens": 3801874,
+          "outputTokens": 154016,
+          "costPerRequest": 0.07325789790548523,
+          "costPerSuccessfulRequest": 0.07716498579377778,
+          "costPerMillionTokens": 4.388929369522409,
+          "activePeople": 4,
+          "costPerActivePerson": 4.3405304509,
+          "outputToInputRatio": 0.0405105482191151,
+          "failedSpend": 0.8136150588,
+          "failedSpendShare": 0.04686149930311504
+        },
+        "previousEconomics": null,
+        "workflows": [
+          {
+            "id": "team:team-platform",
+            "label": "Interactive use · Platform Engineering",
+            "kind": "interactive",
+            "requests": 170,
+            "spend": 13.829578723599992,
+            "inputSpend": 12.154785352575383,
+            "outputSpend": 1.6747933710246243
+          },
+          {
+            "id": "team:team-product",
+            "label": "Interactive use · Product Experience",
+            "kind": "interactive",
+            "requests": 76,
+            "spend": 3.532543079999999,
+            "inputSpend": 2.3992162820092933,
+            "outputSpend": 1.133326797990706
+          }
+        ],
+        "levers": [
+          {
+            "id": "model_right_sizing",
+            "rank": 1,
+            "affectedRequests": 70,
+            "affectedSpend": 6.799919424000001,
+            "savings": 4.3747659733254
+          },
+          {
+            "id": "prompt_caching",
+            "rank": 2,
+            "affectedRequests": 103,
+            "affectedSpend": 8.1798458,
+            "savings": 3.032547501706847
+          },
+          {
+            "id": "context_trimming",
+            "rank": 3,
+            "affectedRequests": 7,
+            "affectedSpend": 1.2874856,
+            "savings": 0.49063168
+          },
+          {
+            "id": "output_limits",
+            "rank": 4,
+            "affectedRequests": 17,
+            "affectedSpend": 2.709348928,
+            "savings": 0.312903657703607
+          },
+          {
+            "id": "batch_processing",
+            "rank": 5,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          }
+        ],
+        "combinedSavings": 7.133819816756399,
+        "score": 36,
+        "grade": "E",
+        "components": {
+          "headroom": 18.08618125532801,
+          "model_fit": 0,
+          "waste": 1.2554002787539842,
+          "visibility": 16.341463414634138
+        }
+      }
+    },
+    {
+      "source": "snapshot",
+      "scope": "company",
+      "period": "2026-09",
+      "scorecard": {
+        "economics": {
+          "spend": 17.442922387300005,
+          "requests": 256,
+          "costedRequests": 245,
+          "unresolvedRequests": 11,
+          "succeededCostedRequests": 223,
+          "inputTokens": 3995227,
+          "outputTokens": 140979,
+          "costPerRequest": 0.07119560158081635,
+          "costPerSuccessfulRequest": 0.0782193829026906,
+          "costPerMillionTokens": 4.2171309618766575,
+          "activePeople": 4,
+          "costPerActivePerson": 4.360730596825001,
+          "outputToInputRatio": 0.03528685604097089,
+          "failedSpend": 1.9621470915999997,
+          "failedSpendShare": 0.11248958448778153
+        },
+        "previousEconomics": {
+          "spend": 17.3621218036,
+          "requests": 246,
+          "costedRequests": 237,
+          "unresolvedRequests": 9,
+          "succeededCostedRequests": 225,
+          "inputTokens": 3801874,
+          "outputTokens": 154016,
+          "costPerRequest": 0.07325789790548523,
+          "costPerSuccessfulRequest": 0.07716498579377778,
+          "costPerMillionTokens": 4.388929369522409,
+          "activePeople": 4,
+          "costPerActivePerson": 4.3405304509,
+          "outputToInputRatio": 0.0405105482191151,
+          "failedSpend": 0.8136150588,
+          "failedSpendShare": 0.04686149930311504
+        },
+        "workflows": [
+          {
+            "id": "team:team-platform",
+            "label": "Interactive use · Platform Engineering",
+            "kind": "interactive",
+            "requests": 178,
+            "spend": 14.108852957299998,
+            "inputSpend": 12.739750473470037,
+            "outputSpend": 1.3691024838299681
+          },
+          {
+            "id": "team:team-product",
+            "label": "Interactive use · Product Experience",
+            "kind": "interactive",
+            "requests": 78,
+            "spend": 3.3340694300000013,
+            "inputSpend": 2.266765513548474,
+            "outputSpend": 1.067303916451526
+          }
+        ],
+        "levers": [
+          {
+            "id": "model_right_sizing",
+            "rank": 1,
+            "affectedRequests": 74,
+            "affectedSpend": 7.036695130000002,
+            "savings": 4.4221252664840565
+          },
+          {
+            "id": "prompt_caching",
+            "rank": 2,
+            "affectedRequests": 98,
+            "affectedSpend": 7.48192769,
+            "savings": 2.7664105535859025
+          },
+          {
+            "id": "context_trimming",
+            "rank": 3,
+            "affectedRequests": 11,
+            "affectedSpend": 1.92010694,
+            "savings": 0.727876776
+          },
+          {
+            "id": "output_limits",
+            "rank": 4,
+            "affectedRequests": 15,
+            "affectedSpend": 2.065889588,
+            "savings": 0.2337992992495207
+          },
+          {
+            "id": "batch_processing",
+            "rank": 5,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          }
+        ],
+        "combinedSavings": 7.085087518298065,
+        "score": 34,
+        "grade": "E",
+        "components": {
+          "headroom": 18.336695771555235,
+          "model_fit": 0,
+          "waste": 0,
+          "visibility": 15.703124999999996
+        }
+      }
+    },
+    {
+      "source": "snapshot",
+      "scope": "company",
+      "period": "2026-10",
+      "scorecard": {
+        "economics": {
+          "spend": 25.607639891650006,
+          "requests": 334,
+          "costedRequests": 317,
+          "unresolvedRequests": 17,
+          "succeededCostedRequests": 299,
+          "inputTokens": 5739190,
+          "outputTokens": 290164,
+          "costPerRequest": 0.08078119839637225,
+          "costPerSuccessfulRequest": 0.08564428057408029,
+          "costPerMillionTokens": 4.247161452396062,
+          "activePeople": 4,
+          "costPerActivePerson": 6.4019099729125015,
+          "outputToInputRatio": 0.050558354053446566,
+          "failedSpend": 1.492286945,
+          "failedSpendShare": 0.05827506757022917
+        },
+        "previousEconomics": {
+          "spend": 17.442922387300005,
+          "requests": 256,
+          "costedRequests": 245,
+          "unresolvedRequests": 11,
+          "succeededCostedRequests": 223,
+          "inputTokens": 3995227,
+          "outputTokens": 140979,
+          "costPerRequest": 0.07119560158081635,
+          "costPerSuccessfulRequest": 0.0782193829026906,
+          "costPerMillionTokens": 4.2171309618766575,
+          "activePeople": 4,
+          "costPerActivePerson": 4.360730596825001,
+          "outputToInputRatio": 0.03528685604097089,
+          "failedSpend": 1.9621470915999997,
+          "failedSpendShare": 0.11248958448778153
+        },
+        "workflows": [
+          {
+            "id": "team:team-platform",
+            "label": "Interactive use · Platform Engineering",
+            "kind": "interactive",
+            "requests": 190,
+            "spend": 14.893400161650007,
+            "inputSpend": 13.222989555251292,
+            "outputSpend": 1.6704106063987036
+          },
+          {
+            "id": "team:team-product",
+            "label": "Interactive use · Product Experience",
+            "kind": "interactive",
+            "requests": 144,
+            "spend": 10.714239729999997,
+            "inputSpend": 7.452457749124218,
+            "outputSpend": 3.2617819808757833
+          }
+        ],
+        "levers": [
+          {
+            "id": "prompt_caching",
+            "rank": 1,
+            "affectedRequests": 168,
+            "affectedSpend": 15.572078849999997,
+            "savings": 5.368407144940581
+          },
+          {
+            "id": "model_right_sizing",
+            "rank": 2,
+            "affectedRequests": 80,
+            "affectedSpend": 7.713557763999998,
+            "savings": 5.03930272056686
+          },
+          {
+            "id": "output_limits",
+            "rank": 3,
+            "affectedRequests": 53,
+            "affectedSpend": 7.27333931,
+            "savings": 0.8103915329984605
+          },
+          {
+            "id": "context_trimming",
+            "rank": 4,
+            "affectedRequests": 12,
+            "affectedSpend": 2.07242668,
+            "savings": 0.7853860319999999
+          },
+          {
+            "id": "batch_processing",
+            "rank": 5,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          }
+        ],
+        "combinedSavings": 10.348527543129919,
+        "score": 33,
+        "grade": "E",
+        "components": {
+          "headroom": 18.44699975076983,
+          "model_fit": 0,
+          "waste": 0,
+          "visibility": 14.910179640718557
+        }
+      }
+    },
+    {
+      "source": "snapshot",
+      "scope": "viewer:uid-ava",
+      "period": "2026-08",
+      "scorecard": {
+        "economics": {
+          "spend": 5.1208381316,
+          "requests": 90,
+          "costedRequests": 88,
+          "unresolvedRequests": 2,
+          "succeededCostedRequests": 81,
+          "inputTokens": 1777717,
+          "outputTokens": 32506,
+          "costPerRequest": 0.05819134240454546,
+          "costPerSuccessfulRequest": 0.06322022384691359,
+          "costPerMillionTokens": 2.8288438118397568,
+          "activePeople": 1,
+          "costPerActivePerson": 5.1208381316,
+          "outputToInputRatio": 0.018285250126988718,
+          "failedSpend": 0.33208270680000007,
+          "failedSpendShare": 0.0648492880004862
+        },
+        "previousEconomics": null,
+        "workflows": [
+          {
+            "id": "team:team-platform",
+            "label": "Interactive use · Platform Engineering",
+            "kind": "interactive",
+            "requests": 90,
+            "spend": 5.1208381316,
+            "inputSpend": 4.76576242509413,
+            "outputSpend": 0.3550757065058699
+          }
+        ],
+        "levers": [
+          {
+            "id": "prompt_caching",
+            "rank": 1,
+            "affectedRequests": 37,
+            "affectedSpend": 4.740153440000001,
+            "savings": 1.9774932480000005
+          },
+          {
+            "id": "model_right_sizing",
+            "rank": 2,
+            "affectedRequests": 15,
+            "affectedSpend": 1.9653660800000001,
+            "savings": 1.8429325792884994
+          },
+          {
+            "id": "context_trimming",
+            "rank": 3,
+            "affectedRequests": 7,
+            "affectedSpend": 1.2874856,
+            "savings": 0.49063168
+          },
+          {
+            "id": "batch_processing",
+            "rank": 4,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "output_limits",
+            "rank": 5,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          }
+        ],
+        "combinedSavings": 3.301528036810755,
+        "score": 23,
+        "grade": "E",
+        "components": {
+          "headroom": 5.61471173829954,
+          "model_fit": 0,
+          "waste": 0,
+          "visibility": 17.77777777777777
+        }
+      }
+    },
+    {
+      "source": "snapshot",
+      "scope": "viewer:uid-ava",
+      "period": "2026-09",
+      "scorecard": {
+        "economics": {
+          "spend": 5.6279959413,
+          "requests": 94,
+          "costedRequests": 90,
+          "unresolvedRequests": 4,
+          "succeededCostedRequests": 78,
+          "inputTokens": 1987085,
+          "outputTokens": 31579,
+          "costPerRequest": 0.06253328823666666,
+          "costPerSuccessfulRequest": 0.07215379411923077,
+          "costPerMillionTokens": 2.7879805362853847,
+          "activePeople": 1,
+          "costPerActivePerson": 5.6279959413,
+          "outputToInputRatio": 0.01589212338677007,
+          "failedSpend": 1.2452764036,
+          "failedSpendShare": 0.2212646236046069
+        },
+        "previousEconomics": {
+          "spend": 5.1208381316,
+          "requests": 90,
+          "costedRequests": 88,
+          "unresolvedRequests": 2,
+          "succeededCostedRequests": 81,
+          "inputTokens": 1777717,
+          "outputTokens": 32506,
+          "costPerRequest": 0.05819134240454546,
+          "costPerSuccessfulRequest": 0.06322022384691359,
+          "costPerMillionTokens": 2.8288438118397568,
+          "activePeople": 1,
+          "costPerActivePerson": 5.1208381316,
+          "outputToInputRatio": 0.018285250126988718,
+          "failedSpend": 0.33208270680000007,
+          "failedSpendShare": 0.0648492880004862
+        },
+        "workflows": [
+          {
+            "id": "team:team-platform",
+            "label": "Interactive use · Platform Engineering",
+            "kind": "interactive",
+            "requests": 94,
+            "spend": 5.6279959413,
+            "inputSpend": 5.302210118251807,
+            "outputSpend": 0.3257858230481914
+          }
+        ],
+        "levers": [
+          {
+            "id": "prompt_caching",
+            "rank": 1,
+            "affectedRequests": 33,
+            "affectedSpend": 4.33065282,
+            "savings": 1.8064589039999999
+          },
+          {
+            "id": "model_right_sizing",
+            "rank": 2,
+            "affectedRequests": 14,
+            "affectedSpend": 1.79832544,
+            "savings": 1.6911615312725585
+          },
+          {
+            "id": "context_trimming",
+            "rank": 3,
+            "affectedRequests": 11,
+            "affectedSpend": 1.92010694,
+            "savings": 0.727876776
+          },
+          {
+            "id": "batch_processing",
+            "rank": 4,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "output_limits",
+            "rank": 5,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          }
+        ],
+        "combinedSavings": 3.300524763630701,
+        "score": 24,
+        "grade": "E",
+        "components": {
+          "headroom": 8.722794182936632,
+          "model_fit": 0,
+          "waste": 0,
+          "visibility": 15.74468085106383
+        }
+      }
+    },
+    {
+      "source": "snapshot",
+      "scope": "viewer:uid-ava",
+      "period": "2026-10",
+      "scorecard": {
+        "economics": {
+          "spend": 5.794540915649998,
+          "requests": 98,
+          "costedRequests": 93,
+          "unresolvedRequests": 5,
+          "succeededCostedRequests": 90,
+          "inputTokens": 2005193,
+          "outputTokens": 38074,
+          "costPerRequest": 0.062306891566129015,
+          "costPerSuccessfulRequest": 0.06438378795166665,
+          "costPerMillionTokens": 2.8359195913456237,
+          "activePeople": 1,
+          "costPerActivePerson": 5.794540915649998,
+          "outputToInputRatio": 0.018987698440997947,
+          "failedSpend": 0.29940884,
+          "failedSpendShare": 0.05167084750257805
+        },
+        "previousEconomics": {
+          "spend": 5.6279959413,
+          "requests": 94,
+          "costedRequests": 90,
+          "unresolvedRequests": 4,
+          "succeededCostedRequests": 78,
+          "inputTokens": 1987085,
+          "outputTokens": 31579,
+          "costPerRequest": 0.06253328823666666,
+          "costPerSuccessfulRequest": 0.07215379411923077,
+          "costPerMillionTokens": 2.7879805362853847,
+          "activePeople": 1,
+          "costPerActivePerson": 5.6279959413,
+          "outputToInputRatio": 0.01589212338677007,
+          "failedSpend": 1.2452764036,
+          "failedSpendShare": 0.2212646236046069
+        },
+        "workflows": [
+          {
+            "id": "team:team-platform",
+            "label": "Interactive use · Platform Engineering",
+            "kind": "interactive",
+            "requests": 98,
+            "spend": 5.794540915649998,
+            "inputSpend": 5.372160326002357,
+            "outputSpend": 0.4223805896476423
+          }
+        ],
+        "levers": [
+          {
+            "id": "model_right_sizing",
+            "rank": 1,
+            "affectedRequests": 18,
+            "affectedSpend": 2.461149,
+            "savings": 2.311083019900591
+          },
+          {
+            "id": "prompt_caching",
+            "rank": 2,
+            "affectedRequests": 42,
+            "affectedSpend": 5.440844079999999,
+            "savings": 2.2628287710000006
+          },
+          {
+            "id": "context_trimming",
+            "rank": 3,
+            "affectedRequests": 12,
+            "affectedSpend": 2.07242668,
+            "savings": 0.7853860319999999
+          },
+          {
+            "id": "batch_processing",
+            "rank": 4,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "output_limits",
+            "rank": 5,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          }
+        ],
+        "combinedSavings": 3.959176711814202,
+        "score": 18,
+        "grade": "E",
+        "components": {
+          "headroom": 3.559478762767321,
+          "model_fit": 0,
+          "waste": 0,
+          "visibility": 14.897959183673471
+        }
+      }
+    },
+    {
+      "source": "snapshot",
+      "scope": "viewer:uid-ben",
+      "period": "2026-08",
+      "scorecard": {
+        "economics": {
+          "spend": 8.708740592,
+          "requests": 80,
+          "costedRequests": 78,
+          "unresolvedRequests": 2,
+          "succeededCostedRequests": 74,
+          "inputTokens": 1155943,
+          "outputTokens": 41707,
+          "costPerRequest": 0.1116505204102564,
+          "costPerSuccessfulRequest": 0.11768568367567567,
+          "costPerMillionTokens": 7.271523894292991,
+          "activePeople": 1,
+          "costPerActivePerson": 8.708740592,
+          "outputToInputRatio": 0.03608049877891903,
+          "failedSpend": 0.46352035199999997,
+          "failedSpendShare": 0.05322472831786927
+        },
+        "previousEconomics": null,
+        "workflows": [
+          {
+            "id": "team:team-platform",
+            "label": "Interactive use · Platform Engineering",
+            "kind": "interactive",
+            "requests": 80,
+            "spend": 8.708740592,
+            "inputSpend": 7.389022927481243,
+            "outputSpend": 1.3197176645187552
+          }
+        ],
+        "levers": [
+          {
+            "id": "model_right_sizing",
+            "rank": 1,
+            "affectedRequests": 55,
+            "affectedSpend": 4.834553344000001,
+            "savings": 2.4172766720000003
+          },
+          {
+            "id": "output_limits",
+            "rank": 2,
+            "affectedRequests": 7,
+            "affectedSpend": 1.3231484480000002,
+            "savings": 0.151334813451159
+          },
+          {
+            "id": "prompt_caching",
+            "rank": 3,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "batch_processing",
+            "rank": 4,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "context_trimming",
+            "rank": 5,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          }
+        ],
+        "combinedSavings": 2.5266056281917293,
+        "score": 42,
+        "grade": "D",
+        "components": {
+          "headroom": 24.526775284360703,
+          "model_fit": 0,
+          "waste": 0,
+          "visibility": 17.499999999999993
+        }
+      }
+    },
+    {
+      "source": "snapshot",
+      "scope": "viewer:uid-ben",
+      "period": "2026-09",
+      "scorecard": {
+        "economics": {
+          "spend": 8.480857016,
+          "requests": 84,
+          "costedRequests": 81,
+          "unresolvedRequests": 3,
+          "succeededCostedRequests": 75,
+          "inputTokens": 1176037,
+          "outputTokens": 33631,
+          "costPerRequest": 0.1047019384691358,
+          "costPerSuccessfulRequest": 0.11307809354666666,
+          "costPerMillionTokens": 7.010896391406568,
+          "activePeople": 1,
+          "costPerActivePerson": 8.480857016,
+          "outputToInputRatio": 0.02859688938358232,
+          "failedSpend": 0.627376008,
+          "failedSpendShare": 0.07397554360560393
+        },
+        "previousEconomics": {
+          "spend": 8.708740592,
+          "requests": 80,
+          "costedRequests": 78,
+          "unresolvedRequests": 2,
+          "succeededCostedRequests": 74,
+          "inputTokens": 1155943,
+          "outputTokens": 41707,
+          "costPerRequest": 0.1116505204102564,
+          "costPerSuccessfulRequest": 0.11768568367567567,
+          "costPerMillionTokens": 7.271523894292991,
+          "activePeople": 1,
+          "costPerActivePerson": 8.708740592,
+          "outputToInputRatio": 0.03608049877891903,
+          "failedSpend": 0.46352035199999997,
+          "failedSpendShare": 0.05322472831786927
+        },
+        "workflows": [
+          {
+            "id": "team:team-platform",
+            "label": "Interactive use · Platform Engineering",
+            "kind": "interactive",
+            "requests": 84,
+            "spend": 8.480857016,
+            "inputSpend": 7.437540355218221,
+            "outputSpend": 1.0433166607817763
+          }
+        ],
+        "levers": [
+          {
+            "id": "model_right_sizing",
+            "rank": 1,
+            "affectedRequests": 60,
+            "affectedSpend": 5.238369690000002,
+            "savings": 2.619184845000001
+          },
+          {
+            "id": "output_limits",
+            "rank": 2,
+            "affectedRequests": 5,
+            "affectedSpend": 0.947260448,
+            "savings": 0.10584300536598472
+          },
+          {
+            "id": "prompt_caching",
+            "rank": 3,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "batch_processing",
+            "rank": 4,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "context_trimming",
+            "rank": 5,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          }
+        ],
+        "combinedSavings": 2.6923398336854967,
+        "score": 39,
+        "grade": "E",
+        "components": {
+          "headroom": 23.068756196966895,
+          "model_fit": 0,
+          "waste": 0,
+          "visibility": 16.428571428571427
+        }
+      }
+    },
+    {
+      "source": "snapshot",
+      "scope": "viewer:uid-ben",
+      "period": "2026-10",
+      "scorecard": {
+        "economics": {
+          "spend": 9.098859245999996,
+          "requests": 92,
+          "costedRequests": 88,
+          "unresolvedRequests": 4,
+          "succeededCostedRequests": 80,
+          "inputTokens": 1247831,
+          "outputTokens": 40017,
+          "costPerRequest": 0.1033961277954545,
+          "costPerSuccessfulRequest": 0.11373574057499995,
+          "costPerMillionTokens": 7.06516549002677,
+          "activePeople": 1,
+          "costPerActivePerson": 9.098859245999996,
+          "outputToInputRatio": 0.032069246556625054,
+          "failedSpend": 0.66735658,
+          "failedSpendShare": 0.07334508227428406
+        },
+        "previousEconomics": {
+          "spend": 8.480857016,
+          "requests": 84,
+          "costedRequests": 81,
+          "unresolvedRequests": 3,
+          "succeededCostedRequests": 75,
+          "inputTokens": 1176037,
+          "outputTokens": 33631,
+          "costPerRequest": 0.1047019384691358,
+          "costPerSuccessfulRequest": 0.11307809354666666,
+          "costPerMillionTokens": 7.010896391406568,
+          "activePeople": 1,
+          "costPerActivePerson": 8.480857016,
+          "outputToInputRatio": 0.02859688938358232,
+          "failedSpend": 0.627376008,
+          "failedSpendShare": 0.07397554360560393
+        },
+        "workflows": [
+          {
+            "id": "team:team-platform",
+            "label": "Interactive use · Platform Engineering",
+            "kind": "interactive",
+            "requests": 92,
+            "spend": 9.098859245999996,
+            "inputSpend": 7.850829229248942,
+            "outputSpend": 1.2480300167510612
+          }
+        ],
+        "levers": [
+          {
+            "id": "model_right_sizing",
+            "rank": 1,
+            "affectedRequests": 62,
+            "affectedSpend": 5.252408763999998,
+            "savings": 2.626204381999999
+          },
+          {
+            "id": "output_limits",
+            "rank": 2,
+            "affectedRequests": 7,
+            "affectedSpend": 1.2063797699999999,
+            "savings": 0.14549654677521703
+          },
+          {
+            "id": "prompt_caching",
+            "rank": 3,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "batch_processing",
+            "rank": 4,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "context_trimming",
+            "rank": 5,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          }
+        ],
+        "combinedSavings": 2.729706250280226,
+        "score": 40,
+        "grade": "D",
+        "components": {
+          "headroom": 23.99971585314061,
+          "model_fit": 0,
+          "waste": 0,
+          "visibility": 15.652173913043477
+        }
+      }
+    },
+    {
+      "source": "snapshot",
+      "scope": "viewer:uid-chloe",
+      "period": "2026-08",
+      "scorecard": {
+        "economics": {
+          "spend": 1.84524048,
+          "requests": 16,
+          "costedRequests": 14,
+          "unresolvedRequests": 2,
+          "succeededCostedRequests": 14,
+          "inputTokens": 375765,
+          "outputTokens": 38537,
+          "costPerRequest": 0.13180289142857143,
+          "costPerSuccessfulRequest": 0.13180289142857143,
+          "costPerMillionTokens": 4.45385366230431,
+          "activePeople": 1,
+          "costPerActivePerson": 1.84524048,
+          "outputToInputRatio": 0.10255611885087754,
+          "failedSpend": 0,
+          "failedSpendShare": 0
+        },
+        "previousEconomics": null,
+        "workflows": [
+          {
+            "id": "team:team-product",
+            "label": "Interactive use · Product Experience",
+            "kind": "interactive",
+            "requests": 16,
+            "spend": 1.84524048,
+            "inputSpend": 1.2151271587027104,
+            "outputSpend": 0.6301133212972898
+          }
+        ],
+        "levers": [
+          {
+            "id": "prompt_caching",
+            "rank": 1,
+            "affectedRequests": 14,
+            "affectedSpend": 1.84524048,
+            "savings": 0.5468072214162195
+          },
+          {
+            "id": "output_limits",
+            "rank": 2,
+            "affectedRequests": 10,
+            "affectedSpend": 1.3862004799999998,
+            "savings": 0.16156884425244797
+          },
+          {
+            "id": "model_right_sizing",
+            "rank": 3,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "batch_processing",
+            "rank": 4,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "context_trimming",
+            "rank": 5,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          }
+        ],
+        "combinedSavings": 0.6604977475032701,
+        "score": 68,
+        "grade": "C",
+        "components": {
+          "headroom": 20.9095091315644,
+          "model_fit": 20,
+          "waste": 20,
+          "visibility": 7.499999999999996
+        }
+      }
+    },
+    {
+      "source": "snapshot",
+      "scope": "viewer:uid-chloe",
+      "period": "2026-09",
+      "scorecard": {
+        "economics": {
+          "spend": 1.6786035800000003,
+          "requests": 18,
+          "costedRequests": 16,
+          "unresolvedRequests": 2,
+          "succeededCostedRequests": 16,
+          "inputTokens": 339217,
+          "outputTokens": 36102,
+          "costPerRequest": 0.10491272375000002,
+          "costPerSuccessfulRequest": 0.10491272375000002,
+          "costPerMillionTokens": 4.472471630799401,
+          "activePeople": 1,
+          "costPerActivePerson": 1.6786035800000003,
+          "outputToInputRatio": 0.10642744909600639,
+          "failedSpend": 0,
+          "failedSpendShare": 0
+        },
+        "previousEconomics": {
+          "spend": 1.84524048,
+          "requests": 16,
+          "costedRequests": 14,
+          "unresolvedRequests": 2,
+          "succeededCostedRequests": 14,
+          "inputTokens": 375765,
+          "outputTokens": 38537,
+          "costPerRequest": 0.13180289142857143,
+          "costPerSuccessfulRequest": 0.13180289142857143,
+          "costPerMillionTokens": 4.45385366230431,
+          "activePeople": 1,
+          "costPerActivePerson": 1.84524048,
+          "outputToInputRatio": 0.10255611885087754,
+          "failedSpend": 0,
+          "failedSpendShare": 0
+        },
+        "workflows": [
+          {
+            "id": "team:team-product",
+            "label": "Interactive use · Product Experience",
+            "kind": "interactive",
+            "requests": 18,
+            "spend": 1.6786035800000003,
+            "inputSpend": 1.0923407211836855,
+            "outputSpend": 0.5862628588163142
+          }
+        ],
+        "levers": [
+          {
+            "id": "prompt_caching",
+            "rank": 1,
+            "affectedRequests": 16,
+            "affectedSpend": 1.6786035800000003,
+            "savings": 0.49155332453265854
+          },
+          {
+            "id": "output_limits",
+            "rank": 2,
+            "affectedRequests": 10,
+            "affectedSpend": 1.11862914,
+            "savings": 0.127956293883536
+          },
+          {
+            "id": "model_right_sizing",
+            "rank": 3,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "batch_processing",
+            "rank": 4,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "context_trimming",
+            "rank": 5,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          }
+        ],
+        "combinedSavings": 0.5820395793892732,
+        "score": 70,
+        "grade": "B",
+        "components": {
+          "headroom": 21.50718176071015,
+          "model_fit": 20,
+          "waste": 20,
+          "visibility": 8.888888888888879
+        }
+      }
+    },
+    {
+      "source": "snapshot",
+      "scope": "viewer:uid-chloe",
+      "period": "2026-10",
+      "scorecard": {
+        "economics": {
+          "spend": 8.804006679999997,
+          "requests": 80,
+          "costedRequests": 75,
+          "unresolvedRequests": 5,
+          "succeededCostedRequests": 69,
+          "inputTokens": 1890734,
+          "outputTokens": 170750,
+          "costPerRequest": 0.11738675573333329,
+          "costPerSuccessfulRequest": 0.12759429971014488,
+          "costPerMillionTokens": 4.270713078539536,
+          "activePeople": 1,
+          "costPerActivePerson": 8.804006679999997,
+          "outputToInputRatio": 0.09030884302075279,
+          "failedSpend": 0.50578658,
+          "failedSpendShare": 0.05744959066750733
+        },
+        "previousEconomics": {
+          "spend": 1.6786035800000003,
+          "requests": 18,
+          "costedRequests": 16,
+          "unresolvedRequests": 2,
+          "succeededCostedRequests": 16,
+          "inputTokens": 339217,
+          "outputTokens": 36102,
+          "costPerRequest": 0.10491272375000002,
+          "costPerSuccessfulRequest": 0.10491272375000002,
+          "costPerMillionTokens": 4.472471630799401,
+          "activePeople": 1,
+          "costPerActivePerson": 1.6786035800000003,
+          "outputToInputRatio": 0.10642744909600639,
+          "failedSpend": 0,
+          "failedSpendShare": 0
+        },
+        "workflows": [
+          {
+            "id": "team:team-product",
+            "label": "Interactive use · Product Experience",
+            "kind": "interactive",
+            "requests": 80,
+            "spend": 8.804006679999997,
+            "inputSpend": 6.038668936958712,
+            "outputSpend": 2.765337743041288
+          }
+        ],
+        "levers": [
+          {
+            "id": "prompt_caching",
+            "rank": 1,
+            "affectedRequests": 69,
+            "affectedSpend": 8.298220099999998,
+            "savings": 2.48979706063142
+          },
+          {
+            "id": "output_limits",
+            "rank": 2,
+            "affectedRequests": 46,
+            "affectedSpend": 6.06695954,
+            "savings": 0.6648949862232434
+          },
+          {
+            "id": "model_right_sizing",
+            "rank": 3,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "batch_processing",
+            "rank": 4,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "context_trimming",
+            "rank": 5,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          }
+        ],
+        "combinedSavings": 2.9666579343763204,
+        "score": 56,
+        "grade": "C",
+        "components": {
+          "headroom": 22.028437477279326,
+          "model_fit": 20,
+          "waste": 0,
+          "visibility": 13.749999999999996
+        }
+      }
+    },
+    {
+      "source": "snapshot",
+      "scope": "viewer:uid-dev",
+      "period": "2026-08",
+      "scorecard": {
+        "economics": {
+          "spend": 1.6873026,
+          "requests": 60,
+          "costedRequests": 57,
+          "unresolvedRequests": 3,
+          "succeededCostedRequests": 56,
+          "inputTokens": 492449,
+          "outputTokens": 41266,
+          "costPerRequest": 0.0296018,
+          "costPerSuccessfulRequest": 0.03013040357142857,
+          "costPerMillionTokens": 3.1614299766729435,
+          "activePeople": 1,
+          "costPerActivePerson": 1.6873026,
+          "outputToInputRatio": 0.08379750999595897,
+          "failedSpend": 0.018012,
+          "failedSpendShare": 0.010675026518657649
+        },
+        "previousEconomics": null,
+        "workflows": [
+          {
+            "id": "team:team-product",
+            "label": "Interactive use · Product Experience",
+            "kind": "interactive",
+            "requests": 60,
+            "spend": 1.6873026,
+            "inputSpend": 1.184089123306583,
+            "outputSpend": 0.5032134766934167
+          }
+        ],
+        "levers": [
+          {
+            "id": "prompt_caching",
+            "rank": 1,
+            "affectedRequests": 52,
+            "affectedSpend": 1.5944518799999998,
+            "savings": 0.5082470322906283
+          },
+          {
+            "id": "model_right_sizing",
+            "rank": 2,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "batch_processing",
+            "rank": 3,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "context_trimming",
+            "rank": 4,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "output_limits",
+            "rank": 5,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          }
+        ],
+        "combinedSavings": 0.5082470322906283,
+        "score": 75,
+        "grade": "B",
+        "components": {
+          "headroom": 23.93500467027461,
+          "model_fit": 20,
+          "waste": 15.72998939253694,
+          "visibility": 14.999999999999991
+        }
+      }
+    },
+    {
+      "source": "snapshot",
+      "scope": "viewer:uid-dev",
+      "period": "2026-09",
+      "scorecard": {
+        "economics": {
+          "spend": 1.6554658500000001,
+          "requests": 60,
+          "costedRequests": 58,
+          "unresolvedRequests": 2,
+          "succeededCostedRequests": 54,
+          "inputTokens": 492888,
+          "outputTokens": 39667,
+          "costPerRequest": 0.028542514655172414,
+          "costPerSuccessfulRequest": 0.030656775,
+          "costPerMillionTokens": 3.1085349869966485,
+          "activePeople": 1,
+          "costPerActivePerson": 1.6554658500000001,
+          "outputToInputRatio": 0.08047872944766357,
+          "failedSpend": 0.08949468,
+          "failedSpendShare": 0.05406011848568183
+        },
+        "previousEconomics": {
+          "spend": 1.6873026,
+          "requests": 60,
+          "costedRequests": 57,
+          "unresolvedRequests": 3,
+          "succeededCostedRequests": 56,
+          "inputTokens": 492449,
+          "outputTokens": 41266,
+          "costPerRequest": 0.0296018,
+          "costPerSuccessfulRequest": 0.03013040357142857,
+          "costPerMillionTokens": 3.1614299766729435,
+          "activePeople": 1,
+          "costPerActivePerson": 1.6873026,
+          "outputToInputRatio": 0.08379750999595897,
+          "failedSpend": 0.018012,
+          "failedSpendShare": 0.010675026518657649
+        },
+        "workflows": [
+          {
+            "id": "team:team-product",
+            "label": "Interactive use · Product Experience",
+            "kind": "interactive",
+            "requests": 60,
+            "spend": 1.6554658500000001,
+            "inputSpend": 1.1744247923647888,
+            "outputSpend": 0.4810410576352114
+          }
+        ],
+        "levers": [
+          {
+            "id": "prompt_caching",
+            "rank": 1,
+            "affectedRequests": 49,
+            "affectedSpend": 1.4726712900000003,
+            "savings": 0.46839832505324336
+          },
+          {
+            "id": "model_right_sizing",
+            "rank": 2,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "batch_processing",
+            "rank": 3,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "context_trimming",
+            "rank": 4,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "output_limits",
+            "rank": 5,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          }
+        ],
+        "combinedSavings": 0.46839832505324336,
+        "score": 62,
+        "grade": "C",
+        "components": {
+          "headroom": 24.909840331143258,
+          "model_fit": 20,
+          "waste": 0,
+          "visibility": 16.666666666666664
+        }
+      }
+    },
+    {
+      "source": "snapshot",
+      "scope": "viewer:uid-dev",
+      "period": "2026-10",
+      "scorecard": {
+        "economics": {
+          "spend": 1.91023305,
+          "requests": 64,
+          "costedRequests": 61,
+          "unresolvedRequests": 3,
+          "succeededCostedRequests": 60,
+          "inputTokens": 595432,
+          "outputTokens": 41323,
+          "costPerRequest": 0.031315295901639346,
+          "costPerSuccessfulRequest": 0.0318372175,
+          "costPerMillionTokens": 2.999949823715558,
+          "activePeople": 1,
+          "costPerActivePerson": 1.91023305,
+          "outputToInputRatio": 0.06940003224549571,
+          "failedSpend": 0.019734945,
+          "failedSpendShare": 0.010331171371995684
+        },
+        "previousEconomics": {
+          "spend": 1.6554658500000001,
+          "requests": 60,
+          "costedRequests": 58,
+          "unresolvedRequests": 2,
+          "succeededCostedRequests": 54,
+          "inputTokens": 492888,
+          "outputTokens": 39667,
+          "costPerRequest": 0.028542514655172414,
+          "costPerSuccessfulRequest": 0.030656775,
+          "costPerMillionTokens": 3.1085349869966485,
+          "activePeople": 1,
+          "costPerActivePerson": 1.6554658500000001,
+          "outputToInputRatio": 0.08047872944766357,
+          "failedSpend": 0.08949468,
+          "failedSpendShare": 0.05406011848568183
+        },
+        "workflows": [
+          {
+            "id": "team:team-product",
+            "label": "Interactive use · Product Experience",
+            "kind": "interactive",
+            "requests": 64,
+            "spend": 1.91023305,
+            "inputSpend": 1.4137888121655038,
+            "outputSpend": 0.49644423783449554
+          }
+        ],
+        "levers": [
+          {
+            "id": "prompt_caching",
+            "rank": 1,
+            "affectedRequests": 57,
+            "affectedSpend": 1.8330146700000003,
+            "savings": 0.6157813133091559
+          },
+          {
+            "id": "model_right_sizing",
+            "rank": 2,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "batch_processing",
+            "rank": 3,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "context_trimming",
+            "rank": 4,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          },
+          {
+            "id": "output_limits",
+            "rank": 5,
+            "affectedRequests": 0,
+            "affectedSpend": 0,
+            "savings": 0
+          }
+        ],
+        "combinedSavings": 0.6157813133091558,
+        "score": 74,
+        "grade": "B",
+        "components": {
+          "headroom": 22.807506108663034,
+          "model_fit": 20,
+          "waste": 15.867531451201726,
+          "visibility": 15.312499999999996
+        }
+      }
+    }
+  ]
+}

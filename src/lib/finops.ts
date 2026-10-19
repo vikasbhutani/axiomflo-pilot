@@ -160,6 +160,9 @@ export function modelTier(modelId: string): number | null {
   return null;
 }
 
+/** Plain code-point order, the same as Python's, so ties break identically in the agent. */
+const compareText = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+
 const isCosted = (r: ScorecardRecord): r is ScorecardRecord & { estimatedCost: number } => r.estimatedCost !== null;
 
 /** Input and output parts of a record's cost. */
@@ -238,7 +241,7 @@ export function workflowCosts(records: ScorecardRecord[], options: ScorecardOpti
     g.costPerRequest = safeRatio(g.spend, g.costedRequests);
     g.costPerMillionTokens = g.inputTokens + g.outputTokens === 0 ? null : (g.spend * 1_000_000) / (g.inputTokens + g.outputTokens);
   }
-  return out.sort((a, b) => b.spend - a.spend || a.label.localeCompare(b.label));
+  return out.sort((a, b) => b.spend - a.spend || compareText(a.label, b.label));
 }
 
 /** Cost per input-equivalent token for each model, from the period's own records. */
@@ -264,7 +267,7 @@ function cheaperModel(modelId: string, providerId: string, inUse: { modelId: str
     .filter((m) => m.providerId === providerId && m.modelId !== modelId)
     .map((m) => ({ id: m.modelId, tier: modelTier(m.modelId) }))
     .filter((m): m is { id: string; tier: number } => m.tier !== null && m.tier < tier)
-    .sort((a, b) => b.tier - a.tier || a.id.localeCompare(b.id));
+    .sort((a, b) => b.tier - a.tier || compareText(a.id, b.id));
   return candidates[0]?.id ?? null;
 }
 

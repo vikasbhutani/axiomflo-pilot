@@ -23,6 +23,7 @@ from ..errors import InvalidArgument
 from ..reporting.calculations import CostSummary, CostedRecord, cost_status_label, summarize, summarize_by
 from ..reporting.dataset import Workspace
 from ..reporting.service import InsufficientData, Scope, period_bounds, previous_period
+from ..reporting.finops import build_scorecard, default_workflow_of, price_list_rates
 from ..reporting.suggestions import build_suggestions
 from .runtime import ToolRuntime
 
@@ -78,6 +79,13 @@ SUGGESTIONS_NOTE = (
     "AxiomFlo works these suggestions out from usage records with fixed rules. They point at places worth a look; "
     "they don't judge answer quality or know why spending changed."
 )
+
+FINOPS_NOTE = (
+    "AxiomFlo works out the scorecard from usage records with fixed rules. Each lever's savings is an estimate under "
+    "the assumption it states; the levers overlap, so their savings don't add up to the combined figure. A cheaper "
+    "model or shorter prompt doesn't promise the same quality."
+)
+SPLIT_NOTE = "Without a price list for these models, input and output costs are split assuming output tokens cost five times input tokens."
 
 
 def envelope(ws: Workspace, ctx: TrustedContext, scope: Scope, periods: list[str], **body) -> dict:
@@ -529,6 +537,110 @@ def make_read_only_tools(rt: ToolRuntime) -> list[Callable]:
 
         return rt.run(tool_context, "get_savings_suggestions", {"period": period, "team": team}, body)
 
+    def get_finops_scorecard(period: str, tool_context: ToolContext, team: str | None = None) -> dict:
+        """The FinOps Scorecard for a month, worked out by AxiomFlo's own rules: a score out of 100
+        with a grade, unit economics (cost per request, per successful request, per million tokens,
+        per active person, spend on failed requests), token cost per workflow, and five cost
+        optimisation levers (model right-sizing, prompt caching, batch processing, context trimming,
+        output limits) ranked by estimated savings, with what to do and the assumption behind each.
+
+        Use this for "how do we optimise / cut / reduce our AI costs?", "what's our FinOps score?",
+        "unit economics", "cost per workflow" or "which savings lever matters most?".
+        Relay the levers and figures as written; don't add levers or savings of your own.
+
+        Args:
+          period: Calendar month as YYYY-MM, for example 2026-10.
+          team: Optional team name or code.
+        """
+
+        def body(ctx, ws, viewer):
+            p = rep.validate_period(ws, period)
+            scope = build_scope(ctx, ws, viewer, team)
+            prev = previous_period(p)
+            current = rep.select(ctx, ws, viewer, p, scope)
+            earlier = rep.select(ctx, ws, viewer, prev, scope) if prev in ws.periods else None
+            workflow_of = default_workflow_of(ws.applications.get, lambda c: group_name(ws, "team", c.record.team_id))
+            rate_of = price_list_rates(ws.pricing_versions)
+            sc = build_scorecard(current, earlier, workflow_of, rate_of)
+            e = sc.economics
+            if e.requests == 0:
+                return envelope(ws, ctx, scope, [p], message=f"There are no requests in {p} for this scope, so there is nothing to score.", notes=[FINOPS_NOTE])
+            figures = {
+                "score": f"{sc.score}/100" if sc.score is not None else NOT_AVAILABLE,
+                "grade": sc.grade,
+                "estimated_spend": money(e.spend),
+                "combined_savings": money(sc.combined_savings),
+                "combined_savings_share": share(sc.combined_savings, e.spend),
+                "requests": e.requests,
+                "unresolved_requests": e.unresolved_requests,
+                "cost_per_request": money(e.cost_per_request, precise=True),
+                "cost_per_successful_request": money(e.cost_per_successful_request, precise=True),
+                "cost_per_million_tokens": money(e.cost_per_million_tokens),
+                "active_people": e.active_people,
+                "cost_per_active_person": money(e.cost_per_active_person),
+                "failed_request_spend": money(e.failed_spend),
+                "failed_spend_share": share(e.failed_spend, e.spend),
+                "input_tokens": e.input_tokens,
+                "output_tokens": e.output_tokens,
+            }
+            if sc.previous_economics is not None and sc.previous_economics.requests > 0:
+                pe = sc.previous_economics
+                figures["previous_period"] = {
+                    "period": prev,
+                    "estimated_spend": money(pe.spend),
+                    "spend_change": percent(e.spend - pe.spend, pe.spend),
+                    "cost_per_request": money(pe.cost_per_request, precise=True),
+                }
+            score_labels = {"headroom": ("Savings headroom", 40), "model_fit": ("Model fit", 20), "waste": ("Failed-request waste", 20), "visibility": ("Cost visibility", 20)}
+            return envelope(
+                ws, ctx, scope, [p] if earlier is None else [prev, p],
+                figures=figures,
+                score_breakdown={label: f"{round(sc.components[k])}/{mx}" for k, (label, mx) in score_labels.items()},
+                levers=[
+                    {
+                        "rank": l.rank,
+                        "lever": l.name,
+                        "effort": l.effort,
+                        "requests": l.affected_requests,
+                        "spend_in_scope": money(l.affected_spend),
+                        "estimated_savings": money(l.savings),
+                        "share_of_spend": share(l.savings, e.spend),
+                        "what_to_do": l.action,
+                        "assumption": l.assumption,
+                        **(
+                            {"model_moves": [
+                                {"from": group_name(ws, "model", m.from_model_id), "to": group_name(ws, "model", m.to_model_id) if m.to_model_id else "a smaller model", "requests": m.requests, "estimated_savings": money(m.savings)}
+                                for m in l.moves
+                            ]}
+                            if l.moves else {}
+                        ),
+                    }
+                    for l in sc.levers
+                ],
+                workflows=[
+                    {
+                        "workflow": w.workflow.label,
+                        "kind": w.workflow.kind,
+                        "requests": w.requests,
+                        "input_tokens": w.input_tokens,
+                        "output_tokens": w.output_tokens,
+                        "input_cost": money(w.input_spend),
+                        "output_cost": money(w.output_spend),
+                        "cost_per_request": money(w.cost_per_request, precise=True),
+                        "estimated_spend": money(w.spend),
+                        "share_of_spend": share(w.spend, e.spend),
+                    }
+                    for w in sc.workflows
+                ],
+                links=[
+                    {"label": "FinOps Scorecard in AxiomFlo", "url": f"{rep.settings.web_base_url}/scorecard" + ("" if ws.is_sample else f"?month={p}")},
+                    {"label": "Supporting requests in AxiomFlo", "url": rep.usage_link(p, scope)},
+                ],
+                notes=[FINOPS_NOTE, ESTIMATE_NOTE] + ([] if rate_of else [SPLIT_NOTE]),
+            )
+
+        return rt.run(tool_context, "get_finops_scorecard", {"period": period, "team": team}, body)
+
     return [
         list_reporting_periods,
         get_cost_summary,
@@ -539,6 +651,7 @@ def make_read_only_tools(rt: ToolRuntime) -> list[Callable]:
         get_team_controls,
         list_notification_subscriptions,
         get_savings_suggestions,
+        get_finops_scorecard,
     ]
 
 
@@ -552,4 +665,5 @@ READ_ONLY_TOOL_NAMES = (
     "get_team_controls",
     "list_notification_subscriptions",
     "get_savings_suggestions",
+    "get_finops_scorecard",
 )
