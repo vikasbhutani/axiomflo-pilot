@@ -108,13 +108,13 @@ def test_model_failure_never_falls_back_to_fake_results(make_service, acme):
     assert "503" not in answer.text
 
 
-def test_live_reporting_not_connected_is_unavailable_through_the_agent(make_service, acme):
+def test_real_data_without_a_snapshot_is_unavailable_through_the_agent(make_service, acme):
     service, _ = make_service(
         [{"call": "get_cost_summary", "args": {"period": "2026-09"}}, {"text": lambda r: r[-1]["error"]["message"]}],
         settings=Settings(data_source="axiomflo_api"),
     )
     answer = ask(service, ctx_for(acme, "u-maya"), "What did we spend?")
-    assert "not connected yet" in answer.text and not answer.is_mock
+    assert "didn't send any usage data" in answer.text and not answer.is_mock
 
 
 def test_sessions_are_scoped_per_tenant_channel_and_user(make_service, acme):

@@ -8,6 +8,8 @@ import type { MembershipStore } from '../membership/store.js';
 import type { AdminService } from '../admin/service.js';
 import { KeyRejectedError, type KeyActor, type KeyPrincipal, type KeyService, type KeyView, type NewKey } from '../keys/service.js';
 import type { ExchangeRateView, UsageResult, UsageService, UsageViewer } from '../reports/service.js';
+import type { AgentClient } from '../assistant/agentClient.js';
+import type { SlackLinkService } from '../slack/links.js';
 import { testConfig } from './testConfig.js';
 
 export const COMPANY_ID = 'test-company';
@@ -203,6 +205,8 @@ export function makeApp({
   usage = new FakeUsage(),
   config = testConfig(),
   logger = silentLogger,
-}: { store?: FakeStore; verifier?: FakeVerifier; admin?: FakeAdmin; keys?: FakeKeys; usage?: FakeUsage; config?: ServerConfig; logger?: Logger } = {}) {
-  return { app: createApp({ config, logger, verifier, store, admin, keys, usage }), store, verifier, admin, keys, usage };
+  agent = null,
+  slackLinks = null,
+}: { store?: FakeStore; verifier?: FakeVerifier; admin?: FakeAdmin; keys?: FakeKeys; usage?: FakeUsage; config?: ServerConfig; logger?: Logger; agent?: AgentClient | null; slackLinks?: SlackLinkService | null } = {}) {
+  return { app: createApp({ config, logger, verifier, store, admin, keys, usage, agent, slackLinks }), store, verifier, admin, keys, usage, agent, slackLinks };
 }

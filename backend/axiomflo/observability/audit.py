@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import logging
 import threading
+from collections import deque
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 
@@ -33,9 +34,11 @@ class AuditEvent:
 
 
 class AuditLog:
-    def __init__(self) -> None:
+    """Writes each event to the log (Cloud Logging on Cloud Run) and keeps the latest in memory."""
+
+    def __init__(self, keep: int = 1000) -> None:
         self._lock = threading.Lock()
-        self._events: list[AuditEvent] = []
+        self._events: deque[AuditEvent] = deque(maxlen=keep)
 
     def record(self, event: AuditEvent) -> None:
         with self._lock:

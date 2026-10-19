@@ -61,6 +61,12 @@ npm start            # run the compiled version
 | `GET /api/usage?month=YYYY-MM` | active members | Usage records for a Sydney calendar month. Company Admin: everyone's. Individual user: their own |
 | `GET /api/exchange-rates` | active members | USD → reporting-currency rates, by month |
 | `PUT /api/exchange-rates/:month` | Company Admin | Set a month's rate `{rate}`. Audited |
+| `POST /api/assistant/ask` | active members | Ask the AI Cost Assistant `{question, sessionId?}`. `503` until the agent is set up |
+| `GET /api/assistant/suggestions?month=YYYY-MM` | active members | Savings suggestions for that month, from what you can see |
+| `GET /api/slack/link?code=…` | active members | Which Slack user a link code is for, and whether its email matches yours |
+| `POST /api/slack/link` | active members | Link that Slack user to **your own** account `{code}`. Refused unless the emails match. Audited |
+| `GET /api/slack/links` | active members | Your Slack link (Company Admin: everyone's) |
+| `DELETE /api/slack/links/:id` | active members | Unlink yours (Company Admin: anyone's). Audited |
 
 Every `/api` call needs `Authorization: Bearer <Firebase ID token>`. The response codes are `401` for no sign-in or an invalid one, `403` when you're signed in but not allowed, `400` for a bad request body, `404` when there's nothing to act on, `409` when a rule would be broken, `429` for too many changes, and `503` when the API can't check right now. See [docs/backend/auth-contract.md](../docs/backend/auth-contract.md) for the exact response shapes.
 
@@ -131,6 +137,8 @@ All settings are environment variables; [`.env.example`](.env.example) explains 
 | `src/http/rateLimit.ts` | Per-user request limits |
 | `src/gateway/` | The AI gateway, a separate service started by `src/gateway/index.ts`: the Claude route (`anthropic.ts`), the Gemini on Vertex AI route (`vertex.ts`), shared key checks (`common.ts`), prices (`prices.ts`, `vertexPrices.ts`) and usage records (`usage.ts`). See [docs/reporting/gateway.md](../docs/reporting/gateway.md) |
 | `src/reports/` | Usage reads (`firestoreUsageService.ts`), Sydney month boundaries (`months.ts`) and exchange rates |
+| `src/assistant/` | Calls the private AxiomFlo Agent (`agentClient.ts`) with the usage snapshot for the verified member (`snapshot.ts`); routes in `src/routes/assistant.ts`. See [docs/agent/deploy.md](../docs/agent/deploy.md) |
+| `src/slack/` | The Slack bot, a separate service started by `src/slack/index.ts`: signature checks, account linking (`links.ts`, routes in `src/routes/slackLinks.ts`) and replies. See [docs/agent/slack.md](../docs/agent/slack.md) |
 | `src/keys/` | AxiomFlo keys for the gateway: format and hashing, create, list and revoke, and `resolveKey`, which the gateway runs on every request |
 | `src/bootstrap/` | The bootstrap script (`cli.ts`), its checks (`input.ts`) and the transaction (`bootstrap.ts`) |
 | `src/test/fakes.ts` | Stand-ins for Firebase Auth and Firestore used by unit tests |

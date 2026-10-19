@@ -1,22 +1,24 @@
-# AxiomFlo Agent (backend), Milestone 1
+# AxiomFlo Agent (backend)
 
 AxiomFlo Agent is a cost assistant built with Google's [Agent Development Kit (ADK)](https://google.github.io/adk-docs/) for Python. Gemini on Vertex AI reads the question, picks a read-only tool, and explains the figures the tool calculated. Gemini never calculates or invents an amount.
 
-> **Milestone 1 runs on sample data only.** Every figure comes from the demo workspace the web app already uses (Acme Innovation, Aug and Sep 2026), and every answer is labelled as sample data. Nothing is deployed, no database is used, and nothing can be changed through the agent.
+> **Two data sources.** By default every figure comes from the demo workspace the web app already uses (Acme Innovation, Aug and Sep 2026), and every answer is labelled as sample data. With `AXIOMFLO_DATA_SOURCE=axiomflo_api` the agent answers from real usage that the AxiomFlo API sends with each question (a "usage snapshot"). It never reads a database, and nothing can be changed through it.
 
-How it fits together: [docs/agent/architecture.md](../docs/agent/architecture.md).
+How it fits together: [docs/agent/architecture.md](../docs/agent/architecture.md). Real data: [docs/agent/usage-snapshot.md](../docs/agent/usage-snapshot.md).
 
 ## What's real and what's mocked
 
-| Piece | Status in Milestone 1 |
+| Piece | Status |
 | --- | --- |
-| Cost calculations | **Real.** A Python port of the web app's `src/lib/calculations.ts`. A test proves every total matches the web app. |
-| Usage data | **Mocked.** Fixtures exported from the web app's sample dataset (`backend/fixtures/`), labelled `MOCK DATA`. |
+| Cost calculations | **Real.** A Python port of the web app's `src/lib/calculations.ts`. Tests prove every total matches the web app's demo pages and real pages. |
+| Usage data | **Sample by default** (`backend/fixtures/`, labelled `MOCK DATA`). **Real** when the AxiomFlo API sends a usage snapshot (the AI Cost Assistant page and the Slack bot). |
+| Savings suggestions | **Real rules** over whichever data is in use (`get_savings_suggestions`). |
 | Gateway controls, notification subscriptions | **Mocked**, read-only, always shown as "Draft, not enforced" (`fixtures/controls.json`). |
 | Sign-in / identity | **Mocked.** Local runs use a demo persona. Firebase token checks arrive in Milestone 2. |
 | Gemini on Vertex AI | **Real, but off by default.** Only called if you set the three variables in "Try one live question". Tests use a scripted stand-in. |
-| Live AxiomFlo reporting API | **Not built.** `AXIOMFLO_DATA_SOURCE=axiomflo_api` answers "unavailable" and never falls back to sample data. |
-| Slack, Microsoft 365, Scheduler, Secret Manager | Not started (Milestones 3 to 6). |
+| Real data without a snapshot | `AXIOMFLO_DATA_SOURCE=axiomflo_api` with no snapshot answers "unavailable" and never falls back to sample data. |
+| Slack | Built: the bot lives in `server/src/slack/` and calls this agent with `channel: "slack"`. Setup: [docs/agent/slack.md](../docs/agent/slack.md). |
+| Microsoft 365, Scheduler | Not started. |
 
 ## Run it on your computer
 
@@ -51,6 +53,17 @@ python -m axiomflo.cli tool list_unresolved_records --persona maya --arg period=
 ```
 
 Personas: `maya` is a Company Admin. `liam` (Platform Engineering) and `noah` (Product Experience) are Individual Users who only see their own requests.
+
+### Try real-data answers and savings suggestions (free)
+
+`--snapshot` makes the CLI behave as if the AxiomFlo API had sent that file with the question. The sample file has invented records in the real shape, seen by a Company Admin:
+
+```bash
+python -m axiomflo.cli tool get_savings_suggestions --snapshot fixtures/sample-snapshot.json --arg period=2026-10
+python -m axiomflo.cli tool get_cost_summary --snapshot fixtures/sample-snapshot.json --arg period=2026-10
+```
+
+You should see six suggestions, starting with Product Experience's October spend jump, and an October total of $25.61 AUD converted at September's exchange rate (October has none of its own).
 
 ## Try one live question with Gemini (optional, small charge)
 
@@ -93,18 +106,29 @@ adk web adk_apps                     # then open http://localhost:8000
 
 If something is wrong, you get a clear message instead of an answer. For example: "model not configured", "could not reach its AI model", or a Google permission error in the terminal. That's usually step 2 or 3 above.
 
+## The private web service
+
+On Cloud Run the agent runs as `axiomflo-agent`, a private service only the AxiomFlo API can call (`axiomflo/http_service.py`, `Dockerfile`). Setup steps: [docs/agent/deploy.md](../docs/agent/deploy.md). To run it locally next to the API:
+
+```bash
+AXIOMFLO_DATA_SOURCE=axiomflo_api uvicorn axiomflo.http_service:app --port 8090
+# then start the API with AGENT_URL=http://localhost:8090
+```
+
 ## Environment variables
 
 None of these are secrets. Never put keys or tokens in this repo; later milestones keep those in Google Secret Manager.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `AXIOMFLO_DATA_SOURCE` | `fixtures` | `fixtures` = labelled sample data. `axiomflo_api` = live reporting (Milestone 2; "unavailable" for now). |
+| `AXIOMFLO_DATA_SOURCE` | `fixtures` | `fixtures` = labelled sample data. `axiomflo_api` = real data, sent by the AxiomFlo API with each question ("unavailable" without it). |
 | `AXIOMFLO_AGENT_MODEL` | none | Gemini model ID on Vertex AI. Without it the agent says it isn't configured. |
 | `GOOGLE_CLOUD_PROJECT` | none | Project billed for Gemini calls. |
 | `GOOGLE_CLOUD_LOCATION` | none | Vertex AI region for Gemini calls. |
 | `AXIOMFLO_WEB_BASE_URL` | `http://localhost:5173` | Where links to supporting records point. |
 | `AXIOMFLO_DEV_PERSONA` | `maya` | Persona for `adk web` only. |
+| `AXIOMFLO_AGENT_ALLOWED_CALLERS` | none | Web service only: service accounts allowed to call it, comma-separated. Required on Cloud Run. |
+| `AXIOMFLO_AGENT_AUDIENCE` | the address it's called on | Web service only: the address callers' ID tokens must be made for. |
 
 ## Tools (all read-only)
 
@@ -118,22 +142,24 @@ None of these are secrets. Never put keys or tokens in this repo; later mileston
 | `list_unresolved_records` | Requests whose cost can't be calculated yet |
 | `get_team_controls` | Gateway controls per team, always "Draft, not enforced" until a gateway exists |
 | `list_notification_subscriptions` | Cost-update subscriptions (yours, or all for an admin); nothing is sent yet |
+| `get_savings_suggestions` | Places to look for savings, worked out by fixed rules: costly models for small jobs, spend jumps, long prompts without caching, failed requests that cost money, missing costs, missing exchange rates ([rules](../docs/agent/usage-snapshot.md#savings-suggestions)) |
 
 Every result includes the period and timezone, currency, scope, cost status, unresolved count, data freshness (`data_as_of`) and links to the records in the AxiomFlo web app.
 
 ## Security rules built in from the start
 
 - **No tool accepts a tenant, company or user ID.** Who is asking comes from a server-built `TrustedContext`, looked up by the conversation's session. If the model makes up extra arguments such as `tenant_id`, they are dropped.
-- **Company Admins** see their own company. **Individual Users** see only their own requests in their own team, the same rule as the web app. Asking about another team gets "access denied", not an empty answer.
+- **Company Admins** see their own company. **Individual Users** see only their own requests (in the demo, only within their own team), the same rules as the web app. Asking about another team gets "access denied", not an empty answer.
+- **Real data is per question.** A usage snapshot only serves the person and company it was made for, and only for that one question.
 - **Sessions are separated** by company, channel and user, and a session's authority ends when its turn ends.
 - **Fixed queries only.** No SQL, shell, web access or cloud-admin tools, and result sizes are capped.
 - **Figures are checked.** An answer containing an amount or percentage that no tool returned is withheld.
 - **Honest failures.** A missing model or data source gives an explicit "unavailable" message, never sample data in disguise.
 - **Audit without content.** Each tool call and turn is logged with actor, tenant, channel, request ID, tool, scope, outcome, latency and the assistant's token usage. The question text and tool output are not logged.
 
-## Acceptance tests for Milestone 1
+## Acceptance tests
 
-`pytest` runs 45 tests. The important ones:
+`pytest` runs 89 tests. The important ones:
 
 | Requirement | Test |
 | --- | --- |
@@ -144,7 +170,10 @@ Every result includes the period and timezone, currency, scope, cost status, unr
 | Individual Users only see their own data | `test_individual_user_sees_only_their_own_requests`, `test_individual_user_cannot_query_another_team` |
 | Prompt injection can't reach other data or write tools | `test_prompt_injection_cannot_reach_other_teams_tenants_or_write_tools` |
 | Unlinked users get no data | `test_unlinked_conversation_gets_no_data` |
-| Missing live services say "unavailable" | `test_missing_model_gives_explicit_unavailable_response`, `test_model_failure_never_falls_back_to_fake_results`, `test_live_reporting_not_connected_is_unavailable_through_the_agent` |
+| Real-data answers match the web app's real pages | `test_snapshot.py::test_every_total_matches_the_real_pages`, `test_month_without_a_rate_uses_the_latest_earlier_rate` |
+| A snapshot only serves its own person, company and question | `test_a_snapshot_only_serves_the_person_and_company_it_was_made_for`, `test_a_snapshot_lasts_for_one_request_only` |
+| Savings suggestions are scoped and never invent savings | `test_suggestions.py` |
+| Missing live services say "unavailable" | `test_missing_model_gives_explicit_unavailable_response`, `test_model_failure_never_falls_back_to_fake_results`, `test_real_data_without_a_snapshot_is_unavailable_through_the_agent` |
 | Gemini can't invent figures | `test_invented_figures_are_withheld`, `test_answer_with_figures_but_no_tool_call_is_withheld` |
 | Controls never claim enforcement | `test_controls_are_drafts_and_never_claim_enforcement` |
 | Assistant usage is its own workload | `test_assistant_usage_is_tracked_as_its_own_workload` |
@@ -153,7 +182,7 @@ Manual check, once you've done the live setup: ask the three questions above and
 
 ## Updating the sample data
 
-The fixtures are generated from the web app. If you change `src/data/mockData.ts` or `src/lib/calculations.ts`, run this from the repository root:
+The fixtures are generated from the web app. If you change `src/data/mockData.ts`, `src/lib/calculations.ts`, `src/reports/realData.ts` or `src/lib/agentRealFixtures.ts`, run this from the repository root:
 
 ```bash
 npm run agent:fixtures

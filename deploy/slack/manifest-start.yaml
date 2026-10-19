@@ -1,0 +1,27 @@
+# Step 1 of docs/agent/slack.md: creates the AxiomFlo Slack app with its permissions only.
+# Step 5 replaces this with manifest.yaml, once the bot service has an address.
+display_information:
+  name: AxiomFlo
+  description: Answers questions about your AI spend, privately, from AxiomFlo.
+  background_color: "#0f766e"
+features:
+  app_home:
+    home_tab_enabled: false
+    messages_tab_enabled: true
+    messages_tab_read_only_enabled: false
+  bot_user:
+    display_name: AxiomFlo
+    always_online: true
+oauth_config:
+  scopes:
+    bot:
+      - app_mentions:read
+      - chat:write
+      - commands
+      - im:history
+      - users:read
+      - users:read.email
+settings:
+  org_deploy_enabled: false
+  socket_mode_enabled: false
+  token_rotation_enabled: false

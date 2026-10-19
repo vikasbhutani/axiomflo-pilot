@@ -1,8 +1,9 @@
-"""Loads a tenant's workspace data.
+"""A tenant's workspace data, as the agent sees it.
 
-Milestone 1 reads the labelled sample fixtures exported from the web app
-(`npm run agent:fixtures`). Milestone 2 replaces this with the authenticated AxiomFlo
-reporting API; until then that source reports "unavailable" rather than falling back.
+Two sources build a Workspace:
+- the labelled sample fixtures exported from the web app (`npm run agent:fixtures`);
+- a usage snapshot the AxiomFlo API sends with each question about real data
+  (reporting/snapshot.py). The real source never falls back to sample data.
 """
 from __future__ import annotations
 
@@ -31,8 +32,22 @@ class Person:
     id: str
     name: str
     role: str
-    team_id: str
+    team_ids: tuple[str, ...]
     status: str
+
+    @property
+    def team_id(self) -> str:
+        """The person's first team (demo people have exactly one)."""
+        return self.team_ids[0] if self.team_ids else ""
+
+
+SOURCE_FIXTURES = "fixtures"
+SOURCE_SNAPSHOT = "snapshot"
+
+# Who an Individual User's records are. The demo web app shows their own requests in their
+# own team; the real API shows all of their own requests, whichever team key they used.
+SCOPE_OWN_REQUESTS_IN_OWN_TEAM = "own_requests_in_own_team"
+SCOPE_OWN_REQUESTS = "own_requests"
 
 
 @dataclass
@@ -51,9 +66,27 @@ class Workspace:
     records: list[UsageRecord]
     controls: list[dict] = field(default_factory=list)
     subscriptions: list[dict] = field(default_factory=list)
+    source: str = SOURCE_FIXTURES
+    individual_scope: str = SCOPE_OWN_REQUESTS_IN_OWN_TEAM
+    # Snapshots arrive already costed (the gateway estimates USD, the snapshot converts it).
+    precosted: list[CostedRecord] | None = None
+    # Months a snapshot covers, including ones with no requests. None = months with data.
+    loaded_periods: list[str] | None = None
+    # How amounts were converted to the reporting currency, per month (snapshots only).
+    currency_notes: dict[str, str] = field(default_factory=dict)
+    # Months whose amounts use another month's exchange rate, or no rate at all.
+    rate_missing_periods: tuple[str, ...] = ()
+    # The person a snapshot was made for; it may only be used for their questions.
+    snapshot_viewer_id: str | None = None
+
+    @property
+    def is_sample(self) -> bool:
+        return self.source == SOURCE_FIXTURES
 
     @cached_property
     def costed(self) -> list[CostedRecord]:
+        if self.precosted is not None:
+            return self.precosted
         tz = ZoneInfo(self.timezone)
         out = []
         for r in self.records:
@@ -63,7 +96,9 @@ class Workspace:
 
     @cached_property
     def periods(self) -> list[str]:
-        """Reporting periods (calendar months in the reporting timezone) with data, oldest first."""
+        """Reporting periods (calendar months in the reporting timezone), oldest first."""
+        if self.loaded_periods is not None:
+            return sorted(self.loaded_periods)
         return sorted({c.local_date[:7] for c in self.costed})
 
     @cached_property
@@ -76,6 +111,9 @@ class Workspace:
 
     def person(self, user_id: str) -> Person | None:
         return next((p for p in self.people if p.id == user_id), None)
+
+    def principal_name_of(self, costed: CostedRecord) -> str:
+        return self.principal_name(costed.record)
 
     def principal_name(self, record: UsageRecord) -> str:
         if record.principal_type == "user":
@@ -99,7 +137,7 @@ def load_fixture_workspace(fixtures_dir: Path) -> Workspace:
         timezone=company["reportingTimezone"],
         data_label=MOCK_DATA_LABEL,
         teams=[Team(t["id"], t["name"], t["code"]) for t in raw["teams"]],
-        people=[Person(u["id"], u["name"], u["role"], u["teamId"], u["status"]) for u in raw["users"]],
+        people=[Person(u["id"], u["name"], u["role"], (u["teamId"],), u["status"]) for u in raw["users"]],
         applications={a["id"]: a["name"] for a in raw["applications"]},
         providers={p["id"]: p["name"] for p in raw["providers"]},
         models={m["id"]: (m["providerId"], m["displayName"]) for m in raw["models"]},

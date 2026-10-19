@@ -12,6 +12,7 @@ describe('loadConfig', () => {
       allowedOrigins: [],
       port: 8080,
       logLevel: 'info',
+      agentUrl: null,
     });
   });
 

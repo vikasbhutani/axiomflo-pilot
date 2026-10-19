@@ -37,6 +37,7 @@ function fakeApi({ fail }: { fail?: { path: string; status: number; message?: st
     if (path === '/api/invitations' && method === 'GET') return json({ invitations });
     if (path === '/api/exchange-rates' && method === 'GET') return json({ currency: 'AUD', rates: [] });
     if (path === '/api/keys' && method === 'GET') return json({ keys: [] });
+    if (path === '/api/slack/links' && method === 'GET') return json({ links: [] });
     if (path === '/api/invitations' && method === 'POST') {
       const invitation: InvitationView = { id: `inv-${invitations.length + 1}`, email: body.email.toLowerCase(), role: body.role, teamIds: body.teamIds, status: 'pending', delivery: 'Created — email not sent', expiresAt: '2026-11-01T00:00:00.000Z', createdAt: '2026-10-18T00:00:00.000Z' };
       invitations.unshift(invitation);
@@ -71,7 +72,7 @@ describe('Admin members and invitations', () => {
     renderAs(membershipFor(alice), api);
     await screen.findByRole('heading', { name: 'Your workspace access is approved' });
     expect(screen.queryByText('Invite someone')).toBeNull();
-    expect(fetch.mock.calls.map(([p]) => p).sort()).toEqual(['/api/exchange-rates', '/api/keys']);
+    expect(fetch.mock.calls.map(([p]) => p).sort()).toEqual(['/api/exchange-rates', '/api/keys', '/api/slack/links']);
   });
 
   it('lists members and offers no changes on your own row', async () => {

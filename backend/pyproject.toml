@@ -5,17 +5,20 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "axiomflo-agent"
 version = "0.1.0"
-description = "AxiomFlo Agent: Gemini-powered cost assistant built on Google's Agent Development Kit (Milestone 1: local, read-only, sample data)."
+description = "AxiomFlo Agent: Gemini-powered, read-only cost assistant built on Google's Agent Development Kit."
 requires-python = ">=3.11"
 dependencies = [
   # Google Agent Development Kit. Pinned so behaviour only changes when we choose to upgrade.
   "google-adk==2.12.0",
   # Timezone database for Australia/Sydney on systems without one (Windows).
   "tzdata>=2024.1",
+  # The private web service the AxiomFlo API calls (also installed by google-adk).
+  "fastapi",
+  "uvicorn",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8"]
+dev = ["pytest>=8", "httpx"]
 
 [tool.setuptools.packages.find]
 include = ["axiomflo*"]

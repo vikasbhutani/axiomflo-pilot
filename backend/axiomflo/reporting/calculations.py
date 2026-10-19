@@ -48,6 +48,9 @@ class UsageRecord:
     output_tokens: int | None
     request_status: str  # "succeeded" | "failed"
     cost_status: str  # "reconciled" | "estimated" | "unavailable"
+    # Prompt-cache token counts; None when the source doesn't report them (the demo data).
+    cache_write_tokens: int | None = None
+    cache_read_tokens: int | None = None
 
 
 @dataclass(frozen=True)

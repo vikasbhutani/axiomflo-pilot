@@ -8,6 +8,7 @@ export function testConfig(overrides: Partial<ServerConfig> = {}): ServerConfig 
     allowedOrigins: [],
     port: 8080,
     logLevel: 'error',
+    agentUrl: null,
     ...overrides,
   };
 }

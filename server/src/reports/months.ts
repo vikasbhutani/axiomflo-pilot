@@ -31,3 +31,27 @@ export function monthBoundsUtc(month: string, timeZone: string): [string, string
   const next = mon === 12 ? [year + 1, 1] : [year, mon + 1];
   return [new Date(monthStartUtc(year, mon, timeZone)).toISOString(), new Date(monthStartUtc(next[0], next[1], timeZone)).toISOString()];
 }
+
+/** The current reporting month (YYYY-MM) in a timezone. */
+export function currentMonth(timeZone: string, now = new Date()): string {
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit' }).formatToParts(now);
+  return `${parts.find((p) => p.type === 'year')?.value}-${parts.find((p) => p.type === 'month')?.value}`;
+}
+
+/** `month` and the `count - 1` months before it, oldest first. */
+export function monthsEndingWith(month: string, count: number): string[] {
+  const m = MONTH.exec(month);
+  if (!m) throw new Error(`Not a month: ${month}`);
+  let year = Number(m[1]);
+  let mon = Number(m[2]);
+  const out: string[] = [];
+  for (let i = 0; i < count; i++) {
+    out.unshift(`${year}-${String(mon).padStart(2, '0')}`);
+    mon--;
+    if (mon === 0) {
+      mon = 12;
+      year--;
+    }
+  }
+  return out;
+}

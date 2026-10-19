@@ -15,7 +15,12 @@ beforeAll(() => {
     disconnect() {}
   } as unknown as typeof ResizeObserver;
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  Object.assign(assistantReply, defaultAssistantReply);
+  slack.links = [];
+  slack.peek = { slackName: 'ava', emailMatches: true };
+});
 
 /** Pages offer the last 12 months, so the tests use the current one. */
 const MONTH = recentMonths()[0];
@@ -103,6 +108,19 @@ describe('turning usage records into report figures', () => {
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
+/** What the fake API answers for the assistant; tests replace these. */
+const assistantReply = {
+  suggestions: (): Response => json({ status: 'ok', suggestions: [], message: 'Nothing stands out for this period under AxiomFlo’s rules.' }),
+  ask: (_body: unknown): Response => json({ status: 'ok', text: 'Done.', sessionId: null, links: [] }),
+};
+const defaultAssistantReply = { ...assistantReply };
+
+/** Slack links the fake API holds, and what it says about a link code. */
+const slack = {
+  links: [] as { id: string; uid: string; slackTeamId: string; slackUserId: string; slackName: string | null; linkedAt: string | null }[],
+  peek: { slackName: 'ava' as string | null, emailMatches: true },
+};
+
 function fakeApi(records: UsageView[], rates: ExchangeRateView[] = []) {
   const fetch = vi.fn(async (path: string, init: RequestInit = {}) => {
     const method = init.method ?? 'GET';
@@ -112,6 +130,19 @@ function fakeApi(records: UsageView[], rates: ExchangeRateView[] = []) {
       const view = rate(path.split('/').pop()!, JSON.parse(String(init.body)).rate);
       rates.push(view);
       return json({ rate: view });
+    }
+    if (path.startsWith('/api/assistant/suggestions?')) return assistantReply.suggestions();
+    if (path === '/api/assistant/ask' && method === 'POST') return assistantReply.ask(JSON.parse(String(init.body)));
+    if (path.startsWith('/api/slack/link?')) return json(slack.peek);
+    if (path === '/api/slack/link' && method === 'POST') {
+      const link = { id: 'T1_U1', uid: alice.uid, slackTeamId: 'T1', slackUserId: 'U1', slackName: slack.peek.slackName, linkedAt: '2026-10-18T00:00:00.000Z' };
+      slack.links.push(link);
+      return json({ link }, 201);
+    }
+    if (path === '/api/slack/links') return json({ links: slack.links });
+    if (path.startsWith('/api/slack/links/') && method === 'DELETE') {
+      slack.links = slack.links.filter((l) => l.id !== decodeURIComponent(path.split('/').pop()!));
+      return json({ deleted: true });
     }
     if (path === '/api/keys') return json({ keys: [] });
     if (path === '/api/members') return json({ members: [] });
@@ -194,5 +225,93 @@ describe('real workspace pages', () => {
     render('/settings', api, membershipFor(alice));
     expect(await screen.findByText('1.5')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Save rate' })).toBeNull();
+  });
+});
+
+describe('real AI Cost Assistant', () => {
+  it('shows savings suggestions for the month, with links that stay in the app', async () => {
+    assistantReply.suggestions = () =>
+      json({
+        status: 'ok',
+        suggestions: [
+          { kind: 'spend_jump', title: 'Team Two spend jumped', detail: 'Team Two spent $10.71, up from $3.33 (+221.4%).', link: { label: 'Requests this month', url: `https://evil.example/usage?month=${MONTH}&team=team-2` } },
+        ],
+      });
+    const { api, fetch } = fakeApi([]);
+    render('/assistant', api);
+    expect(await screen.findByText('Team Two spend jumped')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Requests this month' }).getAttribute('href')).toBe(`/usage?month=${MONTH}&team=team-2`);
+    expect(fetch.mock.calls.map(([p]) => p)).toContain(`/api/assistant/suggestions?month=${MONTH}`);
+  });
+
+  it('sends only the question, then keeps the conversation going', async () => {
+    const asked: unknown[] = [];
+    assistantReply.ask = (body) => {
+      asked.push(body);
+      return json({ status: 'ok', text: 'Team One spent $0.06 AUD in October.', sessionId: `s_${'b'.repeat(32)}`, links: [{ label: 'Supporting requests', url: `/usage?month=${MONTH}` }] });
+    };
+    const { api } = fakeApi([]);
+    render('/assistant', api);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'What did each team spend this month?' }));
+    expect(await screen.findByText('Team One spent $0.06 AUD in October.')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Supporting requests' })).toBeTruthy();
+    await user.type(screen.getByLabelText('Ask a question about AI costs'), 'And last month?{Enter}');
+    await screen.findAllByText('Team One spent $0.06 AUD in October.');
+    expect(asked).toEqual([{ question: 'What did each team spend this month?' }, { question: 'And last month?', sessionId: `s_${'b'.repeat(32)}` }]);
+  });
+
+  it('shows a withheld answer as a warning, not as figures', async () => {
+    assistantReply.ask = () => json({ status: 'withheld', text: 'I couldn’t verify every figure, so I’ve withheld it.', sessionId: null, links: [] });
+    const { api } = fakeApi([]);
+    render('/assistant', api);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'How can we lower our AI spend?' }));
+    expect(await screen.findByText(/withheld it/)).toBeTruthy();
+  });
+
+  it('says plainly when the assistant isn’t set up', async () => {
+    assistantReply.suggestions = () => json({ error: { code: 'assistant_unavailable', message: 'The AI Cost Assistant isn’t set up yet. A Company Admin can follow docs/agent/deploy.md.' } }, 503);
+    const { api } = fakeApi([]);
+    render('/assistant', api);
+    expect(await screen.findByText('The assistant isn’t set up yet')).toBeTruthy();
+  });
+
+  it('an individual user gets questions about their own spend', async () => {
+    const { api } = fakeApi([]);
+    render('/assistant', api, membershipFor(alice, { teams: [teams[0]] }));
+    expect(await screen.findByRole('button', { name: 'What did I spend this month?' })).toBeTruthy();
+  });
+});
+
+describe('linking a Slack account', () => {
+  it('links after the person confirms, then lists it in Settings with Unlink', async () => {
+    const { api, fetch } = fakeApi([]);
+    render('/slack/link?code=abc123', api);
+    const user = userEvent.setup();
+    expect(await screen.findByRole('heading', { name: `Link Slack user ava to ${alice.email}?` })).toBeTruthy();
+    expect(fetch.mock.calls.some(([, i]) => i?.method === 'POST')).toBe(false);
+    await user.click(screen.getByRole('button', { name: 'Link my Slack account' }));
+    expect(await screen.findByRole('heading', { name: 'Your Slack account is linked' })).toBeTruthy();
+    const post = fetch.mock.calls.find(([p, i]) => p === '/api/slack/link' && i?.method === 'POST')!;
+    expect(JSON.parse(String(post[1]!.body))).toEqual({ code: 'abc123' });
+
+    await user.click(screen.getByRole('link', { name: 'Go to Settings' }));
+    await user.click(await screen.findByRole('button', { name: 'Unlink Slack user ava' }));
+    expect(await screen.findByText('No Slack accounts are linked yet.')).toBeTruthy();
+  });
+
+  it('won’t link when the Slack email doesn’t match the sign-in email', async () => {
+    slack.peek = { slackName: 'someone', emailMatches: false };
+    const { api } = fakeApi([]);
+    render('/slack/link?code=abc123', api);
+    expect(await screen.findByText(/email doesn’t match/)).toBeTruthy();
+    expect((screen.getByRole('button', { name: 'Link my Slack account' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('explains a link with no code', async () => {
+    const { api } = fakeApi([]);
+    render('/slack/link', api);
+    expect(await screen.findByText(/isn’t valid/)).toBeTruthy();
   });
 });

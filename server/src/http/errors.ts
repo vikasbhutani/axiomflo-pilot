@@ -8,6 +8,7 @@
  *   403 forbidden                signed in, but not allowed to do this
  *   503 auth_unavailable         the sign-in token couldn't be checked right now
  *   503 membership_unavailable   the membership database couldn't be reached
+ *   503 assistant_unavailable    the AI Cost Assistant isn't set up or couldn't be reached
  *
  * A database failure is never turned into "no membership" and never grants access.
  */
@@ -24,6 +25,7 @@ export type ErrorCode =
   | 'rate_limited'
   | 'auth_unavailable'
   | 'membership_unavailable'
+  | 'assistant_unavailable'
   | 'internal';
 
 export class ApiError extends Error {

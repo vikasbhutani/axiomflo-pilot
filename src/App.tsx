@@ -24,6 +24,7 @@ const RealProvidersPage = lazy(() => import('./pages/real/RealProvidersPage').th
 const RealShowbackPage = lazy(() => import('./pages/real/RealShowbackPage').then((m) => ({ default: m.RealShowbackPage })));
 const RealAssistantPage = lazy(() => import('./pages/real/RealAssistantPage').then((m) => ({ default: m.RealAssistantPage })));
 const RealSettingsPage = lazy(() => import('./pages/real/RealSettingsPage').then((m) => ({ default: m.RealSettingsPage })));
+const SlackLinkPage = lazy(() => import('./pages/real/SlackLinkPage').then((m) => ({ default: m.SlackLinkPage })));
 
 export function App() {
   return (
@@ -43,6 +44,7 @@ export function App() {
         <Route path="showback" element={<ByMode demo={<ShowbackPage />} real={<RealShowbackPage />} />} />
         <Route path="assistant" element={<ByMode demo={<AssistantPage />} real={<RealAssistantPage />} />} />
         <Route path="settings" element={<ByMode demo={<SettingsPage />} real={<RealSettingsPage />} />} />
+        <Route path="slack/link" element={<ByMode demo={<NotFoundPage />} real={<SlackLinkPage />} />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

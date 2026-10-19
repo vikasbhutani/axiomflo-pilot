@@ -93,3 +93,33 @@ def make_service(acme: Workspace, globex: Workspace) -> Callable[..., tuple[Agen
         return service, model
 
     return factory
+
+
+@pytest.fixture(scope="session")
+def snapshot_raw() -> dict:
+    """The sample usage snapshot, as the AxiomFlo API sends it for the admin (uid-ava)."""
+    return json.loads((DEFAULT_FIXTURES_DIR / "sample-snapshot.json").read_text())
+
+
+@pytest.fixture(scope="session")
+def snapshot_golden() -> dict:
+    return json.loads((DEFAULT_FIXTURES_DIR / "sample-snapshot-golden.json").read_text())
+
+
+def snapshot_ctx(ws: Workspace, *, channel: str = "web") -> TrustedContext:
+    """The context the API sends with a snapshot: the person it was made for."""
+    viewer = ws.person(ws.snapshot_viewer_id)
+    return TrustedContext(ws.tenant_id, viewer.id, viewer.role, viewer.team_ids, channel, "test")
+
+
+def as_viewer(raw: dict, uid: str, role: str, team_ids: list[str], *, filter_records: bool = True) -> dict:
+    """A copy of the snapshot as the API would send it to someone else.
+
+    filter_records=False keeps everyone's records, to prove the agent still scopes them.
+    """
+    out = copy.deepcopy(raw)
+    out["viewer"] = {"uid": uid, "role": role, "teamIds": team_ids, "status": "active"}
+    if filter_records:
+        for month in out["usage"]:
+            month["records"] = [r for r in month["records"] if r["principal"]["id"] == uid]
+    return out

@@ -1,0 +1,823 @@
+{
+  "snapshotVersion": 1,
+  "label": "SAMPLE SNAPSHOT: totals calculated by src/reports/realData.ts and src/lib/calculations.ts.",
+  "currency": "AUD",
+  "periods": [
+    "2026-08",
+    "2026-09",
+    "2026-10"
+  ],
+  "modelNames": {
+    "claude-haiku-4-5-20251001": "Claude Haiku 4.5",
+    "claude-haiku-5-5": "Claude Haiku 5.5",
+    "claude-opus-4-8": "Claude Opus 4.8",
+    "claude-opus-5-5": "Claude Opus 5.5",
+    "claude-sonnet-5": "Claude Sonnet 5",
+    "claude-sonnet-5-5": "Claude Sonnet 5.5",
+    "gemini-2.5-flash-lite": "Gemini 2.5 Flash Lite",
+    "gemini-3.1-pro": "Gemini 3.1 Pro",
+    "gemini-3.5-flash": "Gemini 3.5 Flash",
+    "gemini-4-argon": "Gemini 4 Argon",
+    "some-other-model": "some-other-model"
+  },
+  "rows": [
+    {
+      "scope": "company",
+      "period": "2026-08",
+      "summary": {
+        "requestCount": 246,
+        "succeededCount": 234,
+        "failedCount": 12,
+        "costedCount": 237,
+        "unresolvedCount": 9,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 237,
+        "estimatedSpend": 17.3621218036,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 17.3621218036,
+        "averageCostPerCostedRequest": 0.07325789790548523,
+        "inputTokens": 3801874,
+        "outputTokens": 154016
+      }
+    },
+    {
+      "scope": "team:team-platform",
+      "period": "2026-08",
+      "summary": {
+        "requestCount": 170,
+        "succeededCount": 159,
+        "failedCount": 11,
+        "costedCount": 166,
+        "unresolvedCount": 4,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 166,
+        "estimatedSpend": 13.829578723599992,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 13.829578723599992,
+        "averageCostPerCostedRequest": 0.0833107152024096,
+        "inputTokens": 2933660,
+        "outputTokens": 74213
+      }
+    },
+    {
+      "scope": "team:team-product",
+      "period": "2026-08",
+      "summary": {
+        "requestCount": 76,
+        "succeededCount": 75,
+        "failedCount": 1,
+        "costedCount": 71,
+        "unresolvedCount": 5,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 71,
+        "estimatedSpend": 3.532543079999999,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 3.532543079999999,
+        "averageCostPerCostedRequest": 0.04975412788732393,
+        "inputTokens": 868214,
+        "outputTokens": 79803
+      }
+    },
+    {
+      "scope": "provider:anthropic",
+      "period": "2026-08",
+      "summary": {
+        "requestCount": 170,
+        "succeededCount": 159,
+        "failedCount": 11,
+        "costedCount": 166,
+        "unresolvedCount": 4,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 166,
+        "estimatedSpend": 13.829578723599992,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 13.829578723599992,
+        "averageCostPerCostedRequest": 0.0833107152024096,
+        "inputTokens": 2933660,
+        "outputTokens": 74213
+      }
+    },
+    {
+      "scope": "provider:gemini_vertex",
+      "period": "2026-08",
+      "summary": {
+        "requestCount": 76,
+        "succeededCount": 75,
+        "failedCount": 1,
+        "costedCount": 71,
+        "unresolvedCount": 5,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 71,
+        "estimatedSpend": 3.532543079999999,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 3.532543079999999,
+        "averageCostPerCostedRequest": 0.04975412788732393,
+        "inputTokens": 868214,
+        "outputTokens": 79803
+      }
+    },
+    {
+      "scope": "model:claude-haiku-5-5",
+      "period": "2026-08",
+      "summary": {
+        "requestCount": 50,
+        "succeededCount": 46,
+        "failedCount": 4,
+        "costedCount": 48,
+        "unresolvedCount": 2,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 48,
+        "estimatedSpend": 0.0516533316,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 0.0516533316,
+        "averageCostPerCostedRequest": 0.001076111075,
+        "inputTokens": 223947,
+        "outputTokens": 9761
+      }
+    },
+    {
+      "scope": "model:claude-opus-5-5",
+      "period": "2026-08",
+      "summary": {
+        "requestCount": 80,
+        "succeededCount": 76,
+        "failedCount": 4,
+        "costedCount": 78,
+        "unresolvedCount": 2,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 78,
+        "estimatedSpend": 8.708740592,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 8.708740592,
+        "averageCostPerCostedRequest": 0.1116505204102564,
+        "inputTokens": 1155943,
+        "outputTokens": 41707
+      }
+    },
+    {
+      "scope": "model:claude-sonnet-5-5",
+      "period": "2026-08",
+      "summary": {
+        "requestCount": 40,
+        "succeededCount": 37,
+        "failedCount": 3,
+        "costedCount": 40,
+        "unresolvedCount": 0,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 40,
+        "estimatedSpend": 5.069184800000001,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 5.069184800000001,
+        "averageCostPerCostedRequest": 0.12672962000000004,
+        "inputTokens": 1553770,
+        "outputTokens": 22745
+      }
+    },
+    {
+      "scope": "model:gemini-3.1-pro",
+      "period": "2026-08",
+      "summary": {
+        "requestCount": 16,
+        "succeededCount": 16,
+        "failedCount": 0,
+        "costedCount": 14,
+        "unresolvedCount": 2,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 14,
+        "estimatedSpend": 1.84524048,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 1.84524048,
+        "averageCostPerCostedRequest": 0.13180289142857143,
+        "inputTokens": 375765,
+        "outputTokens": 38537
+      }
+    },
+    {
+      "scope": "model:gemini-3.5-flash",
+      "period": "2026-08",
+      "summary": {
+        "requestCount": 60,
+        "succeededCount": 59,
+        "failedCount": 1,
+        "costedCount": 57,
+        "unresolvedCount": 3,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 57,
+        "estimatedSpend": 1.6873026,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 1.6873026,
+        "averageCostPerCostedRequest": 0.0296018,
+        "inputTokens": 492449,
+        "outputTokens": 41266
+      }
+    },
+    {
+      "scope": "viewer:uid-ava",
+      "period": "2026-08",
+      "summary": {
+        "requestCount": 90,
+        "succeededCount": 83,
+        "failedCount": 7,
+        "costedCount": 88,
+        "unresolvedCount": 2,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 88,
+        "estimatedSpend": 5.1208381316,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 5.1208381316,
+        "averageCostPerCostedRequest": 0.05819134240454546,
+        "inputTokens": 1777717,
+        "outputTokens": 32506
+      }
+    },
+    {
+      "scope": "viewer:uid-ben",
+      "period": "2026-08",
+      "summary": {
+        "requestCount": 80,
+        "succeededCount": 76,
+        "failedCount": 4,
+        "costedCount": 78,
+        "unresolvedCount": 2,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 78,
+        "estimatedSpend": 8.708740592,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 8.708740592,
+        "averageCostPerCostedRequest": 0.1116505204102564,
+        "inputTokens": 1155943,
+        "outputTokens": 41707
+      }
+    },
+    {
+      "scope": "viewer:uid-chloe",
+      "period": "2026-08",
+      "summary": {
+        "requestCount": 16,
+        "succeededCount": 16,
+        "failedCount": 0,
+        "costedCount": 14,
+        "unresolvedCount": 2,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 14,
+        "estimatedSpend": 1.84524048,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 1.84524048,
+        "averageCostPerCostedRequest": 0.13180289142857143,
+        "inputTokens": 375765,
+        "outputTokens": 38537
+      }
+    },
+    {
+      "scope": "viewer:uid-dev",
+      "period": "2026-08",
+      "summary": {
+        "requestCount": 60,
+        "succeededCount": 59,
+        "failedCount": 1,
+        "costedCount": 57,
+        "unresolvedCount": 3,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 57,
+        "estimatedSpend": 1.6873026,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 1.6873026,
+        "averageCostPerCostedRequest": 0.0296018,
+        "inputTokens": 492449,
+        "outputTokens": 41266
+      }
+    },
+    {
+      "scope": "company",
+      "period": "2026-09",
+      "summary": {
+        "requestCount": 256,
+        "succeededCount": 234,
+        "failedCount": 22,
+        "costedCount": 245,
+        "unresolvedCount": 11,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 245,
+        "estimatedSpend": 17.442922387300005,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 17.442922387300005,
+        "averageCostPerCostedRequest": 0.07119560158081635,
+        "inputTokens": 3995227,
+        "outputTokens": 140979
+      }
+    },
+    {
+      "scope": "team:team-platform",
+      "period": "2026-09",
+      "summary": {
+        "requestCount": 178,
+        "succeededCount": 160,
+        "failedCount": 18,
+        "costedCount": 171,
+        "unresolvedCount": 7,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 171,
+        "estimatedSpend": 14.108852957299998,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 14.108852957299998,
+        "averageCostPerCostedRequest": 0.08250791203099414,
+        "inputTokens": 3163122,
+        "outputTokens": 65210
+      }
+    },
+    {
+      "scope": "team:team-product",
+      "period": "2026-09",
+      "summary": {
+        "requestCount": 78,
+        "succeededCount": 74,
+        "failedCount": 4,
+        "costedCount": 74,
+        "unresolvedCount": 4,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 74,
+        "estimatedSpend": 3.3340694300000013,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 3.3340694300000013,
+        "averageCostPerCostedRequest": 0.045054992297297314,
+        "inputTokens": 832105,
+        "outputTokens": 75769
+      }
+    },
+    {
+      "scope": "provider:anthropic",
+      "period": "2026-09",
+      "summary": {
+        "requestCount": 178,
+        "succeededCount": 160,
+        "failedCount": 18,
+        "costedCount": 171,
+        "unresolvedCount": 7,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 171,
+        "estimatedSpend": 14.108852957299998,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 14.108852957299998,
+        "averageCostPerCostedRequest": 0.08250791203099414,
+        "inputTokens": 3163122,
+        "outputTokens": 65210
+      }
+    },
+    {
+      "scope": "provider:gemini_vertex",
+      "period": "2026-09",
+      "summary": {
+        "requestCount": 78,
+        "succeededCount": 74,
+        "failedCount": 4,
+        "costedCount": 74,
+        "unresolvedCount": 4,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 74,
+        "estimatedSpend": 3.3340694300000013,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 3.3340694300000013,
+        "averageCostPerCostedRequest": 0.045054992297297314,
+        "inputTokens": 832105,
+        "outputTokens": 75769
+      }
+    },
+    {
+      "scope": "model:claude-haiku-5-5",
+      "period": "2026-09",
+      "summary": {
+        "requestCount": 50,
+        "succeededCount": 48,
+        "failedCount": 2,
+        "costedCount": 47,
+        "unresolvedCount": 3,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 47,
+        "estimatedSpend": 0.0538520813,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 0.0538520813,
+        "averageCostPerCostedRequest": 0.0011457889638297873,
+        "inputTokens": 246077,
+        "outputTokens": 10632
+      }
+    },
+    {
+      "scope": "model:claude-opus-5-5",
+      "period": "2026-09",
+      "summary": {
+        "requestCount": 84,
+        "succeededCount": 78,
+        "failedCount": 6,
+        "costedCount": 81,
+        "unresolvedCount": 3,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 81,
+        "estimatedSpend": 8.480857016,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 8.480857016,
+        "averageCostPerCostedRequest": 0.1047019384691358,
+        "inputTokens": 1176037,
+        "outputTokens": 33631
+      }
+    },
+    {
+      "scope": "model:claude-sonnet-5-5",
+      "period": "2026-09",
+      "summary": {
+        "requestCount": 44,
+        "succeededCount": 34,
+        "failedCount": 10,
+        "costedCount": 43,
+        "unresolvedCount": 1,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 43,
+        "estimatedSpend": 5.5741438599999995,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 5.5741438599999995,
+        "averageCostPerCostedRequest": 0.12963125255813954,
+        "inputTokens": 1741008,
+        "outputTokens": 20947
+      }
+    },
+    {
+      "scope": "model:gemini-3.1-pro",
+      "period": "2026-09",
+      "summary": {
+        "requestCount": 18,
+        "succeededCount": 18,
+        "failedCount": 0,
+        "costedCount": 16,
+        "unresolvedCount": 2,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 16,
+        "estimatedSpend": 1.6786035800000003,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 1.6786035800000003,
+        "averageCostPerCostedRequest": 0.10491272375000002,
+        "inputTokens": 339217,
+        "outputTokens": 36102
+      }
+    },
+    {
+      "scope": "model:gemini-3.5-flash",
+      "period": "2026-09",
+      "summary": {
+        "requestCount": 60,
+        "succeededCount": 56,
+        "failedCount": 4,
+        "costedCount": 58,
+        "unresolvedCount": 2,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 58,
+        "estimatedSpend": 1.6554658500000001,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 1.6554658500000001,
+        "averageCostPerCostedRequest": 0.028542514655172414,
+        "inputTokens": 492888,
+        "outputTokens": 39667
+      }
+    },
+    {
+      "scope": "viewer:uid-ava",
+      "period": "2026-09",
+      "summary": {
+        "requestCount": 94,
+        "succeededCount": 82,
+        "failedCount": 12,
+        "costedCount": 90,
+        "unresolvedCount": 4,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 90,
+        "estimatedSpend": 5.6279959413,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 5.6279959413,
+        "averageCostPerCostedRequest": 0.06253328823666666,
+        "inputTokens": 1987085,
+        "outputTokens": 31579
+      }
+    },
+    {
+      "scope": "viewer:uid-ben",
+      "period": "2026-09",
+      "summary": {
+        "requestCount": 84,
+        "succeededCount": 78,
+        "failedCount": 6,
+        "costedCount": 81,
+        "unresolvedCount": 3,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 81,
+        "estimatedSpend": 8.480857016,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 8.480857016,
+        "averageCostPerCostedRequest": 0.1047019384691358,
+        "inputTokens": 1176037,
+        "outputTokens": 33631
+      }
+    },
+    {
+      "scope": "viewer:uid-chloe",
+      "period": "2026-09",
+      "summary": {
+        "requestCount": 18,
+        "succeededCount": 18,
+        "failedCount": 0,
+        "costedCount": 16,
+        "unresolvedCount": 2,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 16,
+        "estimatedSpend": 1.6786035800000003,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 1.6786035800000003,
+        "averageCostPerCostedRequest": 0.10491272375000002,
+        "inputTokens": 339217,
+        "outputTokens": 36102
+      }
+    },
+    {
+      "scope": "viewer:uid-dev",
+      "period": "2026-09",
+      "summary": {
+        "requestCount": 60,
+        "succeededCount": 56,
+        "failedCount": 4,
+        "costedCount": 58,
+        "unresolvedCount": 2,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 58,
+        "estimatedSpend": 1.6554658500000001,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 1.6554658500000001,
+        "averageCostPerCostedRequest": 0.028542514655172414,
+        "inputTokens": 492888,
+        "outputTokens": 39667
+      }
+    },
+    {
+      "scope": "company",
+      "period": "2026-10",
+      "summary": {
+        "requestCount": 334,
+        "succeededCount": 316,
+        "failedCount": 18,
+        "costedCount": 317,
+        "unresolvedCount": 17,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 317,
+        "estimatedSpend": 25.607639891650006,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 25.607639891650006,
+        "averageCostPerCostedRequest": 0.08078119839637225,
+        "inputTokens": 5739190,
+        "outputTokens": 290164
+      }
+    },
+    {
+      "scope": "team:team-platform",
+      "period": "2026-10",
+      "summary": {
+        "requestCount": 190,
+        "succeededCount": 179,
+        "failedCount": 11,
+        "costedCount": 181,
+        "unresolvedCount": 9,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 181,
+        "estimatedSpend": 14.893400161650007,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 14.893400161650007,
+        "averageCostPerCostedRequest": 0.08228397879364645,
+        "inputTokens": 3253024,
+        "outputTokens": 78091
+      }
+    },
+    {
+      "scope": "team:team-product",
+      "period": "2026-10",
+      "summary": {
+        "requestCount": 144,
+        "succeededCount": 137,
+        "failedCount": 7,
+        "costedCount": 136,
+        "unresolvedCount": 8,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 136,
+        "estimatedSpend": 10.714239729999997,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 10.714239729999997,
+        "averageCostPerCostedRequest": 0.07878117448529409,
+        "inputTokens": 2486166,
+        "outputTokens": 212073
+      }
+    },
+    {
+      "scope": "provider:anthropic",
+      "period": "2026-10",
+      "summary": {
+        "requestCount": 190,
+        "succeededCount": 179,
+        "failedCount": 11,
+        "costedCount": 181,
+        "unresolvedCount": 9,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 181,
+        "estimatedSpend": 14.893400161650007,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 14.893400161650007,
+        "averageCostPerCostedRequest": 0.08228397879364645,
+        "inputTokens": 3253024,
+        "outputTokens": 78091
+      }
+    },
+    {
+      "scope": "provider:gemini_vertex",
+      "period": "2026-10",
+      "summary": {
+        "requestCount": 144,
+        "succeededCount": 137,
+        "failedCount": 7,
+        "costedCount": 136,
+        "unresolvedCount": 8,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 136,
+        "estimatedSpend": 10.714239729999997,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 10.714239729999997,
+        "averageCostPerCostedRequest": 0.07878117448529409,
+        "inputTokens": 2486166,
+        "outputTokens": 212073
+      }
+    },
+    {
+      "scope": "model:claude-haiku-5-5",
+      "period": "2026-10",
+      "summary": {
+        "requestCount": 50,
+        "succeededCount": 50,
+        "failedCount": 0,
+        "costedCount": 48,
+        "unresolvedCount": 2,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 48,
+        "estimatedSpend": 0.05428799565000001,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 0.05428799565000001,
+        "averageCostPerCostedRequest": 0.0011309999093750002,
+        "inputTokens": 240982,
+        "outputTokens": 10767
+      }
+    },
+    {
+      "scope": "model:claude-opus-5-5",
+      "period": "2026-10",
+      "summary": {
+        "requestCount": 92,
+        "succeededCount": 84,
+        "failedCount": 8,
+        "costedCount": 88,
+        "unresolvedCount": 4,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 88,
+        "estimatedSpend": 9.098859245999996,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 9.098859245999996,
+        "averageCostPerCostedRequest": 0.1033961277954545,
+        "inputTokens": 1247831,
+        "outputTokens": 40017
+      }
+    },
+    {
+      "scope": "model:claude-sonnet-5-5",
+      "period": "2026-10",
+      "summary": {
+        "requestCount": 48,
+        "succeededCount": 45,
+        "failedCount": 3,
+        "costedCount": 45,
+        "unresolvedCount": 3,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 45,
+        "estimatedSpend": 5.740252919999999,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 5.740252919999999,
+        "averageCostPerCostedRequest": 0.12756117599999997,
+        "inputTokens": 1764211,
+        "outputTokens": 27307
+      }
+    },
+    {
+      "scope": "model:gemini-3.1-pro",
+      "period": "2026-10",
+      "summary": {
+        "requestCount": 80,
+        "succeededCount": 74,
+        "failedCount": 6,
+        "costedCount": 75,
+        "unresolvedCount": 5,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 75,
+        "estimatedSpend": 8.804006679999997,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 8.804006679999997,
+        "averageCostPerCostedRequest": 0.11738675573333329,
+        "inputTokens": 1890734,
+        "outputTokens": 170750
+      }
+    },
+    {
+      "scope": "model:gemini-3.5-flash",
+      "period": "2026-10",
+      "summary": {
+        "requestCount": 64,
+        "succeededCount": 63,
+        "failedCount": 1,
+        "costedCount": 61,
+        "unresolvedCount": 3,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 61,
+        "estimatedSpend": 1.91023305,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 1.91023305,
+        "averageCostPerCostedRequest": 0.031315295901639346,
+        "inputTokens": 595432,
+        "outputTokens": 41323
+      }
+    },
+    {
+      "scope": "viewer:uid-ava",
+      "period": "2026-10",
+      "summary": {
+        "requestCount": 98,
+        "succeededCount": 95,
+        "failedCount": 3,
+        "costedCount": 93,
+        "unresolvedCount": 5,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 93,
+        "estimatedSpend": 5.794540915649998,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 5.794540915649998,
+        "averageCostPerCostedRequest": 0.062306891566129015,
+        "inputTokens": 2005193,
+        "outputTokens": 38074
+      }
+    },
+    {
+      "scope": "viewer:uid-ben",
+      "period": "2026-10",
+      "summary": {
+        "requestCount": 92,
+        "succeededCount": 84,
+        "failedCount": 8,
+        "costedCount": 88,
+        "unresolvedCount": 4,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 88,
+        "estimatedSpend": 9.098859245999996,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 9.098859245999996,
+        "averageCostPerCostedRequest": 0.1033961277954545,
+        "inputTokens": 1247831,
+        "outputTokens": 40017
+      }
+    },
+    {
+      "scope": "viewer:uid-chloe",
+      "period": "2026-10",
+      "summary": {
+        "requestCount": 80,
+        "succeededCount": 74,
+        "failedCount": 6,
+        "costedCount": 75,
+        "unresolvedCount": 5,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 75,
+        "estimatedSpend": 8.804006679999997,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 8.804006679999997,
+        "averageCostPerCostedRequest": 0.11738675573333329,
+        "inputTokens": 1890734,
+        "outputTokens": 170750
+      }
+    },
+    {
+      "scope": "viewer:uid-dev",
+      "period": "2026-10",
+      "summary": {
+        "requestCount": 64,
+        "succeededCount": 63,
+        "failedCount": 1,
+        "costedCount": 61,
+        "unresolvedCount": 3,
+        "reconciledCount": 0,
+        "estimatedOnlyCount": 61,
+        "estimatedSpend": 1.91023305,
+        "reconciledSpend": 0,
+        "estimatedOnlySpend": 1.91023305,
+        "averageCostPerCostedRequest": 0.031315295901639346,
+        "inputTokens": 595432,
+        "outputTokens": 41323
+      }
+    }
+  ]
+}
