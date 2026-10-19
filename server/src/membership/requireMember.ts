@@ -3,7 +3,8 @@
  * EVERY request (no caching), so a suspension or role change applies immediately,
  * whatever the browser still has in memory.
  *
- *   403  signed in, but not an active member (or not the required role)
+ *   403  signed in, but not an active member (or not the required role), or a
+ *        read-only member trying to change something
  *   503  membership database unavailable
  */
 import type { RequestHandler } from 'express';
@@ -35,8 +36,15 @@ export function accessError(error: unknown, logger: Logger, requestId: string): 
   throw error;
 }
 
+/** The only non-GET request a read-only member may make: asking the assistant changes nothing. */
+const READ_ONLY_ALLOWED = new Set(['POST /api/assistant/ask']);
+
+function isReadRequest(method: string, path: string): boolean {
+  return method === 'GET' || method === 'HEAD' || READ_ONLY_ALLOWED.has(`${method} ${path}`);
+}
+
 export function requireActiveMember({ store, companyId, logger }: { store: MembershipStore; companyId: string; logger: Logger }): RequestHandler {
-  return async (_req, res, next) => {
+  return async (req, res, next) => {
     let decision: AccessDecision;
     try {
       decision = await decideAccess(getIdentity(res.locals), store, companyId);
@@ -45,6 +53,10 @@ export function requireActiveMember({ store, companyId, logger }: { store: Membe
     }
     if (decision.access !== 'active') {
       return next(new ApiError(403, 'forbidden', 'You don’t have access to this AxiomFlo workspace.'));
+    }
+    // Every write route sits behind this guard, so blocking here covers new routes too.
+    if (decision.membership.readOnly && !isReadRequest(req.method, req.path)) {
+      return next(new ApiError(403, 'forbidden', 'This is a view-only account, so nothing can be changed.'));
     }
     res.locals.member = decision;
     return next();

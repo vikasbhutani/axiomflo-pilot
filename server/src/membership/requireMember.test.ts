@@ -48,3 +48,51 @@ describe('malformed membership records', () => {
     expect(res.body.error.code).toBe('internal');
   });
 });
+
+describe('read-only members', () => {
+  function viewerApp() {
+    const store = new FakeStore(pilotData());
+    store.data.memberships[COMPANY_ID].admin = { ...store.data.memberships[COMPANY_ID].admin, readOnly: true };
+    const app = express();
+    const guard = [authenticate({ verifier: new FakeVerifier(IDENTITIES), logger: silentLogger }), requireActiveMember({ store, companyId: COMPANY_ID, logger: silentLogger })];
+    const ok: express.RequestHandler = (_req, res) => {
+      res.json({ ok: true });
+    };
+    app.get('/api/members', ...guard, ok);
+    app.post('/api/invitations', ...guard, ok);
+    app.post('/api/keys', ...guard, ok);
+    app.put('/api/exchange-rates/2026-10', ...guard, ok);
+    app.patch('/api/members/x', ...guard, ok);
+    app.delete('/api/slack/links/x', ...guard, ok);
+    app.post('/api/assistant/ask', ...guard, ok);
+    app.use(errorHandler(silentLogger));
+    return app;
+  }
+  const auth = { Authorization: `Bearer ${token('admin')}` };
+
+  it('can read and ask the assistant', async () => {
+    const app = viewerApp();
+    expect((await request(app).get('/api/members').set(auth)).status).toBe(200);
+    expect((await request(app).post('/api/assistant/ask').set(auth)).status).toBe(200);
+  });
+
+  it('is refused every change with 403', async () => {
+    const app = viewerApp();
+    for (const res of [
+      await request(app).post('/api/invitations').set(auth),
+      await request(app).post('/api/keys').set(auth),
+      await request(app).put('/api/exchange-rates/2026-10').set(auth),
+      await request(app).patch('/api/members/x').set(auth),
+      await request(app).delete('/api/slack/links/x').set(auth),
+    ]) {
+      expect(res.status).toBe(403);
+      expect(res.body.error.code).toBe('forbidden');
+    }
+  });
+
+  it('only accepts true or false in the stored flag', () => {
+    expect(parseMembership('c', 'u', { uid: 'u', role: 'company_admin', teamIds: [], status: 'active', readOnly: true }).readOnly).toBe(true);
+    expect(parseMembership('c', 'u', { uid: 'u', role: 'company_admin', teamIds: [], status: 'active', readOnly: false }).readOnly).toBeUndefined();
+    expect(() => parseMembership('c', 'u', { uid: 'u', role: 'company_admin', teamIds: [], status: 'active', readOnly: 'yes' })).toThrow();
+  });
+});

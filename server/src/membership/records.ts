@@ -37,6 +37,8 @@ export interface MembershipRecord {
   role: Role;
   teamIds: string[];
   status: MemberStatus;
+  /** A view-only login (e.g. for competition judges): it can read and ask the assistant, never change anything. */
+  readOnly?: boolean;
 }
 
 /** A stored record is malformed. Access is refused and the problem is logged (by path, not content). */
@@ -94,5 +96,13 @@ export function parseMembership(companyId: string, uid: string, data: Data): Mem
     role: oneOf(data, 'role', ROLES, path),
     teamIds: [...new Set(teamIds as string[])],
     status: oneOf(data, 'status', ['active', 'suspended'] as const, path),
+    ...readOnlyFlag(data, path),
   };
+}
+
+/** Optional. Absent means a normal member; anything other than true or false is refused. */
+function readOnlyFlag(data: Data, path: string): { readOnly?: true } {
+  if (data.readOnly === undefined || data.readOnly === false) return {};
+  if (data.readOnly !== true) throw new InvalidRecordError(path, 'readOnly');
+  return { readOnly: true };
 }

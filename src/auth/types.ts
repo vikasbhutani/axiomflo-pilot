@@ -38,6 +38,8 @@ export interface Membership {
   /** The teams this member may see (all teams for a Company Admin), when the API provides them. */
   teams?: TeamSummary[];
   status: MembershipStatus;
+  /** A view-only login: the API refuses every change it tries to make. */
+  readOnly?: boolean;
 }
 
 /**
