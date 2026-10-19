@@ -64,7 +64,7 @@ export function fakeMembershipService(memberships: Record<string, Membership | n
   return { getMembership: vi.fn(async (user: AuthUser) => memberships[user.uid] ?? null) };
 }
 
-export const testSettings: AppSettings = { demoEnabled: true, termsUrl: null, privacyUrl: null, apiBaseUrl: null };
+export const testSettings: AppSettings = { demoEnabled: true, termsUrl: null, privacyUrl: null, apiBaseUrl: null, judgeLogin: null };
 
 export function renderApp({
   path = '/',

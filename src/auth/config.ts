@@ -47,6 +47,11 @@ export interface AppSettings {
   privacyUrl: string | null;
   /** Base URL of the AxiomFlo API, or null to use the web app's own address (the default). */
   apiBaseUrl: string | null;
+  /**
+   * A view-only judge login shown on the sign-in page, or null to show none.
+   * Deliberately public: it can only read the workspace (the API refuses every change).
+   */
+  judgeLogin: { email: string; password: string } | null;
 }
 
 /** Only allow https links or same-site paths, so a bad value can't become a javascript: link. */
@@ -65,5 +70,6 @@ export function readAppSettings(env: Env = import.meta.env): AppSettings {
     termsUrl: safeLink(text(env, 'VITE_TERMS_URL')),
     privacyUrl: safeLink(text(env, 'VITE_PRIVACY_URL')),
     apiBaseUrl: text(env, 'VITE_API_BASE_URL') || null,
+    judgeLogin: text(env, 'VITE_JUDGE_EMAIL') && text(env, 'VITE_JUDGE_PASSWORD') ? { email: text(env, 'VITE_JUDGE_EMAIL'), password: text(env, 'VITE_JUDGE_PASSWORD') } : null,
   };
 }
