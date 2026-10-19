@@ -19,7 +19,15 @@ gcloud services enable aiplatform.googleapis.com --project axiomflo-pilot
 
 ## 2. Pick a Gemini model
 
-Open Google's [Deployments and endpoints](https://docs.cloud.google.com/gemini-enterprise-agent-platform/resources/locations) page and pick a **Flash** model listed for `asia-southeast1` (Singapore), where your app already runs. Use Sydney (`australia-southeast1`) instead only if your model is listed there. Write down the model ID, for example `gemini-2.5-flash`.
+Use a **Flash** model such as `gemini-2.5-flash`. The agent calls it through Google's **global** endpoint (`GOOGLE_CLOUD_LOCATION=global`), which spreads requests across regions. A single region such as Singapore shares its capacity among small projects and often answers "429 Resource exhausted" when busy. Only the question and the figures for it are sent to Gemini; your data stays in Firestore. To check the model works for your project:
+
+```bash
+curl -s -X POST -H "Authorization: Bearer $(gcloud auth print-access-token)" -H "Content-Type: application/json" \
+  "https://aiplatform.googleapis.com/v1/projects/axiomflo-pilot/locations/global/publishers/google/models/gemini-2.5-flash:generateContent" \
+  -d '{"contents":[{"role":"user","parts":[{"text":"Say hi"}]}]}' | head -15
+```
+
+A reply containing `"text":` means it works.
 
 ## 3. Create the agent's own service account
 
@@ -48,10 +56,11 @@ Then deploy, putting your model ID from step 2 in place of `gemini-2.5-flash`:
 ```bash
 gcloud run deploy axiomflo-agent \
   --source backend \
+  --clear-base-image \
   --region asia-southeast1 \
   --project axiomflo-pilot \
   --service-account axiomflo-agent@axiomflo-pilot.iam.gserviceaccount.com \
-  --set-env-vars AXIOMFLO_AGENT_MODEL=gemini-2.5-flash,GOOGLE_CLOUD_PROJECT=axiomflo-pilot,GOOGLE_CLOUD_LOCATION=asia-southeast1,AXIOMFLO_WEB_BASE_URL=$WEB_URL,AXIOMFLO_AGENT_ALLOWED_CALLERS=axiomflo-api@axiomflo-pilot.iam.gserviceaccount.com \
+  --set-env-vars AXIOMFLO_AGENT_MODEL=gemini-2.5-flash,GOOGLE_CLOUD_PROJECT=axiomflo-pilot,GOOGLE_CLOUD_LOCATION=global,AXIOMFLO_WEB_BASE_URL=$WEB_URL,AXIOMFLO_AGENT_ALLOWED_CALLERS=axiomflo-api@axiomflo-pilot.iam.gserviceaccount.com \
   --no-allow-unauthenticated \
   --max-instances 1 \
   --memory 1Gi \
@@ -60,6 +69,7 @@ gcloud run deploy axiomflo-agent \
 
 - **`--no-allow-unauthenticated`** makes the service private. Google refuses every request unless the caller has the Cloud Run Invoker role, which only the API gets in the next step.
 - **`AXIOMFLO_AGENT_ALLOWED_CALLERS`** is a second check inside the agent: only the API's own identity is accepted.
+- **`--clear-base-image`** only matters if an earlier attempt deployed `axiomflo-agent` from older code. If gcloud says the flag isn’t needed, leave it out.
 - **`--max-instances 1`** keeps follow-up questions in the same conversation, and caps cost.
 
 When it finishes it prints `Service URL: https://axiomflo-agent-….run.app`. Save it for the next step:
@@ -95,7 +105,7 @@ If you see an error instead:
 | --- | --- |
 | "The assistant isn't set up yet" | The API doesn't have `AGENT_URL`. Rerun the second command in step 5. |
 | "couldn't be reached just now" | The agent refused the API's call. Check step 5's first command, and that `AGENT_URL` on the API is exactly the agent's Service URL. The agent's **Logs** tab in Cloud Run shows a 401 or 403. |
-| "could not reach its AI model" | Gemini refused. Check step 1, step 3, and that the model ID from step 2 is listed for your region. |
+| "could not reach its AI model" | Gemini refused. Check step 1 and step 3, and that the test in step 2 works. If the agent's **Logs** tab says `429 RESOURCE_EXHAUSTED`, Gemini was busy: make sure `GOOGLE_CLOUD_LOCATION` is `global` (`gcloud run services update axiomflo-agent --region asia-southeast1 --project axiomflo-pilot --update-env-vars GOOGLE_CLOUD_LOCATION=global`). |
 
 ## How to undo anything
 

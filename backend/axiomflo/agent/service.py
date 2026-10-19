@@ -60,6 +60,9 @@ def build_model(settings: Settings) -> BaseLlm | None:
 
     return Gemini(
         model=settings.model,
+        # Vertex AI turns requests away with 429 when shared capacity is busy; retry a few times
+        # with backoff before reporting the model as unavailable.
+        retry_options=types.HttpRetryOptions(attempts=4, initial_delay=1, max_delay=8, http_status_codes=[429, 500, 503, 504]),
         client_kwargs={
             "enterprise": True,  # Vertex AI (Gemini Enterprise Agent Platform), not the consumer API
             "project": settings.google_cloud_project,
