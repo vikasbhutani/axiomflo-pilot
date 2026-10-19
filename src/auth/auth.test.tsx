@@ -171,6 +171,23 @@ describe('Google sign-in', () => {
   });
 });
 
+describe('judge login', () => {
+  it('shows the configured view-only login and signs in with it in one click', async () => {
+    const client = new FakeAuthClient(null);
+    renderApp({ path: '/login', client, settings: { ...testSettings, judgeLogin: { email: 'judge@acme.example', password: 'judge-pass' } } });
+    const card = (await screen.findByRole('heading', { name: 'AI Builder Cup judges' })).closest('section') as HTMLElement;
+    expect(within(card).getByText('judge@acme.example')).toBeTruthy();
+    await userEvent.click(within(card).getByRole('button', { name: 'Sign in as judge' }));
+    expect(client.signInWithEmail).toHaveBeenCalledWith('judge@acme.example', 'judge-pass');
+  });
+
+  it('is hidden when none is configured', async () => {
+    renderApp({ path: '/login' });
+    await screen.findByRole('heading', { name: 'Welcome back to AxiomFlo' });
+    expect(screen.queryByRole('button', { name: 'Sign in as judge' })).toBeNull();
+  });
+});
+
 describe('email and password', () => {
   it('logs in with email and password', async () => {
     const client = new FakeAuthClient(null);

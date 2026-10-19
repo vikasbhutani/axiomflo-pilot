@@ -9,7 +9,16 @@ This repository is the working pilot, built for one company and running on Googl
 ## Try it
 
 - **No login needed:** on the sign-in page, click **Explore the demo workspace**. It opens a sample company (Acme Innovation) with about 6,000 generated requests, clearly labelled as sample data. Use **View as** in the top bar to switch between a Company Admin and an Individual User.
-- **Real workspace, view-only:** judges get an email and password for a view-only account on the live workspace. It can open every page, export showback and ask the AI Cost Assistant, but it can't change anything or spend money. How it's created: [docs/backend/view-only-login.md](docs/backend/view-only-login.md).
+- **Real workspace, view-only:** on the sign-in page, click **Sign in as judge**, or enter these under **Work email** and **Password**:
+
+  ```
+  Email:    judge@acme.example
+  Password: UibJQF92bwyAM9fnnswf
+  ```
+
+  It opens the live workspace with the same data the Company Admin sees. It can open every page, export showback and ask the AI Cost Assistant, but it can't change anything or spend money. How it's created: [docs/backend/view-only-login.md](docs/backend/view-only-login.md).
+
+  > **This password is published on purpose.** It's a demo credential for a view-only account, not a secret, so secret scanners can ignore it. It will be reset after judging.
 
 ## What's built
 
@@ -44,7 +53,7 @@ The assistant has no database access: the API sends it only the figures the sign
 
 ## Security notes
 
-- **No secrets are stored in this repository.** The Claude API key and the Slack signing secret and bot token live in Google **Secret Manager**. Each Cloud Run service runs as its own narrow service account with no key file.
+- **No secrets are stored in this repository.** (The judge password above is a deliberately public, view-only demo login.) The Claude API key and the Slack signing secret and bot token live in Google **Secret Manager**. Each Cloud Run service runs as its own narrow service account with no key file.
 - **The Firebase `apiKey` in `.env.production` is not a secret.** Firebase web configuration is public by design: it's built into the JavaScript every visitor downloads, and it only identifies the project. Who can see data is decided by the API and the Firestore rules, which block all direct browser access ([`firestore.rules`](firestore.rules)).
 - **AxiomFlo keys** are stored only as a hash and are re-checked against the owner's membership on every gateway request.
 - Every security rule and the test that proves it: [docs/backend/security-checklist.md](docs/backend/security-checklist.md).
