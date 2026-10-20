@@ -223,7 +223,7 @@ describe('real workspace pages', () => {
 
   it('an admin sets a month’s exchange rate; nothing else is sent', async () => {
     const { api, fetch } = fakeApi([]);
-    render('/settings', api);
+    render('/settings?tab=rates', api);
     const user = userEvent.setup();
     await user.type(await screen.findByLabelText('AUD per 1 USD'), '1.52');
     await user.click(screen.getByRole('button', { name: 'Save rate' }));

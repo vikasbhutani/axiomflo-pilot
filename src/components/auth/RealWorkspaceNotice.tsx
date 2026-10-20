@@ -1,7 +1,7 @@
-import { DatabaseZap } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import { useWorkspaceSession } from '../../auth/WorkspaceSession';
 import { roleLabels } from '../../lib/permissions';
-import { Card } from '../ui/Card';
+import { ProfileSummary } from '../settings/ProfileSummary';
 
 /**
  * Who the signed-in member is and what the AxiomFlo API says they may access.
@@ -15,39 +15,33 @@ export function RealWorkspaceNotice() {
   const isAdmin = membership.role === 'company_admin';
 
   return (
-    <Card>
-      <div className="px-6 py-6">
-        <div className="flex flex-col items-center text-center">
-          <DatabaseZap className="h-9 w-9 text-teal-700" aria-hidden />
-          <h2 className="mt-4 text-lg font-semibold text-navy-900">Your workspace access is approved</h2>
-        </div>
-
-        <dl className="mx-auto mt-6 grid max-w-md grid-cols-[auto,1fr] gap-x-4 gap-y-2 text-sm">
-          <dt className="text-slate-500">Signed in as</dt>
-          <dd className="break-words text-slate-800">
-            {user.displayName ? `${user.displayName} · ` : ''}
-            {user.email}
-          </dd>
-          <dt className="text-slate-500">Company</dt>
-          <dd className="text-slate-800">{membership.companyName ?? 'Your company'}</dd>
-          <dt className="text-slate-500">Role</dt>
-          <dd className="text-slate-800">{roleLabels[membership.role]}</dd>
-          <dt className="text-slate-500">{isAdmin ? 'Teams (all)' : 'Your teams'}</dt>
-          <dd className="text-slate-800">
-            {teams.length === 0 ? (
+    <ProfileSummary
+      name={user.displayName || user.email || 'You'}
+      email={user.email ?? undefined}
+      role={roleLabels[membership.role]}
+      badge={
+        <span className="inline-flex items-center gap-1 text-xs text-emerald-700">
+          <CheckCircle2 className="h-3.5 w-3.5" aria-hidden /> Access approved
+        </span>
+      }
+      facts={[
+        { label: 'Company', value: membership.companyName ?? 'Your company' },
+        {
+          label: isAdmin ? 'Teams (all)' : 'Your teams',
+          value:
+            teams.length === 0 ? (
               <span className="text-slate-500">No teams assigned yet</span>
             ) : (
-              <ul>
+              <ul className="flex flex-wrap gap-1.5">
                 {teams.map((t) => (
-                  <li key={t.id}>
-                    {t.name} <span className="font-mono text-xs text-slate-500">{t.code}</span>
+                  <li key={t.id} className="rounded-md bg-slate-100 px-1.5 py-0.5 text-xs text-slate-700">
+                    {t.name} <span className="font-mono text-[11px] text-slate-500">{t.code}</span>
                   </li>
                 ))}
               </ul>
-            )}
-          </dd>
-        </dl>
-      </div>
-    </Card>
+            ),
+        },
+      ]}
+    />
   );
 }

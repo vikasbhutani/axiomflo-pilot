@@ -78,7 +78,7 @@ export function RealProvidersPage() {
         </ul>
         <p className="px-5 pb-4 text-sm text-slate-600">
           Each person creates their AxiomFlo key in{' '}
-          <Link to="/settings" className="font-medium text-teal-800 underline">
+          <Link to="/settings?tab=integrations" className="font-medium text-teal-800 underline">
             Settings
           </Link>
           .

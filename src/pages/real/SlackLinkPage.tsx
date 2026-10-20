@@ -54,7 +54,7 @@ export function SlackLinkPage() {
             <>
               <h2 className="mt-3 text-base font-semibold text-slate-900">Your Slack account is linked</h2>
               <p className="mt-1 text-sm text-slate-600">Go back to Slack and ask your question again. You can unlink any time in Settings.</p>
-              <Link to="/settings" className="btn-secondary mt-4">
+              <Link to="/settings?tab=integrations" className="btn-secondary mt-4">
                 Go to Settings
               </Link>
             </>

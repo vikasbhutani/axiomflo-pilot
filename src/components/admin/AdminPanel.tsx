@@ -5,6 +5,7 @@ import type { TeamSummary } from '../../auth/types';
 import { useToast } from '../../context/ToastContext';
 import { roleLabels } from '../../lib/permissions';
 import type { Role } from '../../types';
+import { UserPlus, X } from 'lucide-react';
 import { Card, CardHeader } from '../ui/Card';
 import { SelectInput, TextField } from '../ui/FormFields';
 
@@ -209,6 +210,7 @@ export function AdminPanel({ currentUid, teams }: { currentUid: string; teams: T
   const [members, setMembers] = useState<MemberView[] | null>(null);
   const [invitations, setInvitations] = useState<InvitationView[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [inviting, setInviting] = useState(false);
 
   const load = useCallback(async () => {
     if (!adminApi) return;
@@ -252,7 +254,7 @@ export function AdminPanel({ currentUid, teams }: { currentUid: string; teams: T
 
   if (loadError) {
     return (
-      <Card className="mx-auto mt-6 max-w-3xl">
+      <Card>
         <div className="px-5 py-6 text-center text-sm">
           <p className="text-red-700">Couldn’t load members and invitations. {loadError}</p>
           <button type="button" className="btn-secondary mt-3" onClick={() => void load()}>
@@ -263,54 +265,73 @@ export function AdminPanel({ currentUid, teams }: { currentUid: string; teams: T
     );
   }
 
+  const pendingCount = invitations?.filter((i) => i.status === 'pending').length ?? 0;
   return (
-    <div className="mx-auto mt-6 max-w-3xl space-y-6">
-      <Card>
-        <CardHeader title="Invite someone" description="They get access when they sign in with this email address and it’s verified." />
-        <InviteForm adminApi={adminApi} teams={teams} onCreated={() => void load()} />
-      </Card>
+    <Card>
+      <CardHeader
+        title={members === null ? 'Members' : `Members (${members.length})`}
+        description="You can’t change your own role, teams or status. Ask another Company Admin."
+        action={
+          !inviting && (
+            <button type="button" className="btn-primary" onClick={() => setInviting(true)}>
+              <UserPlus className="h-4 w-4" aria-hidden /> Invite someone
+            </button>
+          )
+        }
+      />
+      {inviting && (
+        <div className="border-b border-slate-100 bg-slate-50/60">
+          <div className="flex items-start justify-between gap-3 px-5 pt-4">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900">Invite someone</h3>
+              <p className="mt-0.5 text-xs text-slate-500">They get access when they sign in with this email address and it’s verified.</p>
+            </div>
+            <button type="button" className="rounded-md p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-800" onClick={() => setInviting(false)} aria-label="Close invite form">
+              <X className="h-4 w-4" aria-hidden />
+            </button>
+          </div>
+          <InviteForm adminApi={adminApi} teams={teams} onCreated={() => void load()} />
+        </div>
+      )}
+      {members === null ? (
+        <p className="px-5 py-4 text-sm text-slate-500">Loading members…</p>
+      ) : (
+        <ul className="divide-y divide-slate-100">
+          {members.map((m) => (
+            <MemberRow key={`${m.uid}:${m.role}:${m.teamIds.join(',')}:${m.status}`} member={m} isSelf={m.uid === currentUid} teams={teams} onChange={changeMember} />
+          ))}
+        </ul>
+      )}
 
-      <Card>
-        <CardHeader title="Members" description="You can’t change your own role, teams or status. Ask another Company Admin." />
-        {members === null ? (
-          <p className="px-5 py-4 text-sm text-slate-500">Loading members…</p>
-        ) : (
-          <ul className="divide-y divide-slate-100">
-            {members.map((m) => (
-              <MemberRow key={`${m.uid}:${m.role}:${m.teamIds.join(',')}:${m.status}`} member={m} isSelf={m.uid === currentUid} teams={teams} onChange={changeMember} />
-            ))}
-          </ul>
-        )}
-      </Card>
-
-      <Card>
-        <CardHeader title="Invitations" />
-        {invitations === null ? (
-          <p className="px-5 py-4 text-sm text-slate-500">Loading invitations…</p>
-        ) : invitations.length === 0 ? (
-          <p className="px-5 py-4 text-sm text-slate-500">No invitations yet.</p>
-        ) : (
-          <ul className="divide-y divide-slate-100">
-            {invitations.map((i) => (
-              <li key={i.id} className="flex flex-wrap items-start justify-between gap-3 px-5 py-3 text-sm">
-                <div className="min-w-0">
-                  <p className="break-words font-medium text-slate-900">{i.email}</p>
-                  <p className="text-slate-600">
-                    {roleLabels[i.role]} · {teamNames(i.teamIds, teams, i.role)} · {invitationStatusLabels[i.status]}
-                    {i.status === 'pending' && ` · expires ${new Date(i.expiresAt).toLocaleDateString()}`}
-                  </p>
-                  <p className="text-xs text-slate-500">{i.delivery}</p>
-                </div>
-                {i.status === 'pending' && (
-                  <button type="button" className="btn-secondary" onClick={() => void revoke(i)} aria-label={`Revoke invitation for ${i.email}`}>
-                    Revoke
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
-    </div>
+      <div className="flex items-center gap-2 border-t border-slate-100 bg-slate-50 px-5 py-2.5">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Invitations</h3>
+        {pendingCount > 0 && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">{pendingCount} pending</span>}
+      </div>
+      {invitations === null ? (
+        <p className="px-5 py-4 text-sm text-slate-500">Loading invitations…</p>
+      ) : invitations.length === 0 ? (
+        <p className="px-5 py-4 text-sm text-slate-500">No invitations yet.</p>
+      ) : (
+        <ul className="divide-y divide-slate-100">
+          {invitations.map((i) => (
+            <li key={i.id} className="flex flex-wrap items-start justify-between gap-3 px-5 py-3 text-sm">
+              <div className="min-w-0">
+                <p className="break-words font-medium text-slate-900">{i.email}</p>
+                <p className="text-slate-600">
+                  {roleLabels[i.role]} · {teamNames(i.teamIds, teams, i.role)} · {invitationStatusLabels[i.status]}
+                  {i.status === 'pending' && ` · expires ${new Date(i.expiresAt).toLocaleDateString()}`}
+                </p>
+                <p className="text-xs text-slate-500">{i.delivery}</p>
+              </div>
+              {i.status === 'pending' && (
+                <button type="button" className="btn-secondary" onClick={() => void revoke(i)} aria-label={`Revoke invitation for ${i.email}`}>
+                  Revoke
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
   );
 }

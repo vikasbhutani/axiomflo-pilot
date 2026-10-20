@@ -108,7 +108,7 @@ gcloud run deploy axiomflo --source . --region asia-southeast1 --project "$WEB" 
 
 `API_ORIGIN` must be the API's address with no trailing slash and nothing after `.run.app`.
 
-Then open AxiomFlo and sign in. You should land on the **Overview**. **Settings** shows **Your workspace access is approved** with your company, the Company Admin role and both teams.
+Then open AxiomFlo and sign in. You should land on the **Overview**. **Settings** shows your name with **Company Admin** and **Access approved** at the top, with your company and both teams.
 
 To undo, open Cloud Run → `axiomflo` (in the web app's project) → **Revisions**, and send 100% of traffic to the previous revision.
 

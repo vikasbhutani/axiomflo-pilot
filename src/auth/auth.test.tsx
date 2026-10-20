@@ -71,7 +71,7 @@ describe('protected workspace pages', () => {
 
   it('shows the signed-in identity, company, role and assigned teams from the membership', async () => {
     renderApp({ path: '/settings', client: new FakeAuthClient(alice), membershipService: fakeMembershipService({ [alice.uid]: membershipFor(alice) }) });
-    await screen.findByRole('heading', { name: 'Your workspace access is approved' });
+    await screen.findByText('Access approved');
     expect(screen.getAllByText(/alice@example\.com/).length).toBeGreaterThan(0);
     expect(screen.getAllByText('Individual User').length).toBeGreaterThan(0);
     expect(screen.getByText('Your teams')).toBeTruthy();
@@ -326,7 +326,7 @@ describe('sign-in tokens', () => {
     });
     const api = createApiClient({ baseUrl: 'https://app.example.com', getIdToken: () => client.getIdToken(), fetchImpl });
     renderApp({ path: '/settings', client, membershipService: createHttpMembershipService(api), api });
-    await screen.findByRole('heading', { name: 'Your workspace access is approved' });
+    await screen.findByText('Access approved');
     await screen.findByText('No invitations yet.');
     expect(fetchImpl.mock.calls.map(([url]) => new URL(String(url)).pathname).sort()).toEqual(['/api/exchange-rates', '/api/invitations', '/api/keys', '/api/me', '/api/members', '/api/members', '/api/slack/links']);
     const stored = [window.localStorage, window.sessionStorage].flatMap((s) => Object.keys(s).map((k) => `${k}=${s.getItem(k)}`)).join('\n');
@@ -345,7 +345,7 @@ describe('demo workspace', () => {
   it('never changes a real member’s role', async () => {
     window.localStorage.setItem('axiomflo-demo:role', JSON.stringify('company_admin'));
     renderApp({ path: '/settings', client: new FakeAuthClient(alice), membershipService: fakeMembershipService({ [alice.uid]: membershipFor(alice, { role: 'individual_user' }) }) });
-    await screen.findByRole('heading', { name: 'Your workspace access is approved' });
+    await screen.findByText('Access approved');
     expect(screen.queryByLabelText('Demo role')).toBeNull();
     expect(screen.queryByText('Company Admin')).toBeNull();
     expect(screen.getAllByText(/Individual User/).length).toBeGreaterThan(0);

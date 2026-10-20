@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { History, Lock, RotateCcw } from 'lucide-react';
+import { Building2, FlaskConical, History, Lock, RotateCcw } from 'lucide-react';
 import { PageHeader } from '../components/layout/PageHeader';
 import { Card, CardHeader } from '../components/ui/Card';
 import { ConfirmDialog } from '../components/ui/Modal';
@@ -13,6 +13,8 @@ import { can, roleLabels } from '../lib/permissions';
 import { clearPreferences } from '../lib/storage';
 import { formatDateTime } from '../lib/format';
 import { TableScroll } from '../components/ui/TableScroll';
+import { UrlTabs, type TabItem } from '../components/ui/Tabs';
+import { ProfileSummary } from '../components/settings/ProfileSummary';
 
 export function SettingsPage() {
   const { workspace, currentUser, role, userContext, dataVersion, setRole, setPeriod } = useDemo();
@@ -44,59 +46,79 @@ export function SettingsPage() {
     }
   };
 
-  return (
-    <>
-      <PageHeader title="Settings" breadcrumbs={[{ label: 'Overview', to: '/' }, { label: 'Settings' }]} description="Workspace details, your profile and demo controls." />
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader title="Company" description={isAdmin ? 'Reporting settings are fixed for the pilot.' : 'Managed by a Company Admin.'} />
+  const tabs: TabItem[] = [
+    {
+      id: 'company',
+      label: 'Company',
+      icon: Building2,
+      content: (
+        <Card className="max-w-3xl">
+          <CardHeader title="Company" description={isAdmin ? 'Only the company name can change in the pilot.' : 'Managed by a Company Admin.'} />
           <form
-            className="space-y-4 px-5 py-5"
+            className="space-y-5 px-5 py-5"
             noValidate
             onSubmit={(e) => {
               e.preventDefault();
               void saveName();
             }}
           >
-            <TextField label="Company name" value={companyName} onChange={(e) => setCompanyName(e.target.value)} error={companyError} disabled={!isAdmin} readOnly={!isAdmin} maxLength={100} autoComplete="organization" />
-            <ReadOnlyField label="Reporting currency" value="AUD (Australian dollar)" note="Read-only in the pilot." />
-            <ReadOnlyField label="Reporting timezone" value="Australia/Sydney" note="Used for daily and monthly totals. Read-only in the pilot." />
-            <ReadOnlyField label="Department" value={workspace.departmentName} />
-            {isAdmin && (
-              <div className="flex justify-end">
-                <button type="submit" className="btn-primary" disabled={savingName || companyName.trim() === workspace.companyName}>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+              <div className="min-w-0 flex-1">
+                <TextField label="Company name" value={companyName} onChange={(e) => setCompanyName(e.target.value)} error={companyError} disabled={!isAdmin} readOnly={!isAdmin} maxLength={100} autoComplete="organization" />
+              </div>
+              {isAdmin && (
+                <button type="submit" className="btn-primary sm:mt-6" disabled={savingName || companyName.trim() === workspace.companyName}>
                   Save company name
                 </button>
-              </div>
-            )}
+              )}
+            </div>
+            <div className="rounded-lg border border-slate-200">
+              <dl className="grid divide-y divide-slate-100 text-sm sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                <Detail label="Reporting currency" value="AUD (Australian dollar)" />
+                <Detail label="Reporting timezone" value="Australia/Sydney" />
+                <Detail label="Department" value={workspace.departmentName} />
+              </dl>
+              <p className="flex items-center gap-1.5 border-t border-slate-100 px-3 py-2 text-xs text-slate-500">
+                <Lock className="h-3.5 w-3.5 text-slate-400" aria-hidden /> Fixed for the pilot. The timezone sets the edges of daily and monthly totals.
+              </p>
+            </div>
           </form>
         </Card>
-
-        <Card>
-          <CardHeader title="Your profile" description="Demo persona for the selected role" />
-          <dl className="grid gap-4 px-5 py-5 text-sm sm:grid-cols-2">
-            <Detail label="Name" value={currentUser.name} />
-            <Detail label="Email" value={currentUser.email} />
-            <Detail label="Role" value={roleLabels[role]} />
-            <Detail label="Team" value={team ? `${team.name} (${team.code})` : 'Not assigned'} />
-            <Detail label="Title" value={currentUser.title} />
-            <Detail label="Sign-in" value="Not available in the demo" />
-          </dl>
-          <p className="border-t border-slate-100 px-5 py-3 text-xs text-slate-500">Use the “View as” selector in the top bar to switch between the Company Admin and Individual User personas.</p>
-        </Card>
-
-        <Card>
-          <CardHeader title="Demo data" description="Start over with the original sample workspace" />
-          <div className="space-y-3 px-5 py-5 text-sm text-slate-600">
-            <p>Resetting restores team names, people, provider connections, the company name and the audit log, and clears saved preferences such as the selected role and period. Usage records are sample data and never change.</p>
-            <button type="button" className="btn-secondary" onClick={() => setConfirmReset(true)}>
+      ),
+    },
+    ...(isAdmin ? [{ id: 'audit', label: 'Audit events', icon: History, content: <AuditLogCard /> }] : []),
+    {
+      id: 'demo',
+      label: 'Demo data',
+      icon: FlaskConical,
+      content: (
+        <Card className="max-w-3xl">
+          <CardHeader title={<span className="text-red-700">Danger zone</span>} description="Start over with the original sample workspace" />
+          <div className="flex flex-col gap-4 px-5 py-5 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+            <p className="max-w-xl">Resetting restores team names, people, provider connections, the company name and the audit log, and clears saved preferences such as the selected role and period. Usage records are sample data and never change.</p>
+            <button type="button" className="btn-danger shrink-0" onClick={() => setConfirmReset(true)}>
               <RotateCcw className="h-4 w-4" aria-hidden /> Reset demo data
             </button>
           </div>
         </Card>
+      ),
+    },
+  ];
 
-        {isAdmin ? <AuditLogCard /> : null}
-      </div>
+  return (
+    <>
+      <PageHeader title="Settings" breadcrumbs={[{ label: 'Overview', to: '/' }, { label: 'Settings' }]} description="Workspace details, your profile and demo controls." />
+      <ProfileSummary
+        name={currentUser.name}
+        email={currentUser.email}
+        role={roleLabels[role]}
+        badge={<span className="text-xs text-slate-500">Demo persona · switch with “View as” in the top bar</span>}
+        facts={[
+          { label: 'Title', value: currentUser.title },
+          { label: 'Team', value: team ? `${team.name} (${team.code})` : 'Not assigned' },
+        ]}
+      />
+      <UrlTabs label="Settings sections" tabs={tabs} />
 
       <ConfirmDialog
         open={confirmReset}
@@ -121,7 +143,7 @@ function AuditLogCard() {
   const { userContext, dataVersion } = useDemo();
   const state = useAsync(() => getAuditEvents(userContext), [userContext.userId, userContext.role, dataVersion]);
   return (
-    <Card className="lg:col-span-2">
+    <Card>
       <CardHeader
         title={
           <span className="inline-flex items-center gap-1.5">
@@ -164,22 +186,9 @@ function AuditLogCard() {
   );
 }
 
-function ReadOnlyField({ label, value, note }: { label: string; value: string; note?: string }) {
-  return (
-    <div>
-      <p className="mb-1 text-sm font-medium text-slate-700">{label}</p>
-      <p className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-        <Lock className="h-3.5 w-3.5 text-slate-400" aria-hidden />
-        {value}
-      </p>
-      {note && <p className="mt-1 text-xs text-slate-500">{note}</p>}
-    </div>
-  );
-}
-
 function Detail({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-0">
+    <div className="min-w-0 px-3 py-2.5">
       <dt className="text-xs text-slate-500">{label}</dt>
       <dd className="mt-0.5 break-words text-slate-900">{value}</dd>
     </div>
