@@ -1,5 +1,5 @@
 /**
- * Browser persistence for HARMLESS demo preferences only (role, period, and later
+ * Browser persistence for HARMLESS preferences only (role, period, a collapsed nav, and later
  * simulated team edits). Never store credentials or secrets here.
  */
 const PREFIX = 'axiomflo-demo:';

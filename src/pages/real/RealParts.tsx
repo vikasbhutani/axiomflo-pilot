@@ -21,7 +21,7 @@ export function DataNotes({ data, isAdmin }: { data: RealDataset; isAdmin: boole
       <>
         Amounts are in USD because no USD → {data.money.reportingCurrency} exchange rate is set yet.{' '}
         {isAdmin ? (
-          <Link to="/settings" className="font-medium text-teal-800 underline">
+          <Link to="/settings?tab=rates" className="font-medium text-teal-800 underline">
             Set one in Settings
           </Link>
         ) : (
@@ -129,7 +129,7 @@ export function NoUsageYet({ month }: { month: string }) {
         title={`No AI requests in ${formatPeriod(month)} yet`}
         description="Figures appear here once people send AI requests through the AxiomFlo gateway with their AxiomFlo key. Create a key in Settings. Chats in the Claude or Gemini apps aren’t counted."
         action={
-          <Link to="/settings" className="btn-secondary">
+          <Link to="/settings?tab=integrations" className="btn-secondary">
             Go to Settings
           </Link>
         }

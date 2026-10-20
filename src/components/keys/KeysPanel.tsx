@@ -80,7 +80,7 @@ export function KeysPanel({ currentUid, teams, isAdmin }: { currentUid: string; 
   };
 
   return (
-    <Card className="mx-auto mt-6 max-w-3xl">
+    <Card>
       <CardHeader title="AxiomFlo keys" description="Use a key in your AI tools instead of a provider key, so AxiomFlo can record usage for your team." />
       <div className="space-y-4 px-5 py-4">
         {newSecret && (

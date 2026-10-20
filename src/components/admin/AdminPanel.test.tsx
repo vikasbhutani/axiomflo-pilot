@@ -64,13 +64,16 @@ function renderAs(membership = adminMembership, api: ApiClient | null = fakeApi(
   return renderApp({ path: '/settings', client: new FakeAuthClient(alice), membershipService: fakeMembershipService({ [alice.uid]: membership }), api });
 }
 
-const memberItem = async (email: string) => (await screen.findByText(email, { selector: 'p' })).closest('li') as HTMLElement;
+const memberItem = async (email: string) => (await screen.findByText(email, { selector: 'li p' })).closest('li') as HTMLElement;
+
+/** Opens the invite form inside the Members card. */
+const openInvite = async (user: ReturnType<typeof userEvent.setup>) => user.click(await screen.findByRole('button', { name: 'Invite someone' }));
 
 describe('Admin members and invitations', () => {
   it('is not shown to an Individual User, and the admin API is never called', async () => {
     const { api, fetch } = fakeApi();
     renderAs(membershipFor(alice), api);
-    await screen.findByRole('heading', { name: 'Your workspace access is approved' });
+    await screen.findByText('Access approved');
     expect(screen.queryByText('Invite someone')).toBeNull();
     expect(fetch.mock.calls.map(([p]) => p).sort()).toEqual(['/api/exchange-rates', '/api/keys', '/api/slack/links']);
   });
@@ -89,6 +92,7 @@ describe('Admin members and invitations', () => {
     const { api, fetch } = fakeApi();
     renderAs(adminMembership, api);
     const user = userEvent.setup();
+    await openInvite(user);
     await user.type(await screen.findByLabelText('Email'), 'New.Person@Example.com');
     await user.click(screen.getByRole('checkbox', { name: 'Team Two' }));
     await user.click(screen.getByRole('button', { name: 'Create invitation' }));
@@ -104,6 +108,7 @@ describe('Admin members and invitations', () => {
     const { api, fetch } = fakeApi();
     renderAs(adminMembership, api);
     const user = userEvent.setup();
+    await openInvite(user);
     await user.type(await screen.findByLabelText('Email'), 'x@example.com');
     await user.click(screen.getByRole('button', { name: 'Create invitation' }));
     expect(await screen.findByText('Pick at least one team.')).toBeTruthy();
@@ -113,6 +118,7 @@ describe('Admin members and invitations', () => {
   it('shows the API’s reason when an invitation is refused', async () => {
     renderAs(adminMembership, fakeApi({ fail: { path: '/api/invitations', method: 'POST', status: 409, message: 'There is already a pending invitation for this email.' } }).api);
     const user = userEvent.setup();
+    await openInvite(user);
     await user.selectOptions(await screen.findByLabelText('Role'), 'company_admin');
     await user.type(screen.getByLabelText('Email'), 'dup@example.com');
     await user.click(screen.getByRole('button', { name: 'Create invitation' }));

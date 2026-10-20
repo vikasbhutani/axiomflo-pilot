@@ -24,7 +24,7 @@ export function RealTeamsPage() {
       {isAdmin && (
         <p className="mb-4 text-sm text-slate-600">
           To invite people or change roles and teams, go to{' '}
-          <Link to="/settings" className="font-medium text-teal-800 underline">
+          <Link to="/settings?tab=members" className="font-medium text-teal-800 underline">
             Settings
           </Link>
           .
