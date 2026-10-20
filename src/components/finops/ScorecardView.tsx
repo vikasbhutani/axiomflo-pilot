@@ -103,7 +103,8 @@ function Change({ now, before, previousLabel, lowerIsBetter = true }: { now: num
   const good = lowerIsBetter ? change <= 0 : change >= 0;
   const Icon = change >= 0 ? ArrowUpRight : ArrowDownRight;
   return (
-    <span className={`inline-flex items-center gap-0.5 ${good ? 'text-emerald-700' : 'text-amber-700'}`}>
+    // Keyed on the change so the badge pops in again when the month changes it.
+    <span key={change.toFixed(4)} className={`inline-flex origin-left animate-pop items-center gap-0.5 ${good ? 'text-emerald-700' : 'text-amber-700'}`}>
       <Icon className="h-3 w-3" aria-hidden />
       {formatPercent(Math.abs(change))} vs {previousLabel}
     </span>

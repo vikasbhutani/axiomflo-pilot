@@ -45,7 +45,7 @@ export function AssistantPage() {
       />
       <AssistantTabs />
 
-      <div className="animate-fade-in">
+      <div>
         <div className="mb-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
           <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" aria-hidden />
           <p>

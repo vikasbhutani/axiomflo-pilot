@@ -2,7 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Table rows tint under the pointer; a row's own background utilities still win. */
+@layer base {
+  tbody tr {
+    transition: background-color 150ms cubic-bezier(0.2, 0, 0, 1);
+  }
+  tbody tr:hover {
+    background-color: rgb(240 253 250 / 0.6);
+  }
+}
+
 @layer components {
+  /* Material-style ink ripple, added on press by lib/ripple.ts. */
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger,
+  .ripple-host {
+    position: relative;
+    overflow: hidden;
+  }
+  .ripple {
+    @apply pointer-events-none absolute animate-ripple rounded-full bg-current;
+  }
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-teal-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:opacity-50;
   }
@@ -17,7 +38,7 @@
 /* Children of .stagger fade up one after another (used for card rows and answer parts). */
 @layer utilities {
   .stagger > * {
-    animation: fade-up 550ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+    animation: fade-up 500ms cubic-bezier(0.05, 0.7, 0.1, 1) backwards;
   }
   .stagger > :nth-child(2) {
     animation-delay: 110ms;
@@ -62,6 +83,33 @@
   }
 }
 
+/* A view transition morphs one element into another (lib/viewTransition.ts) with Material's emphasized easing. */
+::view-transition-group(morph) {
+  animation-duration: 450ms;
+  animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+/* Container transform: the old content fades out early and the new fades through, so neither is seen stretched. */
+::view-transition-old(morph) {
+  animation: vt-fade-out 100ms cubic-bezier(0.3, 0, 0.8, 0.15) both;
+}
+::view-transition-new(morph) {
+  animation: vt-fade-in 250ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+@keyframes vt-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes vt-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 250ms;
+}
+
 /* Respect the operating system's "reduce motion" setting. */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -72,5 +120,10 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
 }

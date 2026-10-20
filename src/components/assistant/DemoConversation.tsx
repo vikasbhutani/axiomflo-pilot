@@ -1,10 +1,9 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
-import { Link } from 'react-router-dom';
 import { Bot, Gauge, Lightbulb, Table2 } from 'lucide-react';
 import { useDemo } from '../../context/DemoContext';
 import { getAssistantResponse, SUGGESTED_QUESTIONS, type AssistantResponse, type SupportingFilters } from '../../services/assistantService';
 import { TableScroll } from '../ui/TableScroll';
-import { AssistantAvatar, ChatComposer, scrollConversationToEnd, SUGGESTION_CHIP_CLASS, ThinkingIndicator, TypedParagraphs, useTypedParagraphs, UserBubble } from './ChatParts';
+import { askFromChip, AssistantAvatar, ChatComposer, MorphLink, scrollConversationToEnd, SUGGESTION_CHIP_CLASS, ThinkingIndicator, TypedParagraphs, useTypedParagraphs, UserBubble } from './ChatParts';
 
 type ChatMessage = { id: number; from: 'user'; text: string } | { id: number; from: 'assistant'; response: AssistantResponse } | { id: number; from: 'error'; text: string };
 
@@ -151,12 +150,7 @@ function Welcome({ onAsk, disabled }: { onAsk: (q: string) => void; disabled: bo
 
 function SuggestionChip({ text, onAsk, disabled }: { text: string; onAsk: (q: string) => void; disabled: boolean }) {
   return (
-    <button
-      type="button"
-      onClick={() => onAsk(text)}
-      disabled={disabled}
-      className={SUGGESTION_CHIP_CLASS}
-    >
+    <button type="button" onClick={(e) => askFromChip(e.currentTarget, () => onAsk(text))} disabled={disabled} className={SUGGESTION_CHIP_CLASS}>
       {text}
     </button>
   );
@@ -241,14 +235,14 @@ function AssistantAnswer({ response, onAsk, disabled }: { response: AssistantRes
           )}
 
           {typed.done && r.supporting && (
-            <Link to={usageHref(r.supporting.filters)} className="btn-secondary mt-3">
+            <MorphLink to={usageHref(r.supporting.filters)} className="btn-secondary mt-3">
               <Table2 className="h-4 w-4" aria-hidden /> {r.supporting.label}
-            </Link>
+            </MorphLink>
           )}
           {typed.done && r.page && (
-            <Link to={r.page.to} className="btn-secondary mt-3">
+            <MorphLink to={r.page.to} className="btn-secondary mt-3">
               <Gauge className="h-4 w-4" aria-hidden /> {r.page.label}
-            </Link>
+            </MorphLink>
           )}
         </div>
 

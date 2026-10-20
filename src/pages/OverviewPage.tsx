@@ -18,8 +18,8 @@ import { safeRatio, type CostSummary } from '../lib/calculations';
 import { formatCalendarDate, formatCurrency, formatDateTime, formatNumber, formatPercent, formatPeriod, formatPeriodRange } from '../lib/format';
 import type { ProviderId } from '../types';
 import { TableScroll } from '../components/ui/TableScroll';
-import { CountUp } from '../components/ui/CountUp';
-import { motionAllowed, useFirstRender } from '../hooks/useMotion';
+import { RollingNumber } from '../components/ui/RollingNumber';
+import { motionAllowed } from '../hooks/useMotion';
 
 /** Builds a Usage Explorer link that carries the Overview's team and provider filters. */
 function usageLink(filters: OverviewData['filters'], extra: Record<string, string> = {}): string {
@@ -86,7 +86,7 @@ export function OverviewPage() {
       ) : !state.data ? (
         <OverviewSkeleton />
       ) : (
-        <div className={`space-y-6 transition-opacity ${state.status === 'loading' ? 'opacity-60' : ''}`} aria-busy={state.status === 'loading'}>
+        <div className={`animate-fade-in space-y-6 transition-opacity ${state.status === 'loading' ? 'opacity-60' : ''}`} aria-busy={state.status === 'loading'}>
           <SummaryCards data={state.data} />
           <div className="grid gap-6 xl:grid-cols-3">
             <DailySpendCard data={state.data} />
@@ -142,7 +142,8 @@ function ChangeIndicator({ current, previous, previousPeriod }: { current: numbe
   const up = change >= 0;
   const Icon = up ? ArrowUpRight : ArrowDownRight;
   return (
-    <span className="inline-flex items-center gap-1">
+    // Keyed on the change so the badge pops in again when a filter changes it.
+    <span key={change.toFixed(4)} className="inline-flex origin-left animate-pop items-center gap-1" style={{ animationDelay: '300ms' }}>
       <Icon className="h-3.5 w-3.5" aria-hidden />
       {up ? '+' : '−'}
       {formatPercent(Math.abs(change), 1)} vs {formatPeriod(previousPeriod)} ({formatCurrency(previous.estimatedSpend)})
@@ -159,13 +160,13 @@ function SummaryCards({ data }: { data: OverviewData }) {
         label="Estimated spend"
         tooltip={glossary.estimatedSpend}
         icon={<Coins className="h-4 w-4" aria-hidden />}
-        value={<CountUp value={s.estimatedSpend} format={(n) => formatCurrency(n)} />}
+        value={<RollingNumber text={formatCurrency(s.estimatedSpend)} />}
         detail={<ChangeIndicator current={s.estimatedSpend} previous={data.previousSummary} previousPeriod={data.previousPeriod} />}
       />
       <StatCard
         label="Requests"
         icon={<Hash className="h-4 w-4" aria-hidden />}
-        value={<CountUp value={s.requestCount} format={(n) => formatNumber(Math.round(n))} />}
+        value={<RollingNumber text={formatNumber(s.requestCount)} />}
         detail={`${formatNumber(s.succeededCount)} succeeded · ${formatNumber(s.failedCount)} failed`}
       />
       <StatCard
@@ -216,10 +217,12 @@ function DailyTooltip({ active, payload }: TooltipProps<number, string>) {
   );
 }
 
+// A soft dashed guide that follows the pointer across the chart.
+const GUIDE_LINE = { stroke: '#0d9488', strokeOpacity: 0.35, strokeWidth: 1, strokeDasharray: '4 4' };
+
 function DailySpendCard({ data }: { data: OverviewData }) {
   const [showTable, setShowTable] = useState(false);
-  // Draw the chart in on first load only; filter changes swap the data without replaying it.
-  const firstRender = useFirstRender();
+  // The chart draws in on first load, then morphs from the old values to the new ones when a filter changes.
   const [animateChart] = useState(() => motionAllowed());
   const titleId = useId();
   const hasData = data.summary.requestCount > 0;
@@ -273,8 +276,8 @@ function DailySpendCard({ data }: { data: OverviewData }) {
               <CartesianGrid stroke="#e2e8f0" strokeDasharray="0" vertical={false} />
               <XAxis dataKey="date" tickFormatter={(d: string) => formatCalendarDate(d)} tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={{ stroke: '#cbd5e1' }} minTickGap={24} />
               <YAxis tickFormatter={(v: number) => `$${Number(v.toFixed(1))}`} tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} width={48} />
-              <Tooltip content={<DailyTooltip />} cursor={{ stroke: '#94a3b8', strokeWidth: 1 }} />
-              <Area type="monotone" dataKey="estimatedSpend" stroke="#0d9488" strokeWidth={2} fill="url(#spendFill)" isAnimationActive={animateChart && firstRender} animationDuration={1500} activeDot={{ r: 4, stroke: '#fff', strokeWidth: 2 }} />
+              <Tooltip content={<DailyTooltip />} cursor={GUIDE_LINE} isAnimationActive={animateChart} animationDuration={250} animationEasing="ease-out" />
+              <Area type="monotone" dataKey="estimatedSpend" stroke="#0d9488" strokeWidth={2} fill="url(#spendFill)" isAnimationActive={animateChart} animationDuration={900} animationEasing="ease-out" activeDot={{ r: 5, stroke: '#fff', strokeWidth: 2 }} />
             </AreaChart>
           </ResponsiveContainer>
         </div>

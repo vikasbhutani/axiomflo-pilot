@@ -1,10 +1,12 @@
-import { forwardRef, type FormEvent } from 'react';
+import { forwardRef, type FormEvent, type MouseEvent, type ReactNode } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Bot, SendHorizontal, User as UserIcon } from 'lucide-react';
 import { useTypedText } from '../../hooks/useMotion';
+import { morph } from '../../lib/viewTransition';
 
-/** Suggested-question chip style; the chip lifts slightly on hover. */
+/** Suggested-question chip style; the chip lifts slightly on hover and ripples when pressed. */
 export const SUGGESTION_CHIP_CLASS =
-  'rounded-full border border-slate-200 bg-white px-3 py-1.5 text-left text-sm text-slate-700 transition duration-150 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-900 hover:shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600 disabled:translate-y-0 disabled:opacity-50 disabled:shadow-none';
+  'ripple-host rounded-full border border-slate-200 bg-white px-3 py-1.5 text-left text-sm text-slate-700 transition duration-150 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-900 hover:shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600 disabled:translate-y-0 disabled:opacity-50 disabled:shadow-none';
 
 export function AssistantAvatar({ thinking = false }: { thinking?: boolean }) {
   return (
@@ -35,7 +37,7 @@ export function ThinkingIndicator({ label }: { label: string }) {
 export function UserBubble({ text }: { text: string }) {
   return (
     <div className="flex animate-slide-in-right justify-end gap-3">
-      <p className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-tr-sm bg-navy-900 px-4 py-2.5 text-sm text-white">
+      <p data-user-bubble className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-tr-sm bg-navy-900 px-4 py-2.5 text-sm text-white">
         <span className="sr-only">You asked: </span>
         {text}
       </p>
@@ -43,6 +45,36 @@ export function UserBubble({ text }: { text: string }) {
         <UserIcon className="h-4 w-4" />
       </span>
     </div>
+  );
+}
+
+/**
+ * Asks a suggested question with a Material container transform: the pressed chip morphs into the
+ * question's bubble in the conversation.
+ */
+export function askFromChip(chip: HTMLElement, ask: () => void) {
+  const log = chip.closest('[role="log"]');
+  morph(chip, ask, () => {
+    const bubbles = log?.querySelectorAll<HTMLElement>('[data-user-bubble]');
+    return bubbles?.length ? bubbles[bubbles.length - 1] : null;
+  });
+}
+
+/**
+ * A link from an answer to another page that expands into that page (Material container transform),
+ * as if the button grew to become it. Modified clicks (new tab, etc.) behave as normal links.
+ */
+export function MorphLink({ to, className, children }: { to: string; className?: string; children: ReactNode }) {
+  const navigate = useNavigate();
+  const onClick = (e: MouseEvent<HTMLAnchorElement>) => {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    morph(e.currentTarget, () => navigate(to), () => document.getElementById('main'));
+  };
+  return (
+    <Link to={to} className={className} onClick={onClick}>
+      {children}
+    </Link>
   );
 }
 
