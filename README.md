@@ -8,7 +8,7 @@ This repository is the working pilot, built for one company and running on Googl
 
 ## Try it
 
-- **No login needed:** on the sign-in page, click **Explore the demo workspace**. It opens a sample company (Acme Innovation) with about 6,000 generated requests, clearly labelled as sample data. Use **View as** in the top bar to switch between a Company Admin and an Individual User. Open **FinOps Scorecard** in the sidebar, or ask the AI Cost Assistant "How can we cut our AI costs?".
+- **No login needed:** on the sign-in page, click **Explore the demo workspace**. It opens a sample company (Acme Innovation) with about 6,000 generated requests, clearly labelled as sample data. Use **View as** in the top bar to switch between a Company Admin and an Individual User. Open **FinOps Scorecard** in the sidebar, or ask the AI Cost Assistant "How can we cut our AI costs?" ([more questions to try](#questions-to-ask-the-ai-cost-assistant)).
 - **Real workspace, view-only:** on the sign-in page, click **Sign in as judge**, or enter these under **Work email** and **Password**:
 
   ```
@@ -44,6 +44,40 @@ The **FinOps Scorecard** page (`/scorecard`) shows, for a month, how efficiently
 The AI Cost Assistant answers from the same figures ("How can we cut our AI costs?", "What does each workflow cost in tokens?"), on the web and in Slack. Every figure is worked out by code (`src/lib/finops.ts`, mirrored in `backend/axiomflo/reporting/finops.py`), never by the model, and a test fails if the two disagree. Savings are estimates, and the scorecard never claims a cheaper model gives the same quality. Rules and assumptions: [docs/agent/finops-scorecard.md](docs/agent/finops-scorecard.md).
 
 ![FinOps Scorecard on the Acme sample data: score 59/100, unit economics, five levers ranked by savings and token cost per workflow](docs/images/finops-scorecard.png)
+
+## Questions to ask the AI Cost Assistant
+
+Open **AI Cost Assistant** in the sidebar, or ask in Slack. Each person only gets answers about what they're allowed to see: a Company Admin about the whole company, an Individual User about their own requests.
+
+**In the demo workspace** (no login), the assistant follows fixed rules over the sample data, so these questions work as written:
+
+| Ask | You get |
+| --- | --- |
+| What did each team spend this month? | Spend by team, with a table |
+| How much did we spend on Gemini? | Spend for one provider (also Claude or Anthropic) |
+| Why did estimated spend increase compared with the previous period? | What changed since last month: requests, average cost, the biggest movers |
+| Show the requests behind this total. | A link to those requests in the Usage Explorer |
+| Which requests have unavailable costs? | Requests with no cost yet, and why they aren't counted as $0 |
+| What does estimated cost mean? | How costs are worked out |
+| How can we cut our AI costs? | The FinOps score and the five optimisation levers ranked by savings |
+| What does each workflow cost in tokens? | Unit economics and token cost per workflow |
+
+Add a month ("in August") to ask about another month. Requests to change something ("change our budget settings") are politely refused: the assistant is read-only.
+
+**In the live workspace** (the judge login), Gemini understands questions in your own words. Some to try:
+
+- What did each team spend this month?
+- How can we lower our AI spend?
+- What's our FinOps score and the biggest savings levers?
+- What does each workflow cost in tokens?
+- Why did spending change compared with last month?
+- Which models cost the most this month?
+- Show me the requests behind Platform Engineering's spend.
+- Are there any requests without a cost?
+
+**In Slack:** send the same questions to AxiomFlo by direct message, mention `@AxiomFlo` in a channel, or type `/axiomflo how can we lower our AI spend?`. Only the person who asked sees the answer.
+
+The assistant never makes up a figure. Every amount comes from AxiomFlo's own calculations, and any number a tool didn't return is withheld.
 
 ## How it fits together
 
