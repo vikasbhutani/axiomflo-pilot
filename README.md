@@ -1,6 +1,6 @@
 # AxiomFlo
 
-**AxiomFlo shows a company where its AI money goes.** It records every Claude and Gemini request people make, works out what each one cost, and shows it by team, person, provider and model. A Gemini-powered **AI Cost Assistant** answers questions about that spend in plain English, on the web and in Slack, and only ever shows each person what they're allowed to see.
+**AxiomFlo shows a company where its AI money goes.** It records every Claude and Gemini request people make, works out what each one cost, and shows it by team, person, provider and model. A Gemini-powered **AI Cost Assistant** answers questions about that spend in plain English, on the web and in Slack, and only ever shows each person what they're allowed to see. A **FinOps Scorecard** grades how efficiently the money was spent and ranks five ways to spend less.
 
 This repository is the working pilot, built for one company and running on Google Cloud.
 
@@ -8,7 +8,7 @@ This repository is the working pilot, built for one company and running on Googl
 
 ## Try it
 
-- **No login needed:** on the sign-in page, click **Explore the demo workspace**. It opens a sample company (Acme Innovation) with about 6,000 generated requests, clearly labelled as sample data. Use **View as** in the top bar to switch between a Company Admin and an Individual User.
+- **No login needed:** on the sign-in page, click **Explore the demo workspace**. It opens a sample company (Acme Innovation) with about 6,000 generated requests, clearly labelled as sample data. Use **View as** in the top bar to switch between a Company Admin and an Individual User. Open **FinOps Scorecard** in the sidebar, or ask the AI Cost Assistant "How can we cut our AI costs?".
 - **Real workspace, view-only:** on the sign-in page, click **Sign in as judge**, or enter these under **Work email** and **Password**:
 
   ```
@@ -31,6 +31,19 @@ This repository is the working pilot, built for one company and running on Googl
 | **AI Cost Assistant** | Built with Google's **Agent Development Kit (ADK)** and **Gemini on Vertex AI**, called through the **global endpoint** so busy regions don't cause errors. Gemini picks read-only tools and explains the figures they return; it never calculates or invents an amount, and any number not backed by a tool is withheld. Also gives savings suggestions and the FinOps Scorecard (unit economics, token cost per workflow, five optimisation levers ranked by savings). | `backend/` |
 | **Slack bot** | Ask about AI spend by direct message, `@AxiomFlo` or `/axiomflo`. Answers come from the same assistant and only the person who asked sees them. Accounts are linked only when the Slack email matches the AxiomFlo sign-in email. | `server/src/slack/`, `deploy/slack/` |
 | **Demo workspace** | Sample data that runs fully in the browser, so anyone can explore without an account. | `src/data/`, `src/services/` |
+
+## FinOps Scorecard
+
+The **FinOps Scorecard** page (`/scorecard`) shows, for a month, how efficiently AI money was spent and where it could go further. It works in the demo workspace and the live one, and each person sees only what they're allowed to see.
+
+- **Score out of 100 and a grade (A–E)**, from four parts: savings headroom, model fit, waste on failed requests and cost visibility.
+- **Unit economics:** cost per request, cost per successful request (failures included), cost per million tokens, cost per active person and spend on failed requests, each compared with the month before.
+- **Token cost per workflow:** each bot or application, and each team's own use, with input and output tokens and what each cost.
+- **Five optimisation levers ranked by savings potential:** model right-sizing, prompt caching, batch processing, context trimming and output limits. Each shows how many requests it covers, the estimated saving, the effort, what to do and the assumption behind the number. A combined figure allows for the levers overlapping.
+
+The AI Cost Assistant answers from the same figures ("How can we cut our AI costs?", "What does each workflow cost in tokens?"), on the web and in Slack. Every figure is worked out by code (`src/lib/finops.ts`, mirrored in `backend/axiomflo/reporting/finops.py`), never by the model, and a test fails if the two disagree. Savings are estimates, and the scorecard never claims a cheaper model gives the same quality. Rules and assumptions: [docs/agent/finops-scorecard.md](docs/agent/finops-scorecard.md).
+
+![FinOps Scorecard on the Acme sample data: score 59/100, unit economics, five levers ranked by savings and token cost per workflow](docs/images/finops-scorecard.png)
 
 ## How it fits together
 
@@ -87,7 +100,7 @@ deploy/     nginx config for the dashboard, Slack app manifests
 docs/       Setup and deployment guides
 ```
 
-All cost totals come from one set of rules (`src/lib/calculations.ts`, mirrored in Python in `backend/axiomflo/reporting/calculations.py`), and tests prove the two always agree.
+All cost totals come from one set of rules (`src/lib/calculations.ts`, mirrored in Python in `backend/axiomflo/reporting/calculations.py`), and so does the FinOps Scorecard (`src/lib/finops.ts` and `backend/axiomflo/reporting/finops.py`). Tests prove each pair always agrees.
 
 ## Guides
 
@@ -105,5 +118,5 @@ All cost totals come from one set of rules (`src/lib/calculations.ts`, mirrored 
 
 ## Quality
 
-- Automated tests cover cost calculations, role-scoped access, the gateway, sign-in, the Slack bot and the assistant's guardrails. Firestore and Firebase Auth tests run against the local emulators.
+- Automated tests cover cost calculations, the FinOps Scorecard, role-scoped access, the gateway, sign-in, the Slack bot and the assistant's guardrails. Firestore and Firebase Auth tests run against the local emulators.
 - Every screen was checked with the axe accessibility checker at desktop and phone widths. Dialogs keep keyboard focus, tables scroll on small screens, and animations respect reduced-motion settings.
