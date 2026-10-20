@@ -8,6 +8,7 @@ import { getAssistantResponse, SUGGESTED_QUESTIONS, type AssistantResponse, type
 import { roleLabels } from '../lib/permissions';
 import { formatPeriod } from '../lib/format';
 import { TableScroll } from '../components/ui/TableScroll';
+import { AssistantTabs } from '../components/upgrade/AssistantTabs';
 
 type ChatMessage = { id: number; from: 'user'; text: string } | { id: number; from: 'assistant'; response: AssistantResponse } | { id: number; from: 'error'; text: string };
 
@@ -44,7 +45,8 @@ export function AssistantPage() {
     if (log) log.scrollTo?.({ top: log.scrollHeight, behavior: 'smooth' });
   }, [messages, pending]);
 
-  const lastSupporting = [...messages].reverse().find((m): m is Extract<ChatMessage, { from: 'assistant' }> => m.from === 'assistant')?.response.supporting?.filters;
+  const lastResponse = [...messages].reverse().find((m): m is Extract<ChatMessage, { from: 'assistant' }> => m.from === 'assistant')?.response;
+  const lastSupporting = lastResponse?.supporting?.filters;
 
   const ask = async (question: string) => {
     const text = question.trim().slice(0, MAX_QUESTION_LENGTH);
@@ -53,7 +55,7 @@ export function AssistantPage() {
     setMessages((m) => [...m, { id: nextId.current++, from: 'user', text }]);
     setPending(true);
     try {
-      const response = await getAssistantResponse(text, { period, previous: lastSupporting }, userContext);
+      const response = await getAssistantResponse(text, { period, previous: lastSupporting, upgrade: lastResponse?.upgrade }, userContext);
       setMessages((m) => [...m, { id: nextId.current++, from: 'assistant', response }]);
     } catch {
       setMessages((m) => [...m, { id: nextId.current++, from: 'error', text: 'Something went wrong preparing that answer. Please try again.' }]);
@@ -98,6 +100,7 @@ export function AssistantPage() {
           ) : undefined
         }
       />
+      <AssistantTabs />
 
       <div className="mb-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
         <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" aria-hidden />
@@ -229,7 +232,7 @@ function AssistantAnswer({ response, onAsk, disabled }: { response: AssistantRes
         <div className="rounded-2xl rounded-tl-sm border border-slate-200 bg-white px-4 py-3 text-sm leading-relaxed text-slate-800">
           <span className="sr-only">Assistant answered: </span>
           {r.answer.map((p, i) => (
-            <p key={i} className={i > 0 ? 'mt-2' : undefined}>
+            <p key={i} className={`whitespace-pre-line${i > 0 ? ' mt-2' : ''}`}>
               {p}
             </p>
           ))}

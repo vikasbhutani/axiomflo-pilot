@@ -10,6 +10,7 @@ import { createFirestoreMembershipStore } from './membership/firestoreStore.js';
 import { createFirestoreUsageService } from './reports/firestoreUsageService.js';
 import { agentClientFor } from './assistant/agentClient.js';
 import { createFirestoreSlackLinkService } from './slack/links.js';
+import { createFirestoreUpgradeStore } from './upgrade/firestoreStore.js';
 
 function main() {
   let config;
@@ -35,6 +36,7 @@ function main() {
     usage: createFirestoreUsageService({ db, auth, logger }),
     agent: agentClientFor(config.agentUrl),
     slackLinks: createFirestoreSlackLinkService({ db }),
+    upgradeStore: createFirestoreUpgradeStore({ db }),
   });
 
   const server = app.listen(config.port, '0.0.0.0', () => {

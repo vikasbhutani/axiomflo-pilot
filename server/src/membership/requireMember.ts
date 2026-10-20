@@ -36,11 +36,17 @@ export function accessError(error: unknown, logger: Logger, requestId: string): 
   throw error;
 }
 
-/** The only non-GET request a read-only member may make: asking the assistant changes nothing. */
-const READ_ONLY_ALLOWED = new Set(['POST /api/assistant/ask']);
+/**
+ * The only non-GET requests a read-only member may make. None changes the workspace: asking
+ * the assistant, running an upgrade estimate, and exporting a saved analysis (which only
+ * adds to its audit history).
+ */
+const READ_ONLY_ALLOWED = new Set(['POST /api/assistant/ask', 'POST /api/upgrade-analysis/estimate']);
+const READ_ONLY_ALLOWED_PATTERNS = [/^POST \/api\/upgrade-analysis\/ua_[0-9a-f]{24}\/export$/];
 
 function isReadRequest(method: string, path: string): boolean {
-  return method === 'GET' || method === 'HEAD' || READ_ONLY_ALLOWED.has(`${method} ${path}`);
+  const request = `${method} ${path}`;
+  return method === 'GET' || method === 'HEAD' || READ_ONLY_ALLOWED.has(request) || READ_ONLY_ALLOWED_PATTERNS.some((p) => p.test(request));
 }
 
 export function requireActiveMember({ store, companyId, logger }: { store: MembershipStore; companyId: string; logger: Logger }): RequestHandler {

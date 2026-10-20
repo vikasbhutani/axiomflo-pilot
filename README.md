@@ -28,7 +28,7 @@ This repository is the working pilot, built for one company and running on Googl
 | **Sign-in and access** | **Firebase Authentication** with Google or email and password. Signing in only proves who you are; what you can see comes from a membership record in **Firestore**, checked by the API on every request. Company Admins invite people and manage roles. | `src/auth/`, `server/src/membership/` |
 | **AxiomFlo API** | Node.js + Express on Cloud Run. Verifies Firebase sign-in tokens, enforces roles and teams, serves reports, manages AxiomFlo keys and records audit events. | `server/` |
 | **Gateway** | A separate Cloud Run service. People point their tools at it with an **AxiomFlo key** instead of a provider key. It forwards requests to **Anthropic (Claude)** or **Gemini on Vertex AI**, returns the answer unchanged, and writes one usage record with tokens and estimated cost. Prompts and answers are never stored. | `server/src/gateway/` |
-| **AI Cost Assistant** | Built with Google's **Agent Development Kit (ADK)** and **Gemini on Vertex AI**, called through the **global endpoint** so busy regions don't cause errors. Gemini picks read-only tools and explains the figures they return; it never calculates or invents an amount, and any number not backed by a tool is withheld. Also gives savings suggestions and the FinOps Scorecard (unit economics, token cost per workflow, five optimisation levers ranked by savings). | `backend/` |
+| **AI Cost Assistant** | Built with Google's **Agent Development Kit (ADK)** and **Gemini on Vertex AI**, called through the **global endpoint** so busy regions don't cause errors. Gemini picks read-only tools and explains the figures they return; it never calculates or invents an amount, and any number not backed by a tool is withheld. Also gives savings suggestions and the FinOps Scorecard (unit economics, token cost per workflow, five optimisation levers ranked by savings), and has an Upgrade Analysis tab that models moving to a newer model. | `backend/` |
 | **Slack bot** | Ask about AI spend by direct message, `@AxiomFlo` or `/axiomflo`. Answers come from the same assistant and only the person who asked sees them. Accounts are linked only when the Slack email matches the AxiomFlo sign-in email. | `server/src/slack/`, `deploy/slack/` |
 | **Demo workspace** | Sample data that runs fully in the browser, so anyone can explore without an account. | `src/data/`, `src/services/` |
 
@@ -44,6 +44,16 @@ The **FinOps Scorecard** page (`/scorecard`) shows, for a month, how efficiently
 The AI Cost Assistant answers from the same figures ("How can we cut our AI costs?", "What does each workflow cost in tokens?"), on the web and in Slack. Every figure is worked out by code (`src/lib/finops.ts`, mirrored in `backend/axiomflo/reporting/finops.py`), never by the model, and a test fails if the two disagree. Savings are estimates, and the scorecard never claims a cheaper model gives the same quality. Rules and assumptions: [docs/agent/finops-scorecard.md](docs/agent/finops-scorecard.md).
 
 ![FinOps Scorecard on the Acme sample data: score 59/100, unit economics, five levers ranked by savings and token cost per workflow](docs/images/finops-scorecard.png)
+
+## Upgrade Analysis
+
+The **Upgrade Analysis** tab of the AI Cost Assistant (`/assistant/upgrade`) estimates what moving a model dependency to a newer, cheaper or faster version would cost, from the usage AxiomFlo has already recorded. It works in the demo workspace and the live one, and each person can only analyse what they're allowed to see.
+
+- **Choose** the current model, a candidate, a scope (company, team, project, application, workflow, agent or environment), a time window and the share of eligible calls that would move. Optional assumptions cover token changes, request volume, retries, latency, a one-off migration cost and an evaluation score.
+- **See** current versus projected cost, the estimated monthly and annualised saving, what drives the difference (price, input, cached, output and reasoning tokens, volume, retries), how many calls are eligible, ineligible or still need review, seven risks, a recommendation and, when it's worth doing, a staged rollout plan.
+- **Save** an analysis as a draft (it keeps its inputs, pricing version, scope and timestamp, and is never rewritten) and **export** it as Markdown or CSV. The view-only judge login can run and download analyses but not save them.
+
+Only calls an eligibility rule confirms count toward savings; the rest show as "requires review". Every figure is labelled as a modelled projection, not a guaranteed saving, and AxiomFlo never switches a model, changes routing or touches a provider: migrating stays a human decision. In the demo you can also ask in the chat, for example "Can we upgrade to a newer model?" or "How much could we save if we switched Gemini Flash to Flash 2 for the Platform team over the last 7 days at 80%?". The assistant asks for anything missing one question at a time and confirms its assumptions before it calculates. How it's worked out: [docs/agent/upgrade-analysis.md](docs/agent/upgrade-analysis.md).
 
 ## Questions to ask the AI Cost Assistant
 
@@ -61,6 +71,8 @@ Open **AI Cost Assistant** in the sidebar, or ask in Slack. Each person only get
 | What does estimated cost mean? | How costs are worked out |
 | How can we cut our AI costs? | The FinOps score and the five optimisation levers ranked by savings |
 | What does each workflow cost in tokens? | Unit economics and token cost per workflow |
+| Can we upgrade to a newer model? | A guided Upgrade Analysis: it asks for the model, scope, period and migration percentage, then estimates the saving |
+| Which workflows benefit most from upgrading Sonnet to Sonnet 2 over the last 30 days at 100%? | Workflows ranked by estimated monthly saving |
 
 Add a month ("in August") to ask about another month. Requests to change something ("change our budget settings") are politely refused: the assistant is read-only.
 
@@ -148,6 +160,7 @@ All cost totals come from one set of rules (`src/lib/calculations.ts`, mirrored 
 | AI Cost Assistant design and deployment | [docs/agent/architecture.md](docs/agent/architecture.md), [docs/agent/deploy.md](docs/agent/deploy.md) |
 | Slack bot | [docs/agent/slack.md](docs/agent/slack.md) |
 | FinOps Scorecard (rules, assumptions, score) | [docs/agent/finops-scorecard.md](docs/agent/finops-scorecard.md) |
+| Upgrade Analysis (projection, eligibility, recommendation, API) | [docs/agent/upgrade-analysis.md](docs/agent/upgrade-analysis.md) |
 | View-only login for judges | [docs/backend/view-only-login.md](docs/backend/view-only-login.md) |
 
 ## Quality

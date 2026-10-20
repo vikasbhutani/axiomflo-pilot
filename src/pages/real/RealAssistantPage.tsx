@@ -10,6 +10,7 @@ import { formatPeriod } from '../../lib/format';
 import { AssistantError, createAssistantApi, inAppPath, type AssistantAnswer, type AssistantLink, type SuggestionsResult } from '../../reports/assistantApi';
 import { useMonthParam, useRealMember } from '../../reports/useRealReport';
 import { MonthSelect } from './RealParts';
+import { AssistantTabs } from '../../components/upgrade/AssistantTabs';
 
 const MAX_QUESTION_LENGTH = 2000;
 
@@ -80,6 +81,7 @@ export function RealAssistantPage() {
     return (
       <>
         <PageHeader title="AxiomFlo Cost Assistant" breadcrumbs={[{ label: 'Overview', to: '/' }, { label: 'AI Cost Assistant' }]} />
+        <AssistantTabs />
         <Card>
           <div className="flex justify-center pt-8 text-slate-300">
             <Bot className="h-8 w-8" aria-hidden />
@@ -111,6 +113,7 @@ export function RealAssistantPage() {
           ) : undefined
         }
       />
+      <AssistantTabs />
 
       <div className="mb-4 flex items-start gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700">
         <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-teal-700" aria-hidden />

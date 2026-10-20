@@ -11,6 +11,7 @@ import type { ExchangeRateView, UsageResult, UsageService, UsageViewer } from '.
 import type { AgentClient } from '../assistant/agentClient.js';
 import type { SlackLinkService } from '../slack/links.js';
 import { testConfig } from './testConfig.js';
+import { createMemoryUpgradeStore, type UpgradeAnalysisStore } from '../upgrade/store.js';
 
 export const COMPANY_ID = 'test-company';
 
@@ -207,6 +208,18 @@ export function makeApp({
   logger = silentLogger,
   agent = null,
   slackLinks = null,
-}: { store?: FakeStore; verifier?: FakeVerifier; admin?: FakeAdmin; keys?: FakeKeys; usage?: FakeUsage; config?: ServerConfig; logger?: Logger; agent?: AgentClient | null; slackLinks?: SlackLinkService | null } = {}) {
-  return { app: createApp({ config, logger, verifier, store, admin, keys, usage, agent, slackLinks }), store, verifier, admin, keys, usage, agent, slackLinks };
+  upgradeStore = createMemoryUpgradeStore(),
+}: {
+  store?: FakeStore;
+  verifier?: FakeVerifier;
+  admin?: FakeAdmin;
+  keys?: FakeKeys;
+  usage?: FakeUsage;
+  config?: ServerConfig;
+  logger?: Logger;
+  agent?: AgentClient | null;
+  slackLinks?: SlackLinkService | null;
+  upgradeStore?: UpgradeAnalysisStore;
+} = {}) {
+  return { app: createApp({ config, logger, verifier, store, admin, keys, usage, agent, slackLinks, upgradeStore }), store, verifier, admin, keys, usage, agent, slackLinks, upgradeStore };
 }

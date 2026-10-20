@@ -55,3 +55,24 @@ export function monthsEndingWith(month: string, count: number): string[] {
   }
   return out;
 }
+
+const DAY = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/** [start of `from`, start of the day after `to`) in a timezone, as UTC ISO strings. */
+export function dayRangeUtc(from: string, to: string, timeZone: string): [string, string] {
+  const start = (date: string) => {
+    const m = DAY.exec(date);
+    if (!m) throw new Error(`Not a date: ${date}`);
+    const guess = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    let t = guess - offsetMinutes(guess, timeZone) * 60_000;
+    t = guess - offsetMinutes(t, timeZone) * 60_000;
+    return t;
+  };
+  const next = new Date(Date.parse(`${to}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
+  return [new Date(start(from)).toISOString(), new Date(start(next)).toISOString()];
+}
+
+/** The calendar date (YYYY-MM-DD) of an instant in a timezone. */
+export function localDate(iso: string | Date, timeZone: string): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(typeof iso === 'string' ? new Date(iso) : iso);
+}

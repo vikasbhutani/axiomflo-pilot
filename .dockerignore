@@ -5,3 +5,10 @@ coverage
 *.local
 backend
 server
+
+# The web app imports the shared Upgrade Analysis engine from the server source.
+!server/src/upgrade
+server/src/upgrade/*.test.ts
+server/src/upgrade/realWorkspace.ts
+server/src/upgrade/store.ts
+server/src/upgrade/firestoreStore.ts

@@ -6,12 +6,14 @@ What the login can do:
 
 - See every page: Overview, Usage Explorer, Teams & Users, AI Providers, Monthly Showback, Settings.
 - Download showback CSVs and ask the AI Cost Assistant.
+- Run an Upgrade Analysis and download its report.
 
 What it can't do (the API answers "This is a view-only account, so nothing can be changed."):
 
 - Invite, suspend or change members.
 - Create or revoke AxiomFlo keys, so it can never send paid AI requests through the gateway.
 - Change exchange rates or link Slack.
+- Save an Upgrade Analysis.
 
 The top bar shows **View-only access** while signed in with it.
 
