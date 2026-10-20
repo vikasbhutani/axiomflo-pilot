@@ -55,7 +55,7 @@ Open **AI Cost Assistant** in the sidebar, or ask in Slack. Each person only get
 | --- | --- |
 | What did each team spend this month? | Spend by team, with a table |
 | How much did we spend on Gemini? | Spend for one provider (also Claude or Anthropic) |
-| Why did estimated spend increase compared with the previous period? | What changed since last month: requests, average cost, the biggest movers |
+| Why did estimated spend increase compared with the previous period? | How spend changed from the month before, and what changed with it |
 | Show the requests behind this total. | A link to those requests in the Usage Explorer |
 | Which requests have unavailable costs? | Requests with no cost yet, and why they aren't counted as $0 |
 | What does estimated cost mean? | How costs are worked out |
