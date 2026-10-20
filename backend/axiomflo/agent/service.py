@@ -219,7 +219,7 @@ class AgentService:
             return AgentAnswer("unavailable", "The AI model returned no answer. Please try again.", ctx.request_id, session_id, labels, tools_called, links)
         problems = unverified_figures(text, tool_results)
         if problems:
-            logger.warning("Withheld an answer with %d unverified figure(s).", len(problems))
+            logger.warning("Withheld an answer with %d unverified figure(s): %s", len(problems), ", ".join(problems[:10]))
             message = (
                 "I couldn't verify every figure in the generated answer against AxiomFlo's calculations, so I've withheld it. "
                 "Please use the links to see the figures directly, or ask again."

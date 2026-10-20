@@ -10,7 +10,9 @@ import json
 import re
 from decimal import Decimal, InvalidOperation
 
-MONEY_RE = re.compile(r"(?<![\w.])[-+]?(?:A|AU)?\$\s?\d[\d,]*(?:\.\d+)?")
+# "$1.50", "A$1.50", "US$1.50", or a currency code as the Upgrade Analysis writes non-AUD
+# amounts ("USD 1.50", with a normal or non-breaking space).
+MONEY_RE = re.compile(r"(?<![\w.])[-+−]?(?:(?:A|AU|US)?\$\s?|\b(?:USD|AUD|EUR|GBP|NZD|CAD|SGD|JPY|INR)[\s\u00a0]?)\d[\d,]*(?:\.\d+)?")
 PERCENT_RE = re.compile(r"[-+]?\d+(?:\.\d+)?\s?%")
 
 

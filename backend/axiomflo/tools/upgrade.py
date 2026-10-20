@@ -23,6 +23,7 @@ NOT_AVAILABLE_MESSAGE = (
     "catalogue with this question. Use the Upgrade Analysis tab beside this chat (/assistant/upgrade)."
 )
 WINDOWS = ("last_7_days", "last_30_days", "custom")
+MIGRATION_QUESTION = "Assuming 100% of eligible calls migrate. Continue?"
 APPROVAL_NOTE = "AxiomFlo never switches models itself. Changing production routing needs explicit human approval."
 
 
@@ -115,10 +116,124 @@ def make_upgrade_tools(rt: ToolRuntime) -> list[Callable]:
                 "time_windows": ["last_7_days", "last_30_days", f"custom (from {u['from']} to {u['today']})"],
                 "current_models": current,
                 "eligibility_rules": len(u["defaultRules"]),
+                "migration_question": MIGRATION_QUESTION,
                 "notes": u["notes"] + [APPROVAL_NOTE],
             }
 
         return rt.run(tool_context, "list_upgrade_options", {}, body)
+
+    def build_request(u: dict, a: dict) -> tuple[dict, dict]:
+        """Checks the person's choices and turns them into an engine request."""
+        if a["time_window"] not in WINDOWS:
+            raise InvalidArgument(f"time_window must be one of {', '.join(WINDOWS)}.")
+        window = {"kind": a["time_window"]}
+        if a["time_window"] == "custom":
+            window.update({"from": a["from_date"], "to": a["to_date"]})
+        assumptions = {
+            k: v
+            for k, v in {
+                "outputTokenChangePct": a["output_token_change_pct"],
+                "requestVolumeChangePct": a["request_volume_change_pct"],
+                "migrationCostEstimate": a["migration_cost"],
+                "evaluationQualityScore": a["evaluation_quality_score"],
+                "qualityThreshold": a["quality_threshold"],
+                "businessCritical": True if a["business_critical"] else None,
+            }.items()
+            if v is not None
+        }
+        body = {
+            "currentModelId": _find_model(u, a["current_model"], "current_model")["id"],
+            "candidateModelId": _find_model(u, a["candidate_model"], "candidate_model")["id"],
+            "scope": _resolve_scope(u, a["scope"]),
+            "timeWindow": window,
+            "migrationPercentage": a["migration_percentage"],
+            "eligibilityRules": _rules(u, a["all_calls_eligible"], a["excluded_teams"]),
+            "assumptions": assumptions,
+        }
+        try:
+            request = up.parse_estimate_request(body)
+            resolved = up.resolve_time_window(request["timeWindow"], u["today"])
+        except up.UpgradeInputError as e:
+            raise InvalidArgument(str(e)) from None
+        if resolved["from"] < u["from"]:
+            raise InvalidArgument(f"The usage records sent with this question start on {u['from']}. Choose a window from then to {u['today']}.")
+        return request, resolved
+
+    def assumption_lines(u: dict, request: dict, w: dict) -> list[str]:
+        by_id = {m["id"]: m for m in u["catalogue"]}
+        scope = request["scope"]
+        team = next((t["label"] for t in u["scopes"]["team"] if t["id"] == scope["id"]), None)
+        rules = request["eligibilityRules"]
+        excluded = [t["label"] for r in rules if r["decision"] == "exclude" for t in u["scopes"]["team"] if t["id"] == r["targetId"]]
+        a = request["assumptions"]
+        fmt = lambda v: up.js_num(v)
+        lines = [
+            f"Current model: {by_id[request['currentModelId']]['displayName']}",
+            f"Candidate model: {by_id[request['candidateModelId']]['displayName']}",
+            f"Scope: {u['companyLabel'] if scope['level'] == 'company' else team}",
+            f"Period: {w['from']} to {w['to']}",
+            f"Migration: {fmt(request['migrationPercentage'])}% of eligible calls",
+            "Eligibility: every call confirmed eligible" if any(r["level"] == "company" and r["decision"] == "eligible" for r in rules)
+            else "Eligibility: not confirmed, so calls count as “requires review”, not savings",
+        ]
+        if excluded:
+            lines.append(f"Staying on the current model: {', '.join(excluded)}")
+        labels = {
+            "outputTokenChangePct": ("Output-token change", "%"),
+            "requestVolumeChangePct": ("Request-volume change", "%"),
+            "evaluationQualityScore": ("Evaluation score", "/100"),
+            "qualityThreshold": ("Quality threshold", "/100"),
+        }
+        for k, (label, unit) in labels.items():
+            if a.get(k) is not None:
+                lines.append(f"{label}: {fmt(a[k])}{unit}")
+        if a.get("migrationCostEstimate") is not None:
+            lines.append(f"One-off migration cost: {up.money(a['migrationCostEstimate'], u['currency'])}")
+        if a.get("businessCritical"):
+            lines.append("Business-critical: yes")
+        lines.append("Anything not listed uses the model’s expectations and today’s observed usage.")
+        return lines
+
+    def tool_args(**a) -> dict:
+        return {k: a[k] for k in ("current_model", "candidate_model", "scope", "time_window", "migration_percentage")}
+
+    def preview_upgrade_assumptions(
+        current_model: str,
+        candidate_model: str,
+        time_window: str,
+        migration_percentage: float,
+        tool_context: ToolContext,
+        scope: str | None = None,
+        from_date: str | None = None,
+        to_date: str | None = None,
+        all_calls_eligible: bool = False,
+        excluded_teams: list[str] | None = None,
+        output_token_change_pct: float | None = None,
+        request_volume_change_pct: float | None = None,
+        migration_cost: float | None = None,
+        evaluation_quality_score: float | None = None,
+        quality_threshold: float | None = None,
+        business_critical: bool = False,
+    ) -> dict:
+        """Checks the choices for an Upgrade Analysis and returns them as assumption lines for the
+        person to confirm. No savings figures. Takes the same arguments as estimate_upgrade.
+
+        Call it before you ask the person to confirm, and list `assumptions` exactly as written.
+        """
+        a = dict(locals())
+
+        def body(ctx, ws, viewer):
+            u = _upgrade_inputs(ctx, ws)
+            request, window = build_request(u, a)
+            return {
+                "status": "ok",
+                "data_label": ws.data_label,
+                "assumptions": assumption_lines(u, request, window),
+                "confirm_question": "Shall I run it?",
+                "migration_question": MIGRATION_QUESTION,
+            }
+
+        return rt.run(tool_context, "preview_upgrade_assumptions", tool_args(**a), body)
 
     def estimate_upgrade(
         current_model: str,
@@ -143,8 +258,9 @@ def make_upgrade_tools(rt: ToolRuntime) -> list[Callable]:
         the change, eligibility, risks, a recommendation and a suggested next step. Read-only: it
         never switches models or changes routing.
 
-        Only call it after the person has confirmed every choice and assumption, including the
-        migration percentage. Relay `summary` as written; it already ends with the disclaimer.
+        Only call it after the person has confirmed the assumptions from
+        preview_upgrade_assumptions, including the migration percentage. Relay `summary` as
+        written; it already ends with the disclaimer.
 
         Args:
           current_model: Model used today (ID or name from list_upgrade_options).
@@ -164,42 +280,13 @@ def make_upgrade_tools(rt: ToolRuntime) -> list[Callable]:
           quality_threshold: Minimum acceptable evaluation score (0 to 100).
           business_critical: True if the person said these calls are business-critical.
         """
-        scope_args = {"current_model": current_model, "candidate_model": candidate_model, "scope": scope, "time_window": time_window, "migration_percentage": migration_percentage}
+        a = dict(locals())
 
         def body(ctx, ws, viewer):
             u = _upgrade_inputs(ctx, ws)
-            if time_window not in WINDOWS:
-                raise InvalidArgument(f"time_window must be one of {', '.join(WINDOWS)}.")
-            window = {"kind": time_window}
-            if time_window == "custom":
-                window.update({"from": from_date, "to": to_date})
-            assumptions = {
-                k: v
-                for k, v in {
-                    "outputTokenChangePct": output_token_change_pct,
-                    "requestVolumeChangePct": request_volume_change_pct,
-                    "migrationCostEstimate": migration_cost,
-                    "evaluationQualityScore": evaluation_quality_score,
-                    "qualityThreshold": quality_threshold,
-                    "businessCritical": True if business_critical else None,
-                }.items()
-                if v is not None
-            }
-            body_ = {
-                "currentModelId": _find_model(u, current_model, "current_model")["id"],
-                "candidateModelId": _find_model(u, candidate_model, "candidate_model")["id"],
-                "scope": _resolve_scope(u, scope),
-                "timeWindow": window,
-                "migrationPercentage": migration_percentage,
-                "eligibilityRules": _rules(u, all_calls_eligible, excluded_teams),
-                "assumptions": assumptions,
-            }
+            request, _window = build_request(u, a)
             try:
-                request = up.parse_estimate_request(body_)
-                resolved = up.resolve_time_window(request["timeWindow"], u["today"])
-                if resolved["from"] < u["from"]:
-                    raise InvalidArgument(f"The usage records sent with this question start on {u['from']}. Choose a window from then to {u['today']}.")
-                a = up.estimate_upgrade(
+                analysis = up.estimate_upgrade(
                     request,
                     catalogue=u["catalogue"],
                     records=u["records"],
@@ -217,19 +304,19 @@ def make_upgrade_tools(rt: ToolRuntime) -> list[Callable]:
             return {
                 "status": "ok",
                 "data_label": ws.data_label,
-                "summary": "\n".join(up.summary_lines(a)),
-                "recommendation": a["recommendation"]["label"],
-                "eligible_calls": a["eligibility"]["eligible"]["requests"],
-                "calls_requiring_review": a["eligibility"]["requiresReview"]["requests"],
-                "notices": a["notices"],
-                "link": {"label": "Open in Upgrade Analysis", "url": rep.settings.web_base_url + up.upgrade_href(request, rules=rules)},
+                "summary": "\n".join(up.summary_lines(analysis)),
+                "recommendation": analysis["recommendation"]["label"],
+                "eligible_calls": analysis["eligibility"]["eligible"]["requests"],
+                "calls_requiring_review": analysis["eligibility"]["requiresReview"]["requests"],
+                "notices": analysis["notices"],
+                "links": [{"label": "Open in Upgrade Analysis", "url": rep.settings.web_base_url + up.upgrade_href(request, rules=rules)}],
                 "notes": [APPROVAL_NOTE, "Saving this analysis is done in the Upgrade Analysis tab."],
                 "disclaimer": up.DISCLAIMER,
             }
 
-        return rt.run(tool_context, "estimate_upgrade", scope_args, body)
+        return rt.run(tool_context, "estimate_upgrade", tool_args(**a), body)
 
-    return [list_upgrade_options, estimate_upgrade]
+    return [list_upgrade_options, preview_upgrade_assumptions, estimate_upgrade]
 
 
-UPGRADE_TOOL_NAMES = ("list_upgrade_options", "estimate_upgrade")
+UPGRADE_TOOL_NAMES = ("list_upgrade_options", "preview_upgrade_assumptions", "estimate_upgrade")
