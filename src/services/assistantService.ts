@@ -61,6 +61,7 @@ export const SUGGESTED_QUESTIONS = [
   'What does estimated cost mean?',
   'How can we cut our AI costs?',
   'What does each workflow cost in tokens?',
+  'Can we upgrade to a newer model?',
 ];
 
 export interface AssistantContext {

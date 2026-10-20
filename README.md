@@ -53,7 +53,20 @@ The **Upgrade Analysis** tab of the AI Cost Assistant (`/assistant/upgrade`) est
 - **See** current versus projected cost, the estimated monthly and annualised saving, what drives the difference (price, input, cached, output and reasoning tokens, volume, retries), how many calls are eligible, ineligible or still need review, seven risks, a recommendation and, when it's worth doing, a staged rollout plan.
 - **Save** an analysis as a draft (it keeps its inputs, pricing version, scope and timestamp, and is never rewritten) and **export** it as Markdown or CSV. The view-only judge login can run and download analyses but not save them.
 
-Only calls an eligibility rule confirms count toward savings; the rest show as "requires review". Every figure is labelled as a modelled projection, not a guaranteed saving, and AxiomFlo never switches a model, changes routing or touches a provider: migrating stays a human decision. In the demo you can also ask in the chat, for example "Can we upgrade to a newer model?" or "How much could we save if we switched Gemini Flash to Flash 2 for the Platform team over the last 7 days at 80%?". The assistant asks for anything missing one question at a time and confirms its assumptions before it calculates. How it's worked out: [docs/agent/upgrade-analysis.md](docs/agent/upgrade-analysis.md).
+Only calls an eligibility rule confirms count toward savings; the rest show as "requires review". Every figure is labelled as a modelled projection, not a guaranteed saving, and AxiomFlo never switches a model, changes routing or touches a provider: migrating stays a human decision. How it's worked out: [docs/agent/upgrade-analysis.md](docs/agent/upgrade-analysis.md).
+
+**Upgrade questions to ask the AI Cost Assistant.** In the demo workspace the chat runs the same analysis on the Acme sample data. It asks for anything missing one question at a time (model, scope, period, migration percentage), checks "Assuming 100% of eligible calls migrate. Continue?" and lists its assumptions before it calculates. These work as written:
+
+| Ask | You get |
+| --- | --- |
+| Can we upgrade to a newer model? | The guided conversation, starting with which model you use today |
+| Should we move to a newer Anthropic model? | A choice between the Claude models you use, then the same questions |
+| How much could we save if we switched Gemini Flash to Flash 2 for the Platform team over the last 7 days at 80%? | Straight to the assumptions to confirm, then the estimate (this one isn't worth it: the saving is immaterial) |
+| Upgrade Sonnet to Sonnet 2 for the whole company over the last 30 days at 100% | Savings, what drives them, eligibility, risks, a recommendation and a rollout plan |
+| Migrate only non-production Sonnet calls to Sonnet 2 over the last 30 days at 100% | The same, with production calls excluded |
+| Upgrade Sonnet and Haiku to newer versions across the company over the last 30 days at 100% | Sonnet first, then "Now analyse Claude Haiku" for the next one |
+
+After an answer, "Change the migration percentage to 50%" or "Use the last 7 days instead" reruns it, and "Save this analysis as a draft" saves it. Questions about a provider AxiomFlo doesn't track (for example GPT-4o) are declined, because there's no usage or pricing to compare. In the live workspace, Gemini doesn't model migrations itself; it sends upgrade questions to the Upgrade Analysis tab.
 
 ## Questions to ask the AI Cost Assistant
 
@@ -71,7 +84,7 @@ Open **AI Cost Assistant** in the sidebar, or ask in Slack. Each person only get
 | What does estimated cost mean? | How costs are worked out |
 | How can we cut our AI costs? | The FinOps score and the five optimisation levers ranked by savings |
 | What does each workflow cost in tokens? | Unit economics and token cost per workflow |
-| Can we upgrade to a newer model? | A guided Upgrade Analysis: it asks for the model, scope, period and migration percentage, then estimates the saving |
+| Can we upgrade to a newer model? | A guided Upgrade Analysis (more in [Upgrade Analysis](#upgrade-analysis)) |
 | Which workflows benefit most from upgrading Sonnet to Sonnet 2 over the last 30 days at 100%? | Workflows ranked by estimated monthly saving |
 
 Add a month ("in August") to ask about another month. Requests to change something ("change our budget settings") are politely refused: the assistant is read-only.
@@ -86,6 +99,7 @@ Add a month ("in August") to ask about another month. Requests to change somethi
 - Which models cost the most this month?
 - Show me the requests behind Platform Engineering's spend.
 - Are there any requests without a cost?
+- What would we save by upgrading to a newer model? (Gemini points you to the Upgrade Analysis tab, which runs the estimate)
 
 **In Slack:** send the same questions to AxiomFlo by direct message, mention `@AxiomFlo` in a channel, or type `/axiomflo how can we lower our AI spend?`. Only the person who asked sees the answer.
 

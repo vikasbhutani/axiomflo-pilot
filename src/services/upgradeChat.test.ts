@@ -131,6 +131,27 @@ describe('Upgrade Analysis in the assistant chat', () => {
     expect(text(r)).toMatch(/requests only/);
   });
 
+  it('answers every upgrade question listed in the README', () => {
+    const complete = [
+      'How much could we save if we switched Gemini Flash to Flash 2 for the Platform team over the last 7 days at 80%?',
+      'Upgrade Sonnet to Sonnet 2 for the whole company over the last 30 days at 100%',
+      'Migrate only non-production Sonnet calls to Sonnet 2 over the last 30 days at 100%',
+      'Which workflows benefit most from upgrading Sonnet to Sonnet 2 over the last 30 days at 100%?',
+      'Upgrade Sonnet and Haiku to newer versions across the company over the last 30 days at 100%',
+    ];
+    for (const q of complete) {
+      const [confirm, result] = converse([q, 'yes']);
+      expect(confirm.upgrade?.awaiting).toBe('confirm');
+      expect(result.upgrade?.awaiting).toBeNull();
+      expect(result.answer[result.answer.length - 1]).toBe(DISCLAIMER);
+    }
+    for (const q of ['Can we upgrade to a newer model?', 'Should we move to a newer Anthropic model?']) expect(converse([q])[0].upgrade?.awaiting).toBe('current');
+    const [, first, again] = converse([complete[1], 'yes', 'Use the last 7 days instead', 'yes']);
+    expect(again.upgrade?.awaiting).toBe('confirm');
+    expect(text(again)).toMatch(/Period: the last 7 days/);
+    expect(first.upgrade?.lastRequest?.timeWindow).toEqual({ kind: 'last_30_days' });
+  });
+
   it('can be cancelled mid-conversation', () => {
     const [, cancelled] = converse(['Can we upgrade to a newer model?', 'cancel']);
     expect(text(cancelled)).toMatch(/dropped that upgrade analysis/);
