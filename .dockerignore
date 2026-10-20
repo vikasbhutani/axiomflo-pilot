@@ -12,3 +12,9 @@ server/src/upgrade/*.test.ts
 server/src/upgrade/realWorkspace.ts
 server/src/upgrade/store.ts
 server/src/upgrade/firestoreStore.ts
+
+# Fixture builders for the agent (npm run agent:fixtures) use server-only code; the web app never imports them.
+src/lib/agentRealFixtures.ts
+src/lib/finopsFixtures.ts
+src/lib/upgradeGolden.ts
+src/lib/agentFixtures.test.ts

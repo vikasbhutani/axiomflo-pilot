@@ -192,5 +192,19 @@ describe('Upgrade Analysis links', () => {
     const href = upgradeHref(request);
     const parsed = parseUpgradeParams(new URL(href, 'http://x').searchParams);
     expect(parsed).toMatchObject({ currentModelId: sonnet.currentModelId, candidateModelId: sonnet.candidateModelId, scope: request.scope, migrationPercentage: 80 });
+    expect(parsed?.extraRules).toBeUndefined();
+  });
+
+  it('carries eligibility rules from the assistant (the agent writes the same format)', () => {
+    const href = upgradeHref({ ...sonnet, migrationPercentage: 100 }, [
+      { level: 'company', targetId: null, decision: 'eligible' },
+      { level: 'team', targetId: 'team-product', decision: 'exclude' },
+    ]);
+    expect(href).toContain('rule=eligible%3Acompany&rule=exclude%3Ateam%3Ateam-product');
+    const parsed = parseUpgradeParams(new URLSearchParams(href.split('?')[1] + '&rule=drop:all&rule=eligible:team'));
+    expect(parsed?.extraRules?.map((r) => [r.decision, r.level, r.targetId])).toEqual([
+      ['eligible', 'company', null],
+      ['exclude', 'team', 'team-product'],
+    ]);
   });
 });

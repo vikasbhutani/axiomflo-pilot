@@ -11,7 +11,7 @@ import { baseGeminiModel, geminiListPrices, VERTEX_PRICE_VERSION } from '../gate
 import { localDate } from '../reports/months.js';
 import type { ExchangeRateView, UsageView } from '../reports/service.js';
 import { addDays } from './engine.js';
-import type { ModelFeature, ModelPricing, ModelProfile, UpgradePath, UpgradeUsageRecord } from './types.js';
+import type { EligibilityRule, ModelFeature, ModelPricing, ModelProfile, ScopeOption, UpgradePath, UpgradeUsageRecord } from './types.js';
 
 const PROVIDER_NAMES: Record<string, string> = { anthropic: 'Anthropic', gemini_vertex: 'Gemini on Vertex AI' };
 const ALL_FEATURES: ModelFeature[] = ['tool_use', 'structured_output', 'vision', 'long_context', 'prompt_caching'];
@@ -155,5 +155,91 @@ export function toUpgradeRecord(r: UsageView, timeZone: string, money: Money): U
     costStatus: r.costStatus,
     pricingVersion: r.priceVersion,
     requiredFeatures: [],
+  };
+}
+
+/** Scopes a member of the live workspace can analyse: the company and their teams. */
+export function liveScopes(teams: { id: string; name: string }[]): { team: ScopeOption[] } {
+  return { team: teams.map((t) => ({ id: t.id, label: t.name })) };
+}
+
+export function liveCompanyLabel(role: string, companyName: string): string {
+  return role === 'company_admin' ? `All teams in ${companyName}` : 'Your own requests';
+}
+
+const RECORD_COLUMNS: (keyof UpgradeUsageRecord)[] = [
+  'id', 'localDate', 'teamId', 'projectId', 'applicationId', 'workflowId', 'agentId', 'environment', 'providerId', 'modelId',
+  'inputTokens', 'cachedInputTokens', 'outputTokens', 'reasoningTokens', 'requestStatus', 'isRetry', 'isFallback', 'latencyMs',
+  'cost', 'costStatus', 'pricingVersion', 'requiredFeatures',
+];
+
+export function compactRecords(records: UpgradeUsageRecord[]) {
+  return { columns: RECORD_COLUMNS, rows: records.map((r) => RECORD_COLUMNS.map((k) => r[k])) };
+}
+
+export function expandRecords({ columns, rows }: UpgradeSnapshot['records']): UpgradeUsageRecord[] {
+  return rows.map((row) => Object.fromEntries(columns.map((k, i) => [k, row[i]])) as unknown as UpgradeUsageRecord);
+}
+
+/**
+ * Everything the AxiomFlo Agent needs to run an Upgrade Analysis on the usage records it
+ * was sent, built by the same code as POST /api/upgrade-analysis/estimate. Records go as
+ * columns and rows (one array per record) to keep the request small.
+ */
+export interface UpgradeSnapshot {
+  version: 1;
+  /** Today in the reporting timezone. */
+  today: string;
+  /** First local date the records cover; analyses can't start earlier. */
+  from: string;
+  currency: string;
+  companyLabel: string;
+  scopes: { team: ScopeOption[] };
+  catalogue: ModelProfile[];
+  records: { columns: (keyof UpgradeUsageRecord)[]; rows: unknown[][] };
+  defaultRules: EligibilityRule[];
+  notes: string[];
+}
+
+export function buildUpgradeSnapshot({
+  usage,
+  rates,
+  reportingCurrency,
+  timeZone,
+  today,
+  from,
+  teams,
+  role,
+  companyName,
+}: {
+  usage: { records: UsageView[]; truncated?: boolean; skipped?: number }[];
+  rates: ExchangeRateView[];
+  reportingCurrency: string;
+  timeZone: string;
+  today: string;
+  from: string;
+  teams: { id: string; name: string }[];
+  role: string;
+  companyName: string;
+}): UpgradeSnapshot {
+  const money = moneyFor(reportingCurrency, rates);
+  const raw = usage.flatMap((u) => u.records);
+  const records = raw.map((r) => toUpgradeRecord(r, timeZone, money));
+  const notes = [
+    money.note,
+    usage.some((u) => u.truncated) ? 'There were more usage records than one analysis reads, so some are missing; choose a shorter window.' : null,
+    usage.some((u) => u.skipped) ? `${usage.reduce((n, u) => n + (u.skipped ?? 0), 0)} stored records couldn’t be read and were left out.` : null,
+  ].filter((n): n is string => !!n);
+  return {
+    version: 1,
+    today,
+    from,
+    currency: money.currency,
+    companyLabel: liveCompanyLabel(role, companyName),
+    scopes: liveScopes(teams),
+    catalogue: buildCatalogue({ today, money, observed: records.map((r) => ({ id: r.modelId, providerId: r.providerId })) }),
+    records: compactRecords(records),
+    defaultRules: [],
+    notes,
   };
 }

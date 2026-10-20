@@ -184,4 +184,25 @@ def load_snapshot(raw: dict) -> Workspace:
         currency_notes=notes,
         rate_missing_periods=tuple(rate_missing),
         snapshot_viewer_id=viewer_person.id,
+        upgrade=_upgrade_block(raw.get("upgrade")),
     )
+
+
+def _upgrade_block(raw) -> dict | None:
+    """The Upgrade Analysis inputs, with records expanded from columns and rows. Older API
+    versions don't send them, so a missing block just means the analysis isn't available."""
+    if raw is None:
+        return None
+    try:
+        _require(isinstance(raw, dict) and raw.get("version") == 1, "upgrade.version must be 1")
+        for key in ("today", "from", "currency", "companyLabel"):
+            _require(isinstance(raw.get(key), str), f"upgrade.{key} is missing")
+        _require(isinstance(raw.get("catalogue"), list), "upgrade.catalogue is missing")
+        teams = (raw.get("scopes") or {}).get("team")
+        _require(isinstance(teams, list), "upgrade.scopes.team is missing")
+        columns, rows = raw["records"]["columns"], raw["records"]["rows"]
+        _require(isinstance(columns, list) and isinstance(rows, list), "upgrade.records is malformed")
+        records = [dict(zip(columns, row, strict=True)) for row in rows]
+    except (KeyError, TypeError, ValueError) as e:
+        raise InvalidSnapshot(f"The usage snapshot is malformed: the upgrade inputs could not be read ({type(e).__name__}).") from None
+    return {**raw, "records": records, "scopes": {"team": teams}, "defaultRules": raw.get("defaultRules") or [], "notes": raw.get("notes") or []}

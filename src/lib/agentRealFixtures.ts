@@ -13,6 +13,7 @@
 import { summarize, type CostSummary } from './calculations';
 import { buildDataset, modelDisplayName, type RealRecord } from '../reports/realData';
 import type { ExchangeRateView, UsageResponse, UsageView } from '../reports/reportsApi';
+import { buildUpgradeSnapshot } from '../../server/src/upgrade/realWorkspace';
 
 export const SNAPSHOT_VERSION = 1;
 
@@ -167,16 +168,30 @@ function usageFor(monthIndex: number, viewerUid: string | null): UsageResponse {
 export function buildUsageSnapshot(viewerUid = 'uid-ava') {
   const m = memberships.find((x) => x.uid === viewerUid)!;
   const isAdmin = m.role === 'company_admin';
+  const visibleTeams = isAdmin ? teams : teams.filter((t) => (m.teamIds as readonly string[]).includes(t.id));
+  const usage = MONTHS.map((_, i) => usageFor(i, isAdmin ? null : viewerUid));
   return {
     snapshotVersion: SNAPSHOT_VERSION,
     label: 'SAMPLE SNAPSHOT: invented records in the shape the AxiomFlo API sends the agent. Not real usage.',
     generatedAt: '2026-10-19T03:30:00.000Z',
     company,
     viewer: { uid: m.uid, role: m.role, teamIds: [...m.teamIds], status: 'active', ...people[m.uid] },
-    teams: isAdmin ? teams : teams.filter((t) => (m.teamIds as readonly string[]).includes(t.id)),
+    teams: visibleTeams,
     currentMonth: MONTHS[MONTHS.length - 1][0],
-    usage: MONTHS.map((_, i) => usageFor(i, isAdmin ? null : viewerUid)),
+    usage,
     exchangeRates,
+    // Built by the API's own code (server/src/upgrade/realWorkspace.ts), as the real snapshot is.
+    upgrade: buildUpgradeSnapshot({
+      usage: usage as Parameters<typeof buildUpgradeSnapshot>[0]['usage'],
+      rates: exchangeRates,
+      reportingCurrency: company.reportingCurrency,
+      timeZone: company.reportingTimezone,
+      today: '2026-10-19',
+      from: `${MONTHS[0][0]}-01`,
+      teams: visibleTeams,
+      role: m.role,
+      companyName: company.name,
+    }),
   };
 }
 

@@ -149,11 +149,12 @@ If any row looks different, stop and ask before inviting more people.
 
 ## Updating after a change is merged
 
-New features need both services redeployed: the API first, then the web app. In Cloud Shell, from the repo's top folder:
+New features need the services redeployed: the API first, then the agent (when `backend/` changed), then the web app. In Cloud Shell, from the repo's top folder:
 
 ```bash
 git pull
 gcloud run deploy axiomflo-api --source server --region asia-southeast1 --project axiomflo-pilot
+gcloud run deploy axiomflo-agent --source backend --region asia-southeast1 --project axiomflo-pilot
 WEB=$(gcloud projects describe 603572706266 --format='value(projectId)')
 gcloud run deploy axiomflo --source . --region asia-southeast1 --project "$WEB"
 ```

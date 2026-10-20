@@ -8,8 +8,9 @@
  */
 import type { VerifiedIdentity } from '../auth/tokenVerifier.js';
 import type { ActiveMember } from '../membership/requireMember.js';
-import { monthBoundsUtc } from '../reports/months.js';
+import { localDate, monthBoundsUtc } from '../reports/months.js';
 import type { ExchangeRateView, UsageResult, UsageService } from '../reports/service.js';
+import { buildUpgradeSnapshot, type UpgradeSnapshot } from '../upgrade/realWorkspace.js';
 
 export const SNAPSHOT_VERSION = 1;
 /** Most months one snapshot holds; the agent refuses more. */
@@ -24,6 +25,8 @@ export interface UsageSnapshot {
   currentMonth: string;
   usage: ({ month: string; startIso: string; endIso: string } & UsageResult)[];
   exchangeRates: ExchangeRateView[];
+  /** Upgrade Analysis inputs over the same records (docs/agent/upgrade-analysis.md). */
+  upgrade: UpgradeSnapshot;
 }
 
 export async function buildSnapshot({
@@ -62,5 +65,16 @@ export async function buildSnapshot({
     currentMonth,
     usage: perMonth,
     exchangeRates: rates,
+    upgrade: buildUpgradeSnapshot({
+      usage: perMonth,
+      rates,
+      reportingCurrency: company.reportingCurrency,
+      timeZone: company.reportingTimezone,
+      today: localDate(now, company.reportingTimezone),
+      from: `${[...months].sort()[0]}-01`,
+      teams,
+      role: membership.role,
+      companyName: company.name,
+    }),
   };
 }

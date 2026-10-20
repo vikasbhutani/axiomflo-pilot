@@ -28,7 +28,7 @@ This repository is the working pilot, built for one company and running on Googl
 | **Sign-in and access** | **Firebase Authentication** with Google or email and password. Signing in only proves who you are; what you can see comes from a membership record in **Firestore**, checked by the API on every request. Company Admins invite people and manage roles. | `src/auth/`, `server/src/membership/` |
 | **AxiomFlo API** | Node.js + Express on Cloud Run. Verifies Firebase sign-in tokens, enforces roles and teams, serves reports, manages AxiomFlo keys and records audit events. | `server/` |
 | **Gateway** | A separate Cloud Run service. People point their tools at it with an **AxiomFlo key** instead of a provider key. It forwards requests to **Anthropic (Claude)** or **Gemini on Vertex AI**, returns the answer unchanged, and writes one usage record with tokens and estimated cost. Prompts and answers are never stored. | `server/src/gateway/` |
-| **AI Cost Assistant** | Built with Google's **Agent Development Kit (ADK)** and **Gemini on Vertex AI**, called through the **global endpoint** so busy regions don't cause errors. Gemini picks read-only tools and explains the figures they return; it never calculates or invents an amount, and any number not backed by a tool is withheld. Also gives savings suggestions and the FinOps Scorecard (unit economics, token cost per workflow, five optimisation levers ranked by savings), and has an Upgrade Analysis tab that models moving to a newer model. | `backend/` |
+| **AI Cost Assistant** | Built with Google's **Agent Development Kit (ADK)** and **Gemini on Vertex AI**, called through the **global endpoint** so busy regions don't cause errors. Gemini picks read-only tools and explains the figures they return; it never calculates or invents an amount, and any number not backed by a tool is withheld. Also gives savings suggestions and the FinOps Scorecard (unit economics, token cost per workflow, five optimisation levers ranked by savings), and runs Upgrade Analysis, which models moving to a newer model, in the chat and in its own tab. | `backend/` |
 | **Slack bot** | Ask about AI spend by direct message, `@AxiomFlo` or `/axiomflo`. Answers come from the same assistant and only the person who asked sees them. Accounts are linked only when the Slack email matches the AxiomFlo sign-in email. | `server/src/slack/`, `deploy/slack/` |
 | **Demo workspace** | Sample data that runs fully in the browser, so anyone can explore without an account. | `src/data/`, `src/services/` |
 
@@ -66,7 +66,7 @@ Only calls an eligibility rule confirms count toward savings; the rest show as "
 | Migrate only non-production Sonnet calls to Sonnet 2 over the last 30 days at 100% | The same, with production calls excluded |
 | Upgrade Sonnet and Haiku to newer versions across the company over the last 30 days at 100% | Sonnet first, then "Now analyse Claude Haiku" for the next one |
 
-After an answer, "Change the migration percentage to 50%" or "Use the last 7 days instead" reruns it, and "Save this analysis as a draft" saves it. Questions about a provider AxiomFlo doesn't track (for example GPT-4o) are declined, because there's no usage or pricing to compare. In the live workspace, Gemini doesn't model migrations itself; it sends upgrade questions to the Upgrade Analysis tab.
+After an answer, "Change the migration percentage to 50%" or "Use the last 7 days instead" reruns it, and "Save this analysis as a draft" saves it. Questions about a provider AxiomFlo doesn't track (for example GPT-4o) are declined, because there's no usage or pricing to compare. In the live workspace, Gemini runs the same conversation on your real usage, with the same figures as the tab, and links to the tab to save it.
 
 ## Questions to ask the AI Cost Assistant
 
@@ -99,7 +99,7 @@ Add a month ("in August") to ask about another month. Requests to change somethi
 - Which models cost the most this month?
 - Show me the requests behind Platform Engineering's spend.
 - Are there any requests without a cost?
-- What would we save by upgrading to a newer model? (Gemini points you to the Upgrade Analysis tab, which runs the estimate)
+- Can we upgrade to a newer model? (Gemini asks which models, scope, period and percentage, confirms its assumptions, then runs the Upgrade Analysis)
 
 **In Slack:** send the same questions to AxiomFlo by direct message, mention `@AxiomFlo` in a channel, or type `/axiomflo how can we lower our AI spend?`. Only the person who asked sees the answer.
 
