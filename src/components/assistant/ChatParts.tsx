@@ -1,4 +1,5 @@
-import { Bot, User as UserIcon } from 'lucide-react';
+import { forwardRef, type FormEvent } from 'react';
+import { Bot, SendHorizontal, User as UserIcon } from 'lucide-react';
 import { useTypedText } from '../../hooks/useMotion';
 
 /** Suggested-question chip style; the chip lifts slightly on hover. */
@@ -92,3 +93,46 @@ export function TypedParagraphs({ paragraphs, shown, done, className }: { paragr
     </div>
   );
 }
+
+/** The question box under a conversation. Enter sends, Shift + Enter adds a line. */
+export const ChatComposer = forwardRef<
+  HTMLTextAreaElement,
+  { id: string; draft: string; onDraft: (text: string) => void; onSend: () => void; pending: boolean; maxLength: number; hint: string; className?: string }
+>(function ChatComposer({ id, draft, onDraft, onSend, pending, maxLength, hint, className = 'px-4 py-4 sm:px-6' }, ref) {
+  return (
+    <form
+      onSubmit={(e: FormEvent) => {
+        e.preventDefault();
+        onSend();
+      }}
+      className={`border-t border-slate-200 ${className}`}
+    >
+      <label htmlFor={id} className="sr-only">
+        Ask a question about AI costs
+      </label>
+      <div className="flex items-end gap-2">
+        <textarea
+          id={id}
+          ref={ref}
+          rows={1}
+          value={draft}
+          maxLength={maxLength}
+          onChange={(e) => onDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              onSend();
+            }
+          }}
+          placeholder="Ask about AI spend…"
+          className="max-h-32 min-h-[42px] flex-1 resize-none rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20"
+        />
+        <button type="submit" className="btn-primary h-[42px]" disabled={pending || draft.trim() === ''} aria-label="Send question">
+          <SendHorizontal className="h-4 w-4" aria-hidden />
+          <span className="hidden sm:inline">Send</span>
+        </button>
+      </div>
+      <p className="mt-2 text-xs text-slate-500">{hint}</p>
+    </form>
+  );
+});
