@@ -654,7 +654,7 @@ export function buildAssistantResponse(question: string, ctx: AssistantContext, 
   }
 }
 
-const LATENCY_MS = import.meta.env?.MODE === 'test' ? 0 : 600;
+const LATENCY_MS = import.meta.env?.MODE === 'test' ? 0 : 1100;
 
 /** Deterministic demo answer. No live LLM, no network, no data changes. */
 export function getAssistantResponse(question: string, ctx: AssistantContext, context: UserContext): Promise<AssistantResponse> {

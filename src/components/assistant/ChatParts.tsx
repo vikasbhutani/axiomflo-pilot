@@ -1,4 +1,5 @@
 import { Bot, User as UserIcon } from 'lucide-react';
+import { useTypedText } from '../../hooks/useMotion';
 
 /** Suggested-question chip style; the chip lifts slightly on hover. */
 export const SUGGESTION_CHIP_CLASS =
@@ -40,6 +41,54 @@ export function UserBubble({ text }: { text: string }) {
       <span className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-600 sm:flex" aria-hidden>
         <UserIcon className="h-4 w-4" />
       </span>
+    </div>
+  );
+}
+
+/** Scrolls the conversation panel (never the page) to its latest message. */
+export function scrollConversationToEnd(from: Element | null) {
+  const log = from?.closest('[role="log"]');
+  log?.scrollTo?.({ top: log.scrollHeight, behavior: 'smooth' });
+}
+
+const PARAGRAPH_BREAK = '\u2029';
+
+/** Types out an answer's paragraphs in order; `done` turns true once the last word is shown. */
+export function useTypedParagraphs(paragraphs: string[]) {
+  const { shown, done } = useTypedText(paragraphs.join(PARAGRAPH_BREAK));
+  return { shown: shown.split(PARAGRAPH_BREAK), done };
+}
+
+/**
+ * An answer's paragraphs, typed out word by word with a blinking caret. Screen readers get the whole
+ * text at once, so the conversation's live region announces it once rather than word by word.
+ */
+export function TypedParagraphs({ paragraphs, shown, done, className }: { paragraphs: string[]; shown: string[]; done: boolean; className: (i: number) => string }) {
+  if (done)
+    return (
+      <>
+        {paragraphs.map((p, i) => (
+          <p key={i} className={className(i)}>
+            {p}
+          </p>
+        ))}
+      </>
+    );
+  return (
+    <div>
+      <div aria-hidden>
+        {shown.map((p, i) => (
+          <p key={i} className={className(i)}>
+            {p}
+            {i === shown.length - 1 && <span className="ml-0.5 inline-block h-4 w-0.5 translate-y-0.5 animate-pulse bg-teal-600" />}
+          </p>
+        ))}
+      </div>
+      <div className="sr-only">
+        {paragraphs.map((p, i) => (
+          <p key={i}>{p}</p>
+        ))}
+      </div>
     </div>
   );
 }

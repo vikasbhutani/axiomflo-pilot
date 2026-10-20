@@ -211,7 +211,7 @@ function DailyCard({ data }: { data: RealDataset }) {
               <XAxis dataKey="date" tickFormatter={(d: string) => formatCalendarDate(d)} tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={{ stroke: '#cbd5e1' }} minTickGap={24} />
               <YAxis tickFormatter={(v: number) => formatMoney(v, currency)} tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} width={64} />
               <Tooltip formatter={(v: number) => [formatMoney(v, currency, { precise: true }), 'Estimated spend']} labelFormatter={(d: string) => formatCalendarDate(d, { withYear: true })} />
-              <Area type="monotone" dataKey="spend" stroke="#0d9488" strokeWidth={2} fill="#0d9488" fillOpacity={0.12} isAnimationActive={animateChart && firstRender} animationDuration={900} />
+              <Area type="monotone" dataKey="spend" stroke="#0d9488" strokeWidth={2} fill="#0d9488" fillOpacity={0.12} isAnimationActive={animateChart && firstRender} animationDuration={1500} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
