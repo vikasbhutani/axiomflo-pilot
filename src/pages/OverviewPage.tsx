@@ -274,7 +274,7 @@ function DailySpendCard({ data }: { data: OverviewData }) {
               <XAxis dataKey="date" tickFormatter={(d: string) => formatCalendarDate(d)} tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={{ stroke: '#cbd5e1' }} minTickGap={24} />
               <YAxis tickFormatter={(v: number) => `$${Number(v.toFixed(1))}`} tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} width={48} />
               <Tooltip content={<DailyTooltip />} cursor={{ stroke: '#94a3b8', strokeWidth: 1 }} />
-              <Area type="monotone" dataKey="estimatedSpend" stroke="#0d9488" strokeWidth={2} fill="url(#spendFill)" isAnimationActive={animateChart && firstRender} animationDuration={900} activeDot={{ r: 4, stroke: '#fff', strokeWidth: 2 }} />
+              <Area type="monotone" dataKey="estimatedSpend" stroke="#0d9488" strokeWidth={2} fill="url(#spendFill)" isAnimationActive={animateChart && firstRender} animationDuration={1500} activeDot={{ r: 4, stroke: '#fff', strokeWidth: 2 }} />
             </AreaChart>
           </ResponsiveContainer>
         </div>

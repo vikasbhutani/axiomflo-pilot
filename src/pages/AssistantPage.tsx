@@ -9,7 +9,7 @@ import { roleLabels } from '../lib/permissions';
 import { formatPeriod } from '../lib/format';
 import { TableScroll } from '../components/ui/TableScroll';
 import { AssistantTabs } from '../components/upgrade/AssistantTabs';
-import { AssistantAvatar, SUGGESTION_CHIP_CLASS, ThinkingIndicator, UserBubble } from '../components/assistant/ChatParts';
+import { AssistantAvatar, scrollConversationToEnd, SUGGESTION_CHIP_CLASS, ThinkingIndicator, TypedParagraphs, useTypedParagraphs, UserBubble } from '../components/assistant/ChatParts';
 
 type ChatMessage = { id: number; from: 'user'; text: string } | { id: number; from: 'assistant'; response: AssistantResponse } | { id: number; from: 'error'; text: string };
 
@@ -197,19 +197,21 @@ function SuggestionChip({ text, onAsk, disabled }: { text: string; onAsk: (q: st
 
 function AssistantAnswer({ response, onAsk, disabled }: { response: AssistantResponse; onAsk: (q: string) => void; disabled: boolean }) {
   const r = response;
+  const typed = useTypedParagraphs(r.answer);
+  const ref = useRef<HTMLDivElement>(null);
+  // The facts, table and links arrive once the text has been typed out, so bring them into view.
+  useEffect(() => {
+    if (typed.done) scrollConversationToEnd(ref.current);
+  }, [typed.done]);
   return (
-    <div className="flex animate-slide-in-left gap-3">
+    <div ref={ref} className="flex animate-slide-in-left gap-3">
       <AssistantAvatar />
       <div className="min-w-0 flex-1 space-y-3">
         <div className="stagger rounded-2xl rounded-tl-sm border border-slate-200 bg-white px-4 py-3 text-sm leading-relaxed text-slate-800">
           <span className="sr-only">Assistant answered: </span>
-          {r.answer.map((p, i) => (
-            <p key={i} className={`whitespace-pre-line${i > 0 ? ' mt-2' : ''}`}>
-              {p}
-            </p>
-          ))}
+          <TypedParagraphs paragraphs={r.answer} {...typed} className={(i) => `whitespace-pre-line${i > 0 ? ' mt-2' : ''}`} />
 
-          {r.facts.length > 0 && (
+          {typed.done && r.facts.length > 0 && (
             <dl className="mt-3 flex flex-wrap gap-x-4 gap-y-1 border-t border-slate-100 pt-3 text-xs">
               {r.facts.map((f) => (
                 <div key={f.label} className="flex gap-1">
@@ -220,7 +222,7 @@ function AssistantAnswer({ response, onAsk, disabled }: { response: AssistantRes
             </dl>
           )}
 
-          {r.table && (
+          {typed.done && r.table && (
             <TableScroll label={r.table.caption} className="mt-3 rounded-lg border border-slate-200">
               <table className="w-full min-w-[420px] text-xs tabular-nums">
                 <caption className="bg-slate-50 px-3 py-2 text-left text-xs font-medium text-slate-600">{r.table.caption}</caption>
@@ -271,19 +273,19 @@ function AssistantAnswer({ response, onAsk, disabled }: { response: AssistantRes
             </TableScroll>
           )}
 
-          {r.supporting && (
+          {typed.done && r.supporting && (
             <Link to={usageHref(r.supporting.filters)} className="btn-secondary mt-3">
               <Table2 className="h-4 w-4" aria-hidden /> {r.supporting.label}
             </Link>
           )}
-          {r.page && (
+          {typed.done && r.page && (
             <Link to={r.page.to} className="btn-secondary mt-3">
               <Gauge className="h-4 w-4" aria-hidden /> {r.page.label}
             </Link>
           )}
         </div>
 
-        {r.followUps.length > 0 && (
+        {typed.done && r.followUps.length > 0 && (
           <div className="flex animate-fade-up flex-wrap items-center gap-2" style={{ animationDelay: '400ms' }}>
             <span className="inline-flex items-center gap-1 text-xs text-slate-500">
               <Lightbulb className="h-3.5 w-3.5" aria-hidden /> Ask next:

@@ -11,7 +11,7 @@ import { AssistantError, createAssistantApi, inAppPath, type AssistantAnswer, ty
 import { useMonthParam, useRealMember } from '../../reports/useRealReport';
 import { MonthSelect } from './RealParts';
 import { AssistantTabs } from '../../components/upgrade/AssistantTabs';
-import { AssistantAvatar, SUGGESTION_CHIP_CLASS, ThinkingIndicator, UserBubble } from '../../components/assistant/ChatParts';
+import { AssistantAvatar, scrollConversationToEnd, SUGGESTION_CHIP_CLASS, ThinkingIndicator, TypedParagraphs, useTypedParagraphs, UserBubble } from '../../components/assistant/ChatParts';
 
 const MAX_QUESTION_LENGTH = 2000;
 
@@ -256,14 +256,21 @@ function Welcome({ questions, onAsk, disabled }: { questions: string[]; onAsk: (
 function AnswerBubble({ answer }: { answer: AssistantAnswer }) {
   const ok = answer.status === 'ok';
   const links = answer.links.filter((l, i, all) => inAppPath(l.url) && all.findIndex((x) => x.url === l.url) === i).slice(0, 3);
+  const paragraphs = useMemo(() => [answer.text], [answer.text]);
+  const typed = useTypedParagraphs(paragraphs);
+  const ref = useRef<HTMLDivElement>(null);
+  // The links arrive once the text has been typed out, so bring them into view.
+  useEffect(() => {
+    if (typed.done) scrollConversationToEnd(ref.current);
+  }, [typed.done]);
   return (
-    <div className="flex animate-slide-in-left gap-3">
+    <div ref={ref} className="flex animate-slide-in-left gap-3">
       <AssistantAvatar />
       <div className={`stagger min-w-0 flex-1 rounded-2xl rounded-tl-sm border px-4 py-3 text-sm leading-relaxed ${ok ? 'border-slate-200 bg-white text-slate-800' : 'border-amber-200 bg-amber-50 text-amber-950'}`}>
         <span className="sr-only">Assistant answered: </span>
         {!ok && <AlertTriangle className="mb-1 h-4 w-4 text-amber-700" aria-hidden />}
-        <p className="whitespace-pre-wrap break-words">{answer.text}</p>
-        {links.length > 0 && (
+        <TypedParagraphs paragraphs={paragraphs} {...typed} className={() => 'whitespace-pre-wrap break-words'} />
+        {typed.done && links.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-x-4">
             {links.map((l) => (
               <LinkButton key={l.url} link={l} />

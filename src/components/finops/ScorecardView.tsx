@@ -69,7 +69,7 @@ function ScoreCard({ scorecard, money }: { scorecard: Scorecard; money: Scorecar
       <div className="px-5 py-5">
         <div className="flex items-center gap-4">
           <p className="text-5xl font-semibold tabular-nums tracking-tight text-slate-900" aria-label={`Score ${scorecard.score ?? 'not available'} out of 100`}>
-            {scorecard.score === null ? '—' : <CountUp value={scorecard.score} format={(n) => Math.round(n).toString()} duration={900} />}
+            {scorecard.score === null ? '—' : <CountUp value={scorecard.score} format={(n) => Math.round(n).toString()} duration={1500} />}
             <span className="text-lg font-normal text-slate-400">/100</span>
           </p>
           {scorecard.grade && <span className={`rounded-lg px-3 py-1.5 text-2xl font-bold ring-1 ${GRADE_STYLE[scorecard.grade]}`}>{scorecard.grade}</span>}
