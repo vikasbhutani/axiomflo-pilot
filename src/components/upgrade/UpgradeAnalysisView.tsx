@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } 
 import { AlertTriangle, CheckCircle2, Download, FileText, HelpCircle, Plus, Save, ShieldAlert, Trash2, XCircle } from 'lucide-react';
 import { Card, CardHeader } from '../ui/Card';
 import { StatCard } from '../ui/StatCard';
+import { CountUp } from '../ui/CountUp';
 import { SelectField } from '../ui/SelectField';
 import { TableScroll } from '../ui/TableScroll';
 import { ErrorState, LoadingState } from '../ui/States';
@@ -252,7 +253,7 @@ export function UpgradeAnalysisView({ client, canSave, initial, viewerKey }: Upg
     <div className="space-y-6">
       <SelectionCard models={models} form={form} set={set} running={running} error={runError} onRun={() => void run(form)} />
       {analysis && (
-        <div className={`space-y-6 ${running ? 'opacity-60' : ''}`} aria-busy={running} aria-live="polite">
+        <div className={`animate-fade-up space-y-6 transition-opacity ${running ? 'opacity-60' : ''}`} aria-busy={running} aria-live="polite">
           <ResultHeader analysis={analysis} />
           <SavingsSummary analysis={analysis} money={money} />
           <div className="grid gap-6 xl:grid-cols-2">
@@ -497,14 +498,18 @@ function SavingsSummary({ analysis: a, money }: { analysis: UpgradeAnalysis; mon
       </Card>
     );
   return (
-    <section aria-label="Savings summary" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-      <StatCard label="Current estimated cost" value={money(f.currentCost)} detail={`${a.period.days} days · based on observed usage`} />
-      <StatCard label="Projected cost" value={money(f.projectedCost)} detail="Modelled projection" />
-      <StatCard label="Estimated monthly savings" value={money(f.monthlySavings)} detail={`${money(f.currentMonthlyCost)} → ${money(f.projectedMonthlyCost)} a month`} tone={f.savings < 0 ? 'warning' : 'default'} />
-      <StatCard label="Estimated annualised savings" value={money(f.annualisedSavings)} detail="Extrapolation: monthly × 12" tone={f.savings < 0 ? 'warning' : 'default'} />
-      <StatCard label="Percentage reduction" value={f.savingsPct === null ? 'Not available' : `${f.savingsPct.toFixed(1)}%`} detail={f.oneOffMigrationCost !== null ? `One-off cost ${money(f.oneOffMigrationCost)} (separate)` : 'Not a guaranteed saving'} />
+    <section aria-label="Savings summary" className="stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <StatCard label="Current estimated cost" value={<MoneyCountUp value={f.currentCost} money={money} />} detail={`${a.period.days} days · based on observed usage`} />
+      <StatCard label="Projected cost" value={<MoneyCountUp value={f.projectedCost} money={money} />} detail="Modelled projection" />
+      <StatCard label="Estimated monthly savings" value={<MoneyCountUp value={f.monthlySavings} money={money} />} detail={`${money(f.currentMonthlyCost)} → ${money(f.projectedMonthlyCost)} a month`} tone={f.savings < 0 ? 'warning' : 'default'} />
+      <StatCard label="Estimated annualised savings" value={<MoneyCountUp value={f.annualisedSavings} money={money} />} detail="Extrapolation: monthly × 12" tone={f.savings < 0 ? 'warning' : 'default'} />
+      <StatCard label="Percentage reduction" value={f.savingsPct === null ? 'Not available' : <CountUp value={f.savingsPct} format={(n) => `${n.toFixed(1)}%`} />} detail={f.oneOffMigrationCost !== null ? `One-off cost ${money(f.oneOffMigrationCost)} (separate)` : 'Not a guaranteed saving'} />
     </section>
   );
+}
+
+function MoneyCountUp({ value, money }: { value: number | null; money: (v: number | null | undefined) => string }) {
+  return value === null ? <>{money(value)}</> : <CountUp value={value} format={money} />;
 }
 
 function AssumptionsPanel({ analysis: a, money }: { analysis: UpgradeAnalysis; money: (v: number | null | undefined, precise?: boolean) => string }) {

@@ -12,6 +12,8 @@ import { StatCard } from '../../components/ui/StatCard';
 import { CostStatusBadge } from '../../components/ui/StatusBadge';
 import { ErrorState, Skeleton } from '../../components/ui/States';
 import { TableScroll } from '../../components/ui/TableScroll';
+import { CountUp } from '../../components/ui/CountUp';
+import { motionAllowed, useFirstRender } from '../../hooks/useMotion';
 import { summarize, summarizeBy } from '../../lib/calculations';
 import { formatCalendarDate, formatDateTime, formatMoney, formatNumber, formatPeriod, formatPeriodRange, periodBounds } from '../../lib/format';
 import { glossary } from '../../lib/glossary';
@@ -63,12 +65,12 @@ function OverviewBody({ data, isAdmin }: { data: RealDataset; isAdmin: boolean }
   const total = s.estimatedSpend;
   return (
     <>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Estimated spend" tooltip={glossary.estimatedSpend} icon={<Coins className="h-4 w-4" aria-hidden />} value={spendText(s, money.currency)} detail={money.currency} />
+      <div className="stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Estimated spend" tooltip={glossary.estimatedSpend} icon={<Coins className="h-4 w-4" aria-hidden />} value={spendText(s, money.currency) === 'Not available' ? 'Not available' : <CountUp value={s.estimatedSpend} format={(n) => formatMoney(n, money.currency)} />} detail={money.currency} />
         <StatCard
           label="Requests"
           icon={<Hash className="h-4 w-4" aria-hidden />}
-          value={formatNumber(s.requestCount)}
+          value={<CountUp value={s.requestCount} format={(n) => formatNumber(Math.round(n))} />}
           detail={`${formatNumber(s.succeededCount)} succeeded · ${formatNumber(s.failedCount)} failed`}
         />
         <StatCard
@@ -151,6 +153,9 @@ function OverviewBody({ data, isAdmin }: { data: RealDataset; isAdmin: boolean }
 
 function DailyCard({ data }: { data: RealDataset }) {
   const [showTable, setShowTable] = useState(false);
+  // Draw the chart in on first load only; a month change swaps the data without replaying it.
+  const firstRender = useFirstRender();
+  const [animateChart] = useState(() => motionAllowed());
   const titleId = useId();
   const [start, end] = periodBounds(data.month);
   const byDay = summarizeBy(data.records, (r) => r.localDate);
@@ -206,7 +211,7 @@ function DailyCard({ data }: { data: RealDataset }) {
               <XAxis dataKey="date" tickFormatter={(d: string) => formatCalendarDate(d)} tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={{ stroke: '#cbd5e1' }} minTickGap={24} />
               <YAxis tickFormatter={(v: number) => formatMoney(v, currency)} tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} width={64} />
               <Tooltip formatter={(v: number) => [formatMoney(v, currency, { precise: true }), 'Estimated spend']} labelFormatter={(d: string) => formatCalendarDate(d, { withYear: true })} />
-              <Area type="monotone" dataKey="spend" stroke="#0d9488" strokeWidth={2} fill="#0d9488" fillOpacity={0.12} />
+              <Area type="monotone" dataKey="spend" stroke="#0d9488" strokeWidth={2} fill="#0d9488" fillOpacity={0.12} isAnimationActive={animateChart && firstRender} animationDuration={900} />
             </AreaChart>
           </ResponsiveContainer>
         </div>

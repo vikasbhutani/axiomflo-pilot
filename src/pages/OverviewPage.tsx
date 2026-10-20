@@ -18,6 +18,8 @@ import { safeRatio, type CostSummary } from '../lib/calculations';
 import { formatCalendarDate, formatCurrency, formatDateTime, formatNumber, formatPercent, formatPeriod, formatPeriodRange } from '../lib/format';
 import type { ProviderId } from '../types';
 import { TableScroll } from '../components/ui/TableScroll';
+import { CountUp } from '../components/ui/CountUp';
+import { motionAllowed, useFirstRender } from '../hooks/useMotion';
 
 /** Builds a Usage Explorer link that carries the Overview's team and provider filters. */
 function usageLink(filters: OverviewData['filters'], extra: Record<string, string> = {}): string {
@@ -152,18 +154,18 @@ function SummaryCards({ data }: { data: OverviewData }) {
   const s = data.summary;
   const reconciledShare = safeRatio(s.reconciledCount, s.costedCount);
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <StatCard
         label="Estimated spend"
         tooltip={glossary.estimatedSpend}
         icon={<Coins className="h-4 w-4" aria-hidden />}
-        value={formatCurrency(s.estimatedSpend)}
+        value={<CountUp value={s.estimatedSpend} format={(n) => formatCurrency(n)} />}
         detail={<ChangeIndicator current={s.estimatedSpend} previous={data.previousSummary} previousPeriod={data.previousPeriod} />}
       />
       <StatCard
         label="Requests"
         icon={<Hash className="h-4 w-4" aria-hidden />}
-        value={formatNumber(s.requestCount)}
+        value={<CountUp value={s.requestCount} format={(n) => formatNumber(Math.round(n))} />}
         detail={`${formatNumber(s.succeededCount)} succeeded · ${formatNumber(s.failedCount)} failed`}
       />
       <StatCard
@@ -216,6 +218,9 @@ function DailyTooltip({ active, payload }: TooltipProps<number, string>) {
 
 function DailySpendCard({ data }: { data: OverviewData }) {
   const [showTable, setShowTable] = useState(false);
+  // Draw the chart in on first load only; filter changes swap the data without replaying it.
+  const firstRender = useFirstRender();
+  const [animateChart] = useState(() => motionAllowed());
   const titleId = useId();
   const hasData = data.summary.requestCount > 0;
   return (
@@ -269,7 +274,7 @@ function DailySpendCard({ data }: { data: OverviewData }) {
               <XAxis dataKey="date" tickFormatter={(d: string) => formatCalendarDate(d)} tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={{ stroke: '#cbd5e1' }} minTickGap={24} />
               <YAxis tickFormatter={(v: number) => `$${Number(v.toFixed(1))}`} tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} width={48} />
               <Tooltip content={<DailyTooltip />} cursor={{ stroke: '#94a3b8', strokeWidth: 1 }} />
-              <Area type="monotone" dataKey="estimatedSpend" stroke="#0d9488" strokeWidth={2} fill="url(#spendFill)" activeDot={{ r: 4, stroke: '#fff', strokeWidth: 2 }} />
+              <Area type="monotone" dataKey="estimatedSpend" stroke="#0d9488" strokeWidth={2} fill="url(#spendFill)" isAnimationActive={animateChart && firstRender} animationDuration={900} activeDot={{ r: 4, stroke: '#fff', strokeWidth: 2 }} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -309,7 +314,7 @@ function BreakdownCard({ title, description, rows, total }: { title: string; des
                   </div>
                 </div>
                 <div className="mt-2 h-2 rounded-full bg-slate-100" aria-hidden>
-                  <div className="h-2 rounded-full bg-teal-600" style={{ width: `${max > 0 ? (r.summary.estimatedSpend / max) * 100 : 0}%` }} />
+                  <div className="h-2 origin-left animate-grow-x rounded-full bg-teal-600 transition-[width] duration-500" style={{ width: `${max > 0 ? (r.summary.estimatedSpend / max) * 100 : 0}%` }} />
                 </div>
                 <p className="mt-1.5 text-xs text-slate-500">
                   {formatNumber(r.summary.requestCount)} requests
