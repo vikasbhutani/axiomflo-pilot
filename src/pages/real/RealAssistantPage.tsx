@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertTriangle, Bot, Gauge, Lightbulb, RotateCcw, SendHorizontal, ShieldCheck, Table2, User as UserIcon } from 'lucide-react';
+import { AlertTriangle, Bot, Gauge, Lightbulb, RotateCcw, SendHorizontal, ShieldCheck, Table2 } from 'lucide-react';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Card, CardHeader } from '../../components/ui/Card';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
@@ -11,6 +11,7 @@ import { AssistantError, createAssistantApi, inAppPath, type AssistantAnswer, ty
 import { useMonthParam, useRealMember } from '../../reports/useRealReport';
 import { MonthSelect } from './RealParts';
 import { AssistantTabs } from '../../components/upgrade/AssistantTabs';
+import { AssistantAvatar, SUGGESTION_CHIP_CLASS, ThinkingIndicator, UserBubble } from '../../components/assistant/ChatParts';
 
 const MAX_QUESTION_LENGTH = 2000;
 
@@ -115,7 +116,7 @@ export function RealAssistantPage() {
       />
       <AssistantTabs />
 
-      <div className="mb-4 flex items-start gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700">
+      <div className="mb-4 flex animate-fade-in items-start gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700">
         <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-teal-700" aria-hidden />
         <p>
           Read-only. It answers only from what {isAdmin ? 'a Company Admin' : 'you'} can see, for this month and the two before it. Amounts are estimates from provider list prices, not bills. Answers are
@@ -123,7 +124,7 @@ export function RealAssistantPage() {
         </p>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
+      <div className="grid animate-fade-in gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <Card className="flex flex-col">
           <div ref={logRef} className="h-[calc(100vh-24rem)] min-h-[380px] space-y-5 overflow-y-auto px-4 py-5 sm:px-6" role="log" aria-live="polite" aria-label="Conversation" aria-busy={pending}>
             {messages.length === 0 && <Welcome questions={isAdmin ? ADMIN_QUESTIONS : USER_QUESTIONS} onAsk={ask} disabled={pending} />}
@@ -131,19 +132,14 @@ export function RealAssistantPage() {
               m.from === 'user' ? (
                 <UserBubble key={m.id} text={m.text} />
               ) : m.from === 'error' ? (
-                <p key={m.id} role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                <p key={m.id} role="alert" className="animate-fade-up rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
                   {m.text}
                 </p>
               ) : (
                 <AnswerBubble key={m.id} answer={m.answer} />
               ),
             )}
-            {pending && (
-              <div className="flex items-center gap-3 text-sm text-slate-500">
-                <AssistantAvatar />
-                <span>Looking that up…</span>
-              </div>
-            )}
+            {pending && <ThinkingIndicator label="Looking that up…" />}
           </div>
 
           <form
@@ -208,7 +204,7 @@ function SuggestionList({ result, month }: { result: SuggestionsResult; month: s
   return (
     <ul className="space-y-3" aria-label={`Savings suggestions for ${formatPeriod(month)}`}>
       {items.map((s) => (
-        <li key={`${s.kind}:${s.title}`} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+        <li key={`${s.kind}:${s.title}`} className="animate-fade-up rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
           <p className="flex items-start gap-2 text-sm font-semibold text-slate-900">
             <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" aria-hidden />
             {s.title}
@@ -233,20 +229,20 @@ function LinkButton({ link }: { link: AssistantLink }) {
 
 function Welcome({ questions, onAsk, disabled }: { questions: string[]; onAsk: (q: string) => void; disabled: boolean }) {
   return (
-    <div className="mx-auto max-w-2xl py-6 text-center">
+    <div className="mx-auto max-w-2xl animate-fade-up py-6 text-center">
       <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-teal-50 text-teal-700">
         <Bot className="h-5 w-5" aria-hidden />
       </span>
       <h2 className="mt-3 text-base font-semibold text-slate-900">What would you like to know about AI spend?</h2>
       <p className="mt-1 text-sm text-slate-600">Answers say which month, currency and cost status they use, with a link to the requests behind them.</p>
-      <ul className="mt-5 flex flex-wrap justify-center gap-2" aria-label="Suggested questions">
+      <ul className="stagger mt-5 flex flex-wrap justify-center gap-2" aria-label="Suggested questions">
         {questions.map((q) => (
           <li key={q}>
             <button
               type="button"
               onClick={() => onAsk(q)}
               disabled={disabled}
-              className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-left text-sm text-slate-700 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600 disabled:opacity-50"
+              className={SUGGESTION_CHIP_CLASS}
             >
               {q}
             </button>
@@ -257,35 +253,13 @@ function Welcome({ questions, onAsk, disabled }: { questions: string[]; onAsk: (
   );
 }
 
-function AssistantAvatar() {
-  return (
-    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-700 text-white" aria-hidden>
-      <Bot className="h-4 w-4" />
-    </span>
-  );
-}
-
-function UserBubble({ text }: { text: string }) {
-  return (
-    <div className="flex justify-end gap-3">
-      <p className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-tr-sm bg-navy-900 px-4 py-2.5 text-sm text-white">
-        <span className="sr-only">You asked: </span>
-        {text}
-      </p>
-      <span className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-600 sm:flex" aria-hidden>
-        <UserIcon className="h-4 w-4" />
-      </span>
-    </div>
-  );
-}
-
 function AnswerBubble({ answer }: { answer: AssistantAnswer }) {
   const ok = answer.status === 'ok';
   const links = answer.links.filter((l, i, all) => inAppPath(l.url) && all.findIndex((x) => x.url === l.url) === i).slice(0, 3);
   return (
-    <div className="flex gap-3">
+    <div className="flex animate-slide-in-left gap-3">
       <AssistantAvatar />
-      <div className={`min-w-0 flex-1 rounded-2xl rounded-tl-sm border px-4 py-3 text-sm leading-relaxed ${ok ? 'border-slate-200 bg-white text-slate-800' : 'border-amber-200 bg-amber-50 text-amber-950'}`}>
+      <div className={`stagger min-w-0 flex-1 rounded-2xl rounded-tl-sm border px-4 py-3 text-sm leading-relaxed ${ok ? 'border-slate-200 bg-white text-slate-800' : 'border-amber-200 bg-amber-50 text-amber-950'}`}>
         <span className="sr-only">Assistant answered: </span>
         {!ok && <AlertTriangle className="mb-1 h-4 w-4 text-amber-700" aria-hidden />}
         <p className="whitespace-pre-wrap break-words">{answer.text}</p>

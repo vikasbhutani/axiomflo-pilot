@@ -9,6 +9,7 @@ import { Card, CardHeader } from '../ui/Card';
 import { StatCard } from '../ui/StatCard';
 import { TableScroll } from '../ui/TableScroll';
 import { InfoTooltip } from '../ui/InfoTooltip';
+import { CountUp } from '../ui/CountUp';
 import { safeRatio } from '../../lib/calculations';
 import { formatCompact, formatNumber, formatPercent } from '../../lib/format';
 import type { Lever, Scorecard, UnitEconomics } from '../../lib/finops';
@@ -68,7 +69,7 @@ function ScoreCard({ scorecard, money }: { scorecard: Scorecard; money: Scorecar
       <div className="px-5 py-5">
         <div className="flex items-center gap-4">
           <p className="text-5xl font-semibold tabular-nums tracking-tight text-slate-900" aria-label={`Score ${scorecard.score ?? 'not available'} out of 100`}>
-            {scorecard.score ?? '—'}
+            {scorecard.score === null ? '—' : <CountUp value={scorecard.score} format={(n) => Math.round(n).toString()} duration={900} />}
             <span className="text-lg font-normal text-slate-400">/100</span>
           </p>
           {scorecard.grade && <span className={`rounded-lg px-3 py-1.5 text-2xl font-bold ring-1 ${GRADE_STYLE[scorecard.grade]}`}>{scorecard.grade}</span>}
@@ -86,7 +87,7 @@ function ScoreCard({ scorecard, money }: { scorecard: Scorecard; money: Scorecar
                 </span>
               </div>
               <div className="mt-1 h-1.5 rounded-full bg-slate-100" aria-hidden>
-                <div className="h-1.5 rounded-full bg-teal-600" style={{ width: `${(c.points / c.max) * 100}%` }} />
+                <div className="h-1.5 origin-left animate-grow-x rounded-full bg-teal-600 transition-[width] duration-500" style={{ width: `${(c.points / c.max) * 100}%` }} />
               </div>
             </li>
           ))}
@@ -115,7 +116,7 @@ function EconomicsGrid({ economics: e, previous: p, previousLabel, money }: { ec
       <h2 id="unit-economics" className="sr-only">
         Unit economics
       </h2>
-      <div className="grid h-full gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="stagger grid h-full gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <StatCard label="Estimated spend" value={money(e.spend)} detail={<Change now={e.spend} before={p?.spend} previousLabel={previousLabel} />} />
         <StatCard
           label="Cost per request"
@@ -185,7 +186,7 @@ function LeverComparison({ scorecard, money, assistantHref }: { scorecard: Score
                 </div>
               </div>
               <div className="ml-9 mt-2 h-2 rounded-full bg-slate-100" aria-hidden>
-                <div className="h-2 rounded-full bg-teal-600" style={{ width: `${max > 0 ? (l.savings / max) * 100 : 0}%` }} />
+                <div className="h-2 origin-left animate-grow-x rounded-full bg-teal-600 transition-[width] duration-500" style={{ width: `${max > 0 ? (l.savings / max) * 100 : 0}%` }} />
               </div>
               <div className="ml-9 mt-1.5 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
                 <span>

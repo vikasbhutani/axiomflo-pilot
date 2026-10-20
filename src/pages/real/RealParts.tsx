@@ -93,7 +93,7 @@ export function SpendList({
                   </div>
                 </div>
                 <div className="mt-2 h-2 rounded-full bg-slate-100" aria-hidden>
-                  <div className="h-2 rounded-full bg-teal-600" style={{ width: `${max > 0 ? (r.summary.estimatedSpend / max) * 100 : 0}%` }} />
+                  <div className="h-2 origin-left animate-grow-x rounded-full bg-teal-600 transition-[width] duration-500" style={{ width: `${max > 0 ? (r.summary.estimatedSpend / max) * 100 : 0}%` }} />
                 </div>
                 <p className="mt-1.5 text-xs text-slate-500">
                   {formatNumber(r.summary.requestCount)} request{r.summary.requestCount === 1 ? '' : 's'}
