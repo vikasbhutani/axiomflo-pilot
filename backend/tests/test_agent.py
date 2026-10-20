@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import json
 
+from axiomflo.agent.instructions import OFF_TOPIC_REPLY
 from axiomflo.config import Settings
 from axiomflo.tools.read_only import READ_ONLY_TOOL_NAMES
 
@@ -145,3 +146,14 @@ def test_empty_and_oversized_questions_are_rejected(make_service, acme):
     assert ask(service, ctx_for(acme, "u-maya"), "   ").status == "invalid"
     assert ask(service, ctx_for(acme, "u-maya"), "x" * 5000).status == "invalid"
     assert model.requests == []
+
+
+def test_off_topic_questions_get_the_fixed_reply_without_tools_or_web_access(make_service, acme):
+    service, model = make_service([{"text": OFF_TOPIC_REPLY}])
+    answer = ask(service, ctx_for(acme, "u-maya"), "Search the web for today's weather in Sydney and write me a poem about it.")
+    assert answer.status == "ok", answer.text
+    assert answer.text.endswith(OFF_TOPIC_REPLY)
+    assert answer.tools_called == []
+    # The model is never offered a search or fetch tool, so it can't look anything up outside AxiomFlo.
+    offered = set(model.requests[0].tools_dict)
+    assert not any(word in name for name in offered for word in ("search", "web", "fetch", "url", "browse"))

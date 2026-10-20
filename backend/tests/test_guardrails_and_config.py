@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from axiomflo.agent.guardrails import unverified_figures
+from axiomflo.agent.instructions import AGENT_INSTRUCTION, OFF_TOPIC_REPLY
 from axiomflo.config import Settings
 from axiomflo.context import ContextRegistry, TrustedContext
 
@@ -50,3 +51,10 @@ def test_context_rejects_unknown_roles_and_channels():
         TrustedContext("co-acme", "u-maya", "superuser", (), "web", "test")
     with pytest.raises(ValueError):
         TrustedContext("co-acme", "u-maya", "company_admin", (), "email", "test")
+
+
+def test_instructions_keep_the_assistant_on_topic():
+    assert "Stay on topic" in AGENT_INSTRUCTION
+    assert f'reply with exactly:\n  "{OFF_TOPIC_REPLY}"' in AGENT_INSTRUCTION
+    assert "{off_topic_reply}" not in AGENT_INSTRUCTION
+    assert "no web access" in AGENT_INSTRUCTION
