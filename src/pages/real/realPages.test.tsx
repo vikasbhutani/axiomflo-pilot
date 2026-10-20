@@ -290,6 +290,18 @@ describe('real AI Cost Assistant', () => {
     expect(await screen.findByText('The assistant isn’t set up yet')).toBeTruthy();
   });
 
+  it('opens from any page as a side panel, without leaving it', async () => {
+    assistantReply.ask = () => json({ status: 'ok', text: 'Team One spent $0.06 AUD in October.', sessionId: null, links: [] });
+    const { api } = fakeApi([]);
+    render(`/teams?month=${MONTH}`, api);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'Ask AI' }));
+    const panel = screen.getByRole('complementary', { name: 'AI Cost Assistant' });
+    await user.type(within(panel).getByLabelText('Ask a question about AI costs'), 'What did each team spend?{Enter}');
+    expect(await within(panel).findByText('Team One spent $0.06 AUD in October.')).toBeTruthy();
+    expect(screen.getByTestId('location').textContent).toBe(`/teams?month=${MONTH}`);
+  });
+
   it('an individual user gets questions about their own spend', async () => {
     const { api } = fakeApi([]);
     render('/assistant', api, membershipFor(alice, { teams: [teams[0]] }));
