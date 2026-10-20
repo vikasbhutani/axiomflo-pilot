@@ -13,6 +13,8 @@ import { company, providerConnections as seedConnections, seedAuditEvents, teams
 import type { AuditEvent, ProviderConnection, Team, User } from '../types';
 
 const STORAGE_KEY = 'axiomflo-demo:workspace';
+/** Saved demo Upgrade Analyses (services/upgradeAnalysisService.ts); "Reset demo" clears them too. */
+const UPGRADE_STORAGE_KEY = 'axiomflo-demo:upgrade-analyses';
 const STATE_VERSION = 1;
 
 export interface DemoState {
@@ -91,6 +93,7 @@ export const demoStore = {
     revision++;
     try {
       storage()?.removeItem(STORAGE_KEY);
+      storage()?.removeItem(UPGRADE_STORAGE_KEY);
     } catch {
       // ignore
     }

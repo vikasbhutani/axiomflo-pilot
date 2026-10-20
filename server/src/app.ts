@@ -26,6 +26,8 @@ import { keysRouter } from './routes/keys.js';
 import { meRouter } from './routes/me.js';
 import { reportsRouter } from './routes/reports.js';
 import { workspaceRouter } from './routes/workspace.js';
+import { upgradeAnalysisRouter } from './routes/upgradeAnalysis.js';
+import { createMemoryUpgradeStore, type UpgradeAnalysisStore } from './upgrade/store.js';
 
 /** Largest JSON body accepted. The API's requests are small (an email, a role, a few team IDs). */
 export const BODY_LIMIT = '16kb';
@@ -42,9 +44,11 @@ export interface AppDeps {
   agent?: AgentClient | null;
   /** Slack account links; absent in tests that don't need them. */
   slackLinks?: SlackLinkService | null;
+  /** Saved Upgrade Analyses; in memory when absent (tests). */
+  upgradeStore?: UpgradeAnalysisStore;
 }
 
-export function createApp({ config, logger, verifier, store, admin, keys, usage, agent = null, slackLinks = null }: AppDeps): express.Express {
+export function createApp({ config, logger, verifier, store, admin, keys, usage, agent = null, slackLinks = null, upgradeStore = createMemoryUpgradeStore() }: AppDeps): express.Express {
   const app = express();
   app.disable('x-powered-by');
   // Cloud Run puts one Google front end in front of the container; trust exactly that hop.
@@ -69,6 +73,7 @@ export function createApp({ config, logger, verifier, store, admin, keys, usage,
   app.use(keysRouter({ authenticate: auth, requireMember, keys, companyId, logger }));
   app.use(reportsRouter({ authenticate: auth, requireMember, usage, companyId, logger }));
   app.use(assistantRouter({ authenticate: auth, requireMember, usage, agent, companyId, logger }));
+  app.use(upgradeAnalysisRouter({ authenticate: auth, requireMember, usage, store: upgradeStore, companyId, logger }));
   if (slackLinks) app.use(slackLinksRouter({ authenticate: auth, requireMember, links: slackLinks, companyId, logger }));
 
   app.use(notFoundHandler);

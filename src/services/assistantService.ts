@@ -16,8 +16,9 @@ import type { CostedUsageRecord, CostStatus, PeriodKey, ProviderId, UserContext 
 import { getCurrentUser, getReportingPeriods, selectRecords } from './mockService';
 import { buildDemoScorecard } from './finopsService';
 import type { Scorecard } from '../lib/finops';
+import { isUpgradeQuestion, upgradeTurn, type UpgradeDraft } from './upgradeChat';
 
-export type AssistantIntent = 'optimise' | 'unit_economics' | 'team_spend' | 'provider_spend' | 'period_change' | 'supporting_requests' | 'estimated_meaning' | 'unresolved' | 'read_only' | 'unsupported';
+export type AssistantIntent = 'upgrade_analysis' | 'optimise' | 'unit_economics' | 'team_spend' | 'provider_spend' | 'period_change' | 'supporting_requests' | 'estimated_meaning' | 'unresolved' | 'read_only' | 'unsupported';
 
 /** Usage Explorer filters for the "View supporting requests" action. */
 export interface SupportingFilters {
@@ -48,6 +49,8 @@ export interface AssistantResponse {
   /** Raw figures behind the answer (used by tests and for transparency). */
   figures: Record<string, number | null>;
   followUps: string[];
+  /** Upgrade Analysis conversation state, handed back with the next question. */
+  upgrade?: UpgradeDraft;
 }
 
 export const SUGGESTED_QUESTIONS = [
@@ -65,6 +68,8 @@ export interface AssistantContext {
   period: PeriodKey;
   /** Filters behind the previous answer, so "this total" has a meaning. */
   previous?: SupportingFilters;
+  /** The Upgrade Analysis conversation in progress, from the previous answer. */
+  upgrade?: UpgradeDraft;
 }
 
 const SCOPE_TEXT =
@@ -77,11 +82,18 @@ function normalise(question: string): string {
 const has = (text: string, ...words: (string | RegExp)[]) => words.some((w) => (typeof w === 'string' ? text.includes(w) : w.test(text)));
 
 export function detectIntent(question: string): AssistantIntent {
+  return intentFor(question);
+}
+
+function intentFor(question: string, upgrade?: UpgradeDraft): AssistantIntent {
   const q = normalise(question);
   if (q === '') return 'unsupported';
+  // An upgrade conversation in progress takes the answer to its question.
+  if (upgrade?.awaiting) return 'upgrade_analysis';
   // Anything asking the assistant to change something is refused first.
   if (has(q, /\b(change|set|update|raise|lower|increase|reduce|edit|delete|remove|disable|enable|turn off|turn on|connect|disconnect|rename|invite|suspend|approve|pay|charge)\b.*\b(budget|setting|connection|provider|team|user|limit|key|credential|invoice|payment)s?\b/) && !has(q, /\bwhy\b/, 'compared', 'previous', 'last month')) return 'read_only';
   if (has(q, /\bmean(s|ing)?\b/, 'what is estimated', 'what is an estimate', 'define', 'explain estimated', 'how is the cost calculated', 'how are costs calculated', 'how is cost calculated')) return 'estimated_meaning';
+  if (isUpgradeQuestion(q, upgrade)) return 'upgrade_analysis';
   if (has(q, /\boptimi[sz]/, /\bsav(e|es|ing|ings)\b/, /\b(cut|reduce|lower|trim)\b.*\b(cost|costs|spend|spending|bill)\b/, 'lever', 'scorecard', 'finops', 'cost down', 'efficien')) return 'optimise';
   if (has(q, 'unit economic', 'unit cost', 'workflow', 'per request', 'cost per', 'token cost', 'per token', 'per million')) return 'unit_economics';
   if (has(q, /\bwhy\b/, 'compare', 'compared', 'previous', 'last month', 'prior', 'month over month', 'change in', 'trend', 'went up', 'go up', 'went down', 'increase', 'decrease')) return 'period_change';
@@ -616,7 +628,9 @@ function unsupported(q: string): AssistantResponse {
 /** Pure function behind getAssistantResponse (no latency). */
 export function buildAssistantResponse(question: string, ctx: AssistantContext, context: UserContext): AssistantResponse {
   const q = normalise(question);
-  switch (detectIntent(question)) {
+  switch (intentFor(question, ctx.upgrade)) {
+    case 'upgrade_analysis':
+      return upgradeTurn(q, ctx.upgrade, context);
     case 'optimise':
       return optimise(q, ctx, context);
     case 'unit_economics':

@@ -61,3 +61,21 @@ export function estimateAnthropicCostUsd(model: string, t: TokenCounts): number 
   const rate = entry.longPrompt && prompt > entry.longPrompt.over ? entry.longPrompt.rate : entry.rate;
   return (t.inputTokens * rate.input + t.outputTokens * rate.output + t.cacheWriteTokens * rate.cacheWrite + t.cacheReadTokens * rate.cacheRead) / 1_000_000;
 }
+
+export interface AnthropicListPrice {
+  prefix: string;
+  input: number;
+  output: number;
+  cacheWrite: number;
+  cacheRead: number;
+}
+
+/** The standard list price of every priced Claude model, for Upgrade Analysis. Long-prompt rates aren't included. */
+export function anthropicListPrices(): AnthropicListPrice[] {
+  return ANTHROPIC.map((e) => ({ prefix: e.prefix, ...e.rate }));
+}
+
+/** The price-list prefix a model ID is priced under, or null. */
+export function anthropicPricePrefix(model: string): string | null {
+  return ANTHROPIC.find((e) => model.startsWith(e.prefix))?.prefix ?? null;
+}

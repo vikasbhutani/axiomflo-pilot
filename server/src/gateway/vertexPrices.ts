@@ -77,3 +77,20 @@ export function estimateVertexCostUsd(model: string, t: GeminiTokens, at: Date):
   const input = (uncached - audio) * rate.input + audio * (rate.audioInput ?? rate.input);
   return (input + t.cachedTokens * rate.cachedInput + t.outputTokens * rate.output) / 1_000_000;
 }
+
+export interface GeminiListPrice {
+  model: string;
+  input: number;
+  cachedInput: number;
+  output: number;
+  /** First day this rate no longer applies (UTC, YYYY-MM-DD), when a change is announced. */
+  until: string | null;
+}
+
+/** Each priced Gemini model's standard rate on a day, for Upgrade Analysis. Long-context and audio rates aren't included. */
+export function geminiListPrices(day: string): GeminiListPrice[] {
+  return Object.entries(GEMINI).flatMap(([model, periods]) => {
+    const period = periods.find((p) => !p.until || day < p.until);
+    return period ? [{ model, input: period.rate.input, cachedInput: period.rate.cachedInput, output: period.rate.output, until: period.until ?? null }] : [];
+  });
+}
