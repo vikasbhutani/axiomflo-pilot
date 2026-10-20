@@ -170,6 +170,19 @@ describe('real workspace pages', () => {
     expect(fetch.mock.calls.map(([p]) => p)).toContain(`/api/usage?month=${MONTH}`);
   });
 
+  it('FinOps Scorecard scores the real month without sample data', async () => {
+    const { api } = fakeApi([...records, usage('r3', { modelId: 'claude-opus-5-5', inputTokens: 60_000, outputTokens: 100, estimatedCostUsd: 0.5 })], [rate(MONTH, 1.5)]);
+    render(`/scorecard?month=${MONTH}`, api);
+    expect(await screen.findByText('FinOps score')).toBeTruthy();
+    const levers = screen.getByText('Five optimisation levers, by savings potential').closest('section')!;
+    expect(within(levers).getAllByRole('listitem')).toHaveLength(5);
+    const table = screen.getByRole('table');
+    expect(within(table).getByText('Interactive use · Team One')).toBeTruthy();
+    expect(within(table).getByText('Interactive use · Team Two')).toBeTruthy();
+    expect(screen.getByText(/split assuming output tokens cost five times/)).toBeTruthy();
+    expect(screen.queryByText(/sample/i)).toBeNull();
+  });
+
   it('says plainly when there are no requests yet', async () => {
     const { api } = fakeApi([]);
     render('/', api);

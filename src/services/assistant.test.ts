@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildAssistantResponse, detectIntent, getAssistantResponse, SUGGESTED_QUESTIONS } from './assistantService';
+import { buildDemoScorecard } from './finopsService';
 import { buildMonthlyShowback, buildOverview, selectRecords } from './mockService';
 import { DEMO_PERSONAS } from '../data/mockData';
 import { summarize } from '../lib/calculations';
@@ -11,7 +12,7 @@ const sept = { period: '2026-09' };
 
 describe('Assistant intent detection', () => {
   it('supports every suggested question', () => {
-    expect(SUGGESTED_QUESTIONS.map(detectIntent)).toEqual(['team_spend', 'provider_spend', 'period_change', 'supporting_requests', 'estimated_meaning']);
+    expect(SUGGESTED_QUESTIONS.map(detectIntent)).toEqual(['team_spend', 'provider_spend', 'period_change', 'supporting_requests', 'estimated_meaning', 'optimise', 'unit_economics']);
   });
 
   it('refuses requests to change data', () => {
@@ -113,5 +114,33 @@ describe('Assistant role scoping', () => {
       const count = r.figures.requestCount ?? r.figures.currentRequests;
       if (count !== undefined && count !== null) expect(count).toBeLessThan(adminTotal);
     }
+  });
+});
+
+describe('Cost optimisation answers', () => {
+  it('ranks the five levers from the FinOps Scorecard', () => {
+    const r = buildAssistantResponse('How can we cut our AI costs?', sept, admin);
+    const { scorecard } = buildDemoScorecard('2026-09', admin);
+    expect(r.intent).toBe('optimise');
+    expect(r.table?.rows).toHaveLength(5);
+    expect(r.table?.rows[0].lever).toBe(scorecard.levers[0].name);
+    expect(r.figures.combinedSavings).toBe(scorecard.combinedSavings);
+    expect(r.figures.score).toBe(scorecard.score);
+    expect(r.page?.to).toBe('/scorecard');
+    expect(r.answer.join(' ')).toMatch(/doesn’t promise the same quality/);
+  });
+
+  it('understands other ways of asking', () => {
+    for (const q of ['Any savings ideas?', 'How do we optimise spend?', 'Show the FinOps scorecard', 'Ways to reduce our Gemini cost']) expect(detectIntent(q)).toBe('optimise');
+    for (const q of ['What is our unit economics?', 'Token cost per workflow', 'What is the cost per request?']) expect(detectIntent(q)).toBe('unit_economics');
+    expect(detectIntent('Which model is cheaper and just as good?')).toBe('unsupported');
+  });
+
+  it('gives token cost per workflow, scoped to the person asking', () => {
+    const r = buildAssistantResponse('What does each workflow cost in tokens?', sept, admin);
+    expect(r.table?.rows.map((row) => row.workflow)).toContain('CI code-review bot');
+    const own = buildAssistantResponse('What does each workflow cost in tokens?', sept, individual);
+    expect(own.table?.rows.map((row) => row.workflow)).toEqual(['Interactive use · Product Experience']);
+    expect(own.figures.estimatedSpend).toBeLessThan(r.figures.estimatedSpend!);
   });
 });

@@ -31,7 +31,7 @@ flowchart LR
 | Box | Code | State |
 | --- | --- | --- |
 | Agent | `backend/axiomflo/agent/` | ADK `LlmAgent`, Gemini model from settings, instructions, figure check |
-| Tools | `backend/axiomflo/tools/` | 9 read-only tools (including savings suggestions), context lookup, audit |
+| Tools | `backend/axiomflo/tools/` | 10 read-only tools (including savings suggestions and the [FinOps Scorecard](finops-scorecard.md)), context lookup, audit |
 | Reporting | `backend/axiomflo/reporting/` | Python port of the web app's calculations, over sample fixtures or a real usage snapshot sent by the API ([usage-snapshot.md](usage-snapshot.md)) |
 | TrustedContext | `backend/axiomflo/context.py` | Built by server code; local runs use demo personas |
 | Audit | `backend/axiomflo/observability/audit.py` | In memory and Python log; no chat content |

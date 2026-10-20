@@ -7,6 +7,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildGoldenTotals, buildWorkspaceFixture } from '../src/lib/agentFixtures';
 import { buildSnapshotGoldenTotals, buildUsageSnapshot } from '../src/lib/agentRealFixtures';
+import { buildFinopsGolden } from '../src/lib/finopsFixtures';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const outDir = resolve(root, 'backend/fixtures');
@@ -18,6 +19,7 @@ const files: [string, unknown, number | undefined][] = [
   ['golden-totals.json', buildGoldenTotals(), 2],
   ['sample-snapshot.json', buildUsageSnapshot(), undefined],
   ['sample-snapshot-golden.json', buildSnapshotGoldenTotals(), 2],
+  ['finops-golden.json', buildFinopsGolden(), 2],
 ];
 for (const [name, data, indent] of files) {
   writeFileSync(resolve(outDir, name), `${JSON.stringify(data, null, indent)}\n`);

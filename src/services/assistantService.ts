@@ -14,8 +14,10 @@ import { formatCurrency, formatNumber, formatPercent, formatPeriod, formatPeriod
 import { can } from '../lib/permissions';
 import type { CostedUsageRecord, CostStatus, PeriodKey, ProviderId, UserContext } from '../types';
 import { getCurrentUser, getReportingPeriods, selectRecords } from './mockService';
+import { buildDemoScorecard } from './finopsService';
+import type { Scorecard } from '../lib/finops';
 
-export type AssistantIntent = 'team_spend' | 'provider_spend' | 'period_change' | 'supporting_requests' | 'estimated_meaning' | 'unresolved' | 'read_only' | 'unsupported';
+export type AssistantIntent = 'optimise' | 'unit_economics' | 'team_spend' | 'provider_spend' | 'period_change' | 'supporting_requests' | 'estimated_meaning' | 'unresolved' | 'read_only' | 'unsupported';
 
 /** Usage Explorer filters for the "View supporting requests" action. */
 export interface SupportingFilters {
@@ -41,6 +43,8 @@ export interface AssistantResponse {
   facts: { label: string; value: string }[];
   table?: AssistantTable;
   supporting?: { label: string; filters: SupportingFilters };
+  /** A page in the app that shows the answer in full. */
+  page?: { label: string; to: string };
   /** Raw figures behind the answer (used by tests and for transparency). */
   figures: Record<string, number | null>;
   followUps: string[];
@@ -52,6 +56,8 @@ export const SUGGESTED_QUESTIONS = [
   'Why did estimated spend increase compared with the previous period?',
   'Show the requests behind this total.',
   'What does estimated cost mean?',
+  'How can we cut our AI costs?',
+  'What does each workflow cost in tokens?',
 ];
 
 export interface AssistantContext {
@@ -62,7 +68,7 @@ export interface AssistantContext {
 }
 
 const SCOPE_TEXT =
-  'I can answer questions about estimated spend by team or provider, how this period compares with the previous one, the requests behind a total, requests with unavailable costs, and what estimated cost means.';
+  'I can answer questions about estimated spend by team or provider, how this period compares with the previous one, the requests behind a total, requests with unavailable costs, what estimated cost means, ways to cut cost, and unit economics and token cost per workflow.';
 
 function normalise(question: string): string {
   return question.toLowerCase().replace(/[’']/g, "'").replace(/\s+/g, ' ').trim();
@@ -76,6 +82,8 @@ export function detectIntent(question: string): AssistantIntent {
   // Anything asking the assistant to change something is refused first.
   if (has(q, /\b(change|set|update|raise|lower|increase|reduce|edit|delete|remove|disable|enable|turn off|turn on|connect|disconnect|rename|invite|suspend|approve|pay|charge)\b.*\b(budget|setting|connection|provider|team|user|limit|key|credential|invoice|payment)s?\b/) && !has(q, /\bwhy\b/, 'compared', 'previous', 'last month')) return 'read_only';
   if (has(q, /\bmean(s|ing)?\b/, 'what is estimated', 'what is an estimate', 'define', 'explain estimated', 'how is the cost calculated', 'how are costs calculated', 'how is cost calculated')) return 'estimated_meaning';
+  if (has(q, /\boptimi[sz]/, /\bsav(e|es|ing|ings)\b/, /\b(cut|reduce|lower|trim)\b.*\b(cost|costs|spend|spending|bill)\b/, 'lever', 'scorecard', 'finops', 'cost down', 'efficien')) return 'optimise';
+  if (has(q, 'unit economic', 'unit cost', 'workflow', 'per request', 'cost per', 'token cost', 'per token', 'per million')) return 'unit_economics';
   if (has(q, /\bwhy\b/, 'compare', 'compared', 'previous', 'last month', 'prior', 'month over month', 'change in', 'trend', 'went up', 'go up', 'went down', 'increase', 'decrease')) return 'period_change';
   if (has(q, 'unresolved', 'unavailable', 'missing cost', 'missing usage', 'no cost')) return 'unresolved';
   if (has(q, 'request', 'behind', 'underlying', 'breakdown of this', 'drill')) return 'supporting_requests';
@@ -501,6 +509,88 @@ function estimatedMeaning(ctx: AssistantContext, context: UserContext): Assistan
   };
 }
 
+function scorecardFacts(period: PeriodKey, context: UserContext, sc: Scorecard) {
+  return [
+    { label: 'Period', value: `${formatPeriodRange(period)} (Australia/Sydney)` },
+    { label: 'Currency', value: 'AUD' },
+    { label: 'Cost status', value: sc.economics.unresolvedRequests > 0 ? `Estimated · ${formatNumber(sc.economics.unresolvedRequests)} unresolved` : 'Estimated' },
+    { label: 'Data scope', value: scopeLabel(context) },
+  ];
+}
+
+const SCORECARD_PAGE = { label: 'Open the FinOps Scorecard', to: '/scorecard' };
+
+function optimise(q: string, ctx: AssistantContext, context: UserContext): AssistantResponse {
+  const period = mentionedPeriod(q, ctx.period);
+  const { scorecard: sc } = buildDemoScorecard(period, context);
+  if (sc.economics.requests === 0) return emptyAnswer('optimise', period, context, 'requests');
+  const [top, second] = sc.levers;
+  const answer = [
+    `${can(context, 'view_company_totals') ? 'Your FinOps score' : 'The FinOps score for your own requests'} for ${formatPeriod(period)} is ${sc.score}/100 (grade ${sc.grade}). ` +
+      `Of ${formatCurrency(sc.economics.spend)} estimated spend, up to ${formatCurrency(sc.combinedSavings)} (${formatPercent(sc.combinedSavingsShare)}) could be saved if all five levers were pulled, allowing for overlap.`,
+    top.savings > 0
+      ? `The biggest lever is ${top.name.toLowerCase()}: about ${formatCurrency(top.savings)} across ${formatNumber(top.affectedRequests)} requests. ${top.action}` +
+        (second && second.savings > 0 ? ` Next is ${second.name.toLowerCase()}, at about ${formatCurrency(second.savings)}.` : '')
+      : 'None of the five levers finds anything to save in this period.',
+    'Each lever is estimated on its own under the assumptions shown on the scorecard, so the amounts overlap. A cheaper model or shorter prompt doesn’t promise the same quality, so test a change on real tasks first.',
+  ];
+  return {
+    intent: 'optimise',
+    answer,
+    facts: scorecardFacts(period, context, sc),
+    table: {
+      caption: 'Optimisation levers by savings potential',
+      columns: [
+        { key: 'rank', label: '#', align: 'right' },
+        { key: 'lever', label: 'Lever' },
+        { key: 'effort', label: 'Effort' },
+        { key: 'requests', label: 'Requests', align: 'right' },
+        { key: 'savings', label: 'Est. savings', align: 'right' },
+        { key: 'share', label: 'Of spend', align: 'right' },
+      ],
+      rows: sc.levers.map((l) => ({ rank: String(l.rank), lever: l.name, effort: l.effort, requests: formatNumber(l.affectedRequests), savings: formatCurrency(l.savings), share: formatPercent(l.savingsShare, 1) })),
+      footer: { rank: '', lever: 'All five, allowing for overlap', effort: '', requests: '', savings: formatCurrency(sc.combinedSavings), share: formatPercent(sc.combinedSavingsShare, 1) },
+    },
+    page: SCORECARD_PAGE,
+    figures: { score: sc.score, estimatedSpend: sc.economics.spend, combinedSavings: sc.combinedSavings, requestCount: sc.economics.requests, ...Object.fromEntries(sc.levers.map((l) => [l.id, l.savings])) },
+    followUps: ['What does each workflow cost in tokens?', 'Why did estimated spend increase compared with the previous period?'],
+  };
+}
+
+function unitEconomicsAnswer(q: string, ctx: AssistantContext, context: UserContext): AssistantResponse {
+  const period = mentionedPeriod(q, ctx.period);
+  const { scorecard: sc } = buildDemoScorecard(period, context);
+  if (sc.economics.requests === 0) return emptyAnswer('unit_economics', period, context, 'requests');
+  const e = sc.economics;
+  const top = sc.workflows[0];
+  const answer = [
+    `In ${formatPeriod(period)}, each request with a known cost averaged ${formatCurrency(e.costPerRequest, { precise: true })}, and each successful request ${formatCurrency(e.costPerSuccessfulRequest, { precise: true })} once failed requests are counted. ` +
+      `That’s ${formatCurrency(e.costPerMillionTokens)} per million tokens and ${formatCurrency(e.costPerActivePerson)} per active person.`,
+    `${top.label} is the costliest workflow at ${formatCurrency(top.spend)} (${formatPercent(top.share)} of spend), ${formatCurrency(top.costPerRequest, { precise: true })} per request.` +
+      (e.outputToInputRatio !== null && e.outputToInputRatio < 0.1 ? ' Prompts are far larger than answers here, so input tokens drive most of the cost.' : ''),
+  ];
+  return {
+    intent: 'unit_economics',
+    answer,
+    facts: scorecardFacts(period, context, sc),
+    table: {
+      caption: 'Token cost per workflow',
+      columns: [
+        { key: 'workflow', label: 'Workflow' },
+        { key: 'requests', label: 'Requests', align: 'right' },
+        { key: 'input', label: 'Input cost', align: 'right' },
+        { key: 'output', label: 'Output cost', align: 'right' },
+        { key: 'perRequest', label: 'Per request', align: 'right' },
+        { key: 'spend', label: 'Spend', align: 'right' },
+      ],
+      rows: sc.workflows.map((w) => ({ workflow: w.label, requests: formatNumber(w.requests), input: formatCurrency(w.inputSpend), output: formatCurrency(w.outputSpend), perRequest: formatCurrency(w.costPerRequest, { precise: true }), spend: formatCurrency(w.spend) })),
+    },
+    page: SCORECARD_PAGE,
+    figures: { estimatedSpend: e.spend, requestCount: e.requests, costPerRequest: e.costPerRequest, costPerSuccessfulRequest: e.costPerSuccessfulRequest, costPerMillionTokens: e.costPerMillionTokens },
+    followUps: ['How can we cut our AI costs?', 'What did each team spend this month?'],
+  };
+}
+
 function readOnly(): AssistantResponse {
   return {
     intent: 'read_only',
@@ -527,6 +617,10 @@ function unsupported(q: string): AssistantResponse {
 export function buildAssistantResponse(question: string, ctx: AssistantContext, context: UserContext): AssistantResponse {
   const q = normalise(question);
   switch (detectIntent(question)) {
+    case 'optimise':
+      return optimise(q, ctx, context);
+    case 'unit_economics':
+      return unitEconomicsAnswer(q, ctx, context);
     case 'team_spend':
       return teamSpend(q, ctx, context);
     case 'provider_spend':
