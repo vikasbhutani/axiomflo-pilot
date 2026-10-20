@@ -50,7 +50,7 @@ export function AssistantLauncher() {
       onClick={() => setOpen(true)}
       aria-expanded={false}
       aria-controls={PANEL_ID}
-      className="fixed bottom-5 right-5 z-40 inline-flex animate-fade-up items-center gap-2 rounded-full bg-teal-700 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-teal-900/20 transition hover:-translate-y-0.5 hover:bg-teal-800 hover:shadow-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600"
+      className="ripple-host fixed bottom-5 right-5 z-40 inline-flex animate-fade-up items-center gap-2 rounded-full bg-teal-700 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-teal-900/20 transition hover:-translate-y-0.5 hover:bg-teal-800 hover:shadow-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600"
     >
       <Bot className="h-5 w-5" aria-hidden />
       Ask AI

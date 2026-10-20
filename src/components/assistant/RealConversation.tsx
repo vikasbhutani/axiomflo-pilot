@@ -1,10 +1,9 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
-import { Link } from 'react-router-dom';
 import { AlertTriangle, Bot, Table2 } from 'lucide-react';
 import { useApiClient } from '../../auth/apiContext';
 import { AssistantError, createAssistantApi, inAppPath, type AssistantAnswer, type AssistantLink } from '../../reports/assistantApi';
 import { useRealMember } from '../../reports/useRealReport';
-import { AssistantAvatar, ChatComposer, scrollConversationToEnd, SUGGESTION_CHIP_CLASS, ThinkingIndicator, TypedParagraphs, useTypedParagraphs, UserBubble } from './ChatParts';
+import { askFromChip, AssistantAvatar, ChatComposer, MorphLink, scrollConversationToEnd, SUGGESTION_CHIP_CLASS, ThinkingIndicator, TypedParagraphs, useTypedParagraphs, UserBubble } from './ChatParts';
 
 const MAX_QUESTION_LENGTH = 2000;
 
@@ -141,9 +140,9 @@ export function LinkButton({ link }: { link: AssistantLink }) {
   const path = inAppPath(link.url);
   if (!path) return null;
   return (
-    <Link to={path} className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-teal-800 underline">
+    <MorphLink to={path} className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-teal-800 underline">
       <Table2 className="h-4 w-4" aria-hidden /> {link.label}
-    </Link>
+    </MorphLink>
   );
 }
 
@@ -158,12 +157,7 @@ function Welcome({ questions, onAsk, disabled }: { questions: string[]; onAsk: (
       <ul className="stagger mt-5 flex flex-wrap justify-center gap-2" aria-label="Suggested questions">
         {questions.map((q) => (
           <li key={q}>
-            <button
-              type="button"
-              onClick={() => onAsk(q)}
-              disabled={disabled}
-              className={SUGGESTION_CHIP_CLASS}
-            >
+            <button type="button" onClick={(e) => askFromChip(e.currentTarget, () => onAsk(q))} disabled={disabled} className={SUGGESTION_CHIP_CLASS}>
               {q}
             </button>
           </li>

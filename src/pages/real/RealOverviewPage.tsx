@@ -12,8 +12,8 @@ import { StatCard } from '../../components/ui/StatCard';
 import { CostStatusBadge } from '../../components/ui/StatusBadge';
 import { ErrorState, Skeleton } from '../../components/ui/States';
 import { TableScroll } from '../../components/ui/TableScroll';
-import { CountUp } from '../../components/ui/CountUp';
-import { motionAllowed, useFirstRender } from '../../hooks/useMotion';
+import { RollingNumber } from '../../components/ui/RollingNumber';
+import { motionAllowed } from '../../hooks/useMotion';
 import { summarize, summarizeBy } from '../../lib/calculations';
 import { formatCalendarDate, formatDateTime, formatMoney, formatNumber, formatPeriod, formatPeriodRange, periodBounds } from '../../lib/format';
 import { glossary } from '../../lib/glossary';
@@ -49,7 +49,7 @@ export function RealOverviewPage() {
           ))}
         </div>
       ) : (
-        <div className={`space-y-6 ${state.status === 'loading' ? 'opacity-60' : ''}`} aria-busy={state.status === 'loading'}>
+        <div className={`animate-fade-in space-y-6 transition-opacity ${state.status === 'loading' ? 'opacity-60' : ''}`} aria-busy={state.status === 'loading'}>
           <DataNotes data={state.data} isAdmin={isAdmin} />
           {state.data.records.length === 0 ? <NoUsageYet month={month} /> : <OverviewBody data={state.data} isAdmin={isAdmin} />}
           <p className="text-xs text-slate-500">{COST_NOTE}</p>
@@ -66,11 +66,11 @@ function OverviewBody({ data, isAdmin }: { data: RealDataset; isAdmin: boolean }
   return (
     <>
       <div className="stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Estimated spend" tooltip={glossary.estimatedSpend} icon={<Coins className="h-4 w-4" aria-hidden />} value={spendText(s, money.currency) === 'Not available' ? 'Not available' : <CountUp value={s.estimatedSpend} format={(n) => formatMoney(n, money.currency)} />} detail={money.currency} />
+        <StatCard label="Estimated spend" tooltip={glossary.estimatedSpend} icon={<Coins className="h-4 w-4" aria-hidden />} value={spendText(s, money.currency) === 'Not available' ? 'Not available' : <RollingNumber text={formatMoney(s.estimatedSpend, money.currency)} />} detail={money.currency} />
         <StatCard
           label="Requests"
           icon={<Hash className="h-4 w-4" aria-hidden />}
-          value={<CountUp value={s.requestCount} format={(n) => formatNumber(Math.round(n))} />}
+          value={<RollingNumber text={formatNumber(s.requestCount)} />}
           detail={`${formatNumber(s.succeededCount)} succeeded · ${formatNumber(s.failedCount)} failed`}
         />
         <StatCard
@@ -151,10 +151,12 @@ function OverviewBody({ data, isAdmin }: { data: RealDataset; isAdmin: boolean }
   );
 }
 
+// A soft dashed guide that follows the pointer across the chart.
+const GUIDE_LINE = { stroke: '#0d9488', strokeOpacity: 0.35, strokeWidth: 1, strokeDasharray: '4 4' };
+
 function DailyCard({ data }: { data: RealDataset }) {
   const [showTable, setShowTable] = useState(false);
-  // Draw the chart in on first load only; a month change swaps the data without replaying it.
-  const firstRender = useFirstRender();
+  // The chart draws in on first load, then morphs from the old values to the new ones when the month changes.
   const [animateChart] = useState(() => motionAllowed());
   const titleId = useId();
   const [start, end] = periodBounds(data.month);
@@ -210,8 +212,8 @@ function DailyCard({ data }: { data: RealDataset }) {
               <CartesianGrid stroke="#e2e8f0" vertical={false} />
               <XAxis dataKey="date" tickFormatter={(d: string) => formatCalendarDate(d)} tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={{ stroke: '#cbd5e1' }} minTickGap={24} />
               <YAxis tickFormatter={(v: number) => formatMoney(v, currency)} tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} width={64} />
-              <Tooltip formatter={(v: number) => [formatMoney(v, currency, { precise: true }), 'Estimated spend']} labelFormatter={(d: string) => formatCalendarDate(d, { withYear: true })} />
-              <Area type="monotone" dataKey="spend" stroke="#0d9488" strokeWidth={2} fill="#0d9488" fillOpacity={0.12} isAnimationActive={animateChart && firstRender} animationDuration={1500} />
+              <Tooltip cursor={GUIDE_LINE} isAnimationActive={animateChart} animationDuration={250} animationEasing="ease-out" formatter={(v: number) => [formatMoney(v, currency, { precise: true }), 'Estimated spend']} labelFormatter={(d: string) => formatCalendarDate(d, { withYear: true })} />
+              <Area type="monotone" dataKey="spend" stroke="#0d9488" strokeWidth={2} fill="#0d9488" fillOpacity={0.12} activeDot={{ r: 5, stroke: '#fff', strokeWidth: 2 }} isAnimationActive={animateChart} animationDuration={900} animationEasing="ease-out" />
             </AreaChart>
           </ResponsiveContainer>
         </div>

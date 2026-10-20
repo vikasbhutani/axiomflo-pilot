@@ -5,6 +5,7 @@ import { useWorkspaceSession } from '../../auth/WorkspaceSession';
 import { SidebarContent } from './Sidebar';
 import { MobileNav } from './MobileNav';
 import { TopBar } from './TopBar';
+import { PageTransition } from './PageTransition';
 import { LoadingState } from '../ui/States';
 import { readPreference, writePreference } from '../../lib/storage';
 import { AssistantLauncher, AssistantProvider } from '../assistant/AssistantPanel';
@@ -44,7 +45,9 @@ function Shell() {
           <main id="main" className="mx-auto max-w-7xl px-4 pb-24 pt-6 sm:px-6 lg:pt-8">
             {/* Each route shows its demo page only in demo mode, and its real page only for an approved member. */}
             <Suspense fallback={<LoadingState label="Loading page…" />}>
-              <Outlet key={session.mode === 'real' ? `real-${session.user.uid}` : 'demo'} />
+              <PageTransition>
+                <Outlet key={session.mode === 'real' ? `real-${session.user.uid}` : 'demo'} />
+              </PageTransition>
             </Suspense>
           </main>
         </div>

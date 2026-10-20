@@ -6,15 +6,6 @@ export function motionAllowed(): boolean {
   return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-/** True only during a component's first render, so charts animate on first load but not on every filter change. */
-export function useFirstRender(): boolean {
-  const first = useRef(true);
-  useEffect(() => {
-    first.current = false;
-  }, []);
-  return first.current;
-}
-
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
 
 /**

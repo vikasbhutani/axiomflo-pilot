@@ -2,7 +2,8 @@ import type { ReactNode } from 'react';
 import { AlertCircle, Inbox, Loader2 } from 'lucide-react';
 
 export function Skeleton({ className = '' }: { className?: string }) {
-  return <div className={`animate-pulse rounded-md bg-slate-200/70 ${className}`} aria-hidden />;
+  // A light band sweeps across the placeholder while it waits for content.
+  return <div className={`animate-shimmer rounded-md bg-[linear-gradient(90deg,#e2e8f0_0%,#f1f5f9_50%,#e2e8f0_100%)] bg-[length:200%_100%] ${className}`} aria-hidden />;
 }
 
 export function LoadingState({ label = 'Loading sample data…' }: { label?: string }) {

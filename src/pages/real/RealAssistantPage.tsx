@@ -67,7 +67,7 @@ export function RealAssistantPage() {
       />
       <AssistantTabs />
 
-      <div className="mb-4 flex animate-fade-in items-start gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700">
+      <div className="mb-4 flex items-start gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700">
         <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-teal-700" aria-hidden />
         <p>
           Read-only. It answers only from what {isAdmin ? 'a Company Admin' : 'you'} can see, for this month and the two before it. Amounts are estimates from provider list prices, not bills. Answers are
@@ -75,7 +75,7 @@ export function RealAssistantPage() {
         </p>
       </div>
 
-      <div className="grid animate-fade-in gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <Card className="flex flex-col">
           <RealConversationView />
         </Card>

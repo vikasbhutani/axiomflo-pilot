@@ -7,9 +7,11 @@ import { AuthProvider } from './auth/AuthContext';
 import { createAuthSetup } from './auth/setup';
 import { DemoProvider } from './context/DemoContext';
 import { ToastProvider } from './context/ToastContext';
+import { installRipple } from './lib/ripple';
 import './index.css';
 
 const auth = createAuthSetup();
+installRipple();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -3,7 +3,7 @@ import { InfoTooltip } from './InfoTooltip';
 
 export function StatCard({ label, value, detail, tooltip, icon, tone = 'default' }: { label: string; value: ReactNode; detail?: ReactNode; tooltip?: string; icon?: ReactNode; tone?: 'default' | 'warning' }) {
   return (
-    <div className={`rounded-xl border bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md ${tone === 'warning' ? 'border-amber-200' : 'border-slate-200'}`}>
+    <div className={`rounded-xl border bg-white p-5 shadow-sm transition duration-300 ease-standard hover:-translate-y-1 hover:shadow-lg ${tone === 'warning' ? 'border-amber-200' : 'border-slate-200'}`}>
       <div className="flex items-center justify-between gap-2">
         <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">
           {label}
