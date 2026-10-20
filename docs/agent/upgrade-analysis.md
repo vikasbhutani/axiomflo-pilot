@@ -1,6 +1,6 @@
 # Upgrade Analysis
 
-**Where:** the **Upgrade Analysis** tab of the AI Cost Assistant (`/assistant/upgrade`), in the demo workspace (Acme sample data) and the live one. In the demo the assistant's chat also runs it as a guided conversation ("Can we upgrade to a newer model?"). In the live workspace Gemini runs the same conversation with two read-only tools (see [In the live assistant](#in-the-live-assistant)).
+**Where:** the **Upgrade Analysis** tab of the AI Cost Assistant (`/assistant/upgrade`), in the demo workspace (Acme sample data) and the live one. In the demo the assistant's chat also runs it as a guided conversation ("Can we upgrade to a newer model?"). In the live workspace Gemini runs the same conversation with three read-only tools (see [In the live assistant](#in-the-live-assistant)).
 
 It answers one question: *what would moving a model dependency to a newer, cheaper or faster version cost?* Every figure is a **modelled projection from observed usage and stated assumptions, never a guaranteed saving**, and nothing here changes routing, models or providers. A migration always needs a person's explicit approval outside AxiomFlo.
 
@@ -95,14 +95,17 @@ A saved analysis keeps its inputs, the pricing version and source for both model
 
 ## In the live assistant
 
-Gemini answers upgrade questions with two read-only tools. Neither saves anything, changes routing or switches a model.
+Gemini answers upgrade questions with three read-only tools. None of them saves anything, changes routing or switches a model.
 
 | Tool | Does |
 | --- | --- |
 | `list_upgrade_options` | The models this person's calls use, the priced models each could move to (drop-in first), the teams they can analyse, the dates the records cover and the currency. No savings figures. |
+| `preview_upgrade_assumptions` | Checks the choices and returns them as assumption lines for the person to confirm. No savings figures. |
 | `estimate_upgrade` | Runs the engine on those records and returns the same summary as the demo chat, ending with the disclaimer, plus a link that opens the tab with the same choices and rules filled in (where it can be saved). |
 
-Gemini asks for anything missing one question at a time, asks "Assuming 100% of eligible calls migrate. Continue?", asks whether the calls are confirmed eligible and which teams must stay, and lists its assumptions for confirmation before it calls `estimate_upgrade` (`backend/axiomflo/agent/instructions.py`). The percentage has no default in the tool, so it always comes from the person. Calls nobody confirmed count as *requires review*, not savings, as in the tab.
+Gemini asks for anything missing one question at a time, asks "Assuming 100% of eligible calls migrate. Continue?", asks whether the calls are confirmed eligible and which teams must stay, and lists the assumptions from `preview_upgrade_assumptions` for confirmation before it calls `estimate_upgrade` (`backend/axiomflo/agent/instructions.py`). The percentage has no default in the tool, so it always comes from the person. Calls nobody confirmed count as *requires review*, not savings, as in the tab.
+
+**Figure check.** Like every answer, each reply may only quote amounts and percentages that a tool returned in that same reply (`backend/axiomflo/agent/guardrails.py`), so the tools return the questions and assumptions Gemini quotes, and amounts written with a currency code (`USD 1.50`) count as figures.
 
 **Inputs.** The API adds an `upgrade` block to the usage snapshot it already sends with each question (`buildUpgradeSnapshot` in `server/src/upgrade/realWorkspace.ts`): the catalogue, the member's own scopes and company label, and their records already mapped by the same `toUpgradeRecord` the tab uses. So the agent never reads the database, an Individual User only gets their own records and teams, and inputs made for one person are refused for anyone else. Analyses cover the three months the snapshot holds.
 
