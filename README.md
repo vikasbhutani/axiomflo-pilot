@@ -115,7 +115,7 @@ Add a month ("in August") to ask about another month. Requests to change somethi
 
 **In Slack:** send the same questions to AxiomFlo by direct message, mention `@AxiomFlo` in a channel, or type `/axiomflo how can we lower our AI spend?`. Only the person who asked sees the answer.
 
-The assistant never makes up a figure. Every amount comes from AxiomFlo's own calculations, and any number a tool didn't return is withheld.
+The assistant never makes up a figure. Every amount comes from AxiomFlo's own calculations, and any number a tool didn't return is withheld. It also stays on topic: it has no web access, and questions that aren't about your AI usage and costs ("What's the weather?", "Write me a poem") get a short reply pointing back to what it can answer.
 
 ## How it fits together
 
