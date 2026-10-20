@@ -57,6 +57,21 @@ describe('POST /api/assistant/ask', () => {
     for (const c of listed) expect(c.args[1]).toEqual({ uid: 'alice', role: 'individual_user' });
   });
 
+  it('sends Upgrade Analysis inputs built from the same records, scoped to the member', async () => {
+    const agent = new FakeAgent();
+    const { app } = makeApp({ agent });
+    expect((await request(app).post('/api/assistant/ask').set(as('alice')).send({ question: 'Should we upgrade?' })).status).toBe(200);
+    const { upgrade, usage } = agent.calls[0].input.snapshot;
+    expect(upgrade.companyLabel).toBe('Your own requests');
+    expect(upgrade.scopes).toEqual({ team: [{ id: 'team-a', label: expect.any(String) }] });
+    expect(upgrade.records.rows.map((r: unknown[]) => r[upgrade.records.columns.indexOf('id')]).sort()).toEqual(usage.flatMap((u) => u.records.map((r) => r.id)).sort());
+    expect(upgrade.from).toBe(`${usage[0].month}-01`);
+    expect(upgrade.today >= upgrade.from).toBe(true);
+    expect(upgrade.catalogue.some((m) => m.providerId === 'anthropic' && m.pricing)).toBe(true);
+    expect(upgrade.catalogue.some((m) => m.providerId === 'gemini_vertex' && m.pricing)).toBe(true);
+    expect(JSON.stringify(upgrade)).not.toMatch(/keyId|apiKey|secret/i);
+  });
+
   it.each([
     ['no question', {}],
     ['an empty question', { question: '   ' }],

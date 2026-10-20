@@ -78,6 +78,8 @@ class Workspace:
     rate_missing_periods: tuple[str, ...] = ()
     # The person a snapshot was made for; it may only be used for their questions.
     snapshot_viewer_id: str | None = None
+    # Upgrade Analysis inputs the API sent (catalogue, records, scopes); None = not available.
+    upgrade: dict | None = None
 
     @property
     def is_sample(self) -> bool:

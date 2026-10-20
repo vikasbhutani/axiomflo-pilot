@@ -12,7 +12,7 @@ const sept = { period: '2026-09' };
 
 describe('Assistant intent detection', () => {
   it('supports every suggested question', () => {
-    expect(SUGGESTED_QUESTIONS.map(detectIntent)).toEqual(['team_spend', 'provider_spend', 'period_change', 'supporting_requests', 'estimated_meaning', 'optimise', 'unit_economics']);
+    expect(SUGGESTED_QUESTIONS.map(detectIntent)).toEqual(['team_spend', 'provider_spend', 'period_change', 'supporting_requests', 'estimated_meaning', 'optimise', 'unit_economics', 'upgrade_analysis']);
   });
 
   it('refuses requests to change data', () => {

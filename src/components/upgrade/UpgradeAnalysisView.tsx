@@ -37,7 +37,10 @@ export interface UpgradeAnalysisViewProps {
   /** False for view-only logins: they can run and download analyses but not save them. */
   canSave: boolean;
   /** Choices handed over in the link (e.g. from the assistant chat). */
-  initial?: Partial<Pick<UpgradeEstimateRequest, 'currentModelId' | 'candidateModelId' | 'scope' | 'timeWindow' | 'migrationPercentage'>>;
+  initial?: Partial<Pick<UpgradeEstimateRequest, 'currentModelId' | 'candidateModelId' | 'scope' | 'timeWindow' | 'migrationPercentage'>> & {
+    /** Eligibility rules added to the workspace's own (from the assistant chat). */
+    extraRules?: EligibilityRule[];
+  };
   /** Changes when the viewer changes (demo role switch), so the view starts again. */
   viewerKey: string;
 }
@@ -111,7 +114,7 @@ function initialForm(models: UpgradeModelsResponse, initial: UpgradeAnalysisView
     pct: String(initial.migrationPercentage ?? 100),
     assumptions: {},
     businessCritical: false,
-    rules: models.defaultRules.map((r) => ({ ...r })),
+    rules: [...models.defaultRules.map((r) => ({ ...r })), ...(initial.extraRules ?? [])],
   };
 }
 

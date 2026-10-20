@@ -110,10 +110,15 @@ export function buildDemoUpgradeModels(context: UserContext): UpgradeModelsRespo
 /** Like POST /api/upgrade-analysis/estimate. Throws UpgradeInputError or UpgradeAccessError. */
 export function buildDemoUpgradeEstimate(body: unknown, context: UserContext, now = new Date()): UpgradeAnalysis {
   const request = parseEstimateRequest(body);
+  return estimateUpgrade(request, demoEstimateContext(request, context, now));
+}
+
+/** What the demo estimate runs on (also exported as the agent's parity fixture). */
+export function demoEstimateContext(request: UpgradeEstimateRequest, context: UserContext, now = new Date()): EstimateContext {
   const window = resolveTimeWindow(request.timeWindow, DEMO_REPORTING_DATE);
   const seen = records(context, window.from, window.to);
   const all = records(context, addDays(DEMO_REPORTING_DATE, -(UPGRADE_RULES.maxWindowDays - 1)), DEMO_REPORTING_DATE);
-  return estimateUpgrade(request, {
+  return {
     catalogue: demoUpgradeCatalogue,
     records: seen,
     scopes: scopeOptions(context, all),
@@ -122,7 +127,7 @@ export function buildDemoUpgradeEstimate(body: unknown, context: UserContext, no
     today: DEMO_REPORTING_DATE,
     regionOf: demoRegionOf,
     now: now.toISOString(),
-  });
+  };
 }
 
 // ---------------------------------------------------------------------------

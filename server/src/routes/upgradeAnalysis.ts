@@ -21,7 +21,7 @@ import { getMember, type ActiveMember } from '../membership/requireMember.js';
 import { dayRangeUtc, localDate } from '../reports/months.js';
 import type { UsageService } from '../reports/service.js';
 import { addDays, estimateUpgrade, parseEstimateRequest, resolveTimeWindow, UpgradeAccessError, UpgradeInputError, UPGRADE_RULES, type EstimateContext } from '../upgrade/engine.js';
-import { buildCatalogue, moneyFor, toUpgradeRecord } from '../upgrade/realWorkspace.js';
+import { buildCatalogue, liveCompanyLabel, liveScopes, moneyFor, toUpgradeRecord } from '../upgrade/realWorkspace.js';
 import { renderCsvReport, renderMarkdownReport } from '../upgrade/report.js';
 import { IDEMPOTENCY_KEY, SAVED_ID, type UpgradeAnalysisStore } from '../upgrade/store.js';
 import { SCOPE_LEVELS, type UpgradeEstimateRequest, type UpgradeExportResponse, type UpgradeModelsResponse, type UpgradeSavedResponse } from '../upgrade/types.js';
@@ -80,9 +80,8 @@ export function upgradeAnalysisRouter({
     return { records, catalogue, money, notes };
   }
 
-  const isAdmin = (m: ActiveMember) => m.membership.role === 'company_admin';
-  const scopesOf = (m: ActiveMember): EstimateContext['scopes'] => ({ team: m.teams.map((t) => ({ id: t.id, label: t.name })) });
-  const companyLabel = (m: ActiveMember) => (isAdmin(m) ? `All teams in ${m.company.name}` : 'Your own requests');
+  const scopesOf = (m: ActiveMember): EstimateContext['scopes'] => liveScopes(m.teams);
+  const companyLabel = (m: ActiveMember) => liveCompanyLabel(m.membership.role, m.company.name);
 
   async function estimate(m: ActiveMember, request: UpgradeEstimateRequest, at = now()) {
     const window = resolveTimeWindow(request.timeWindow, today(m));

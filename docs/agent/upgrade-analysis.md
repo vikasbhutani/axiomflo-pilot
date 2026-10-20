@@ -1,6 +1,6 @@
 # Upgrade Analysis
 
-**Where:** the **Upgrade Analysis** tab of the AI Cost Assistant (`/assistant/upgrade`), in the demo workspace (Acme sample data) and the live one. In the demo the assistant's chat also runs it as a guided conversation ("Can we upgrade to a newer model?"). In the live workspace Gemini points upgrade questions at the tab; it has no migration tool of its own yet.
+**Where:** the **Upgrade Analysis** tab of the AI Cost Assistant (`/assistant/upgrade`), in the demo workspace (Acme sample data) and the live one. In the demo the assistant's chat also runs it as a guided conversation ("Can we upgrade to a newer model?"). In the live workspace Gemini runs the same conversation with two read-only tools (see [In the live assistant](#in-the-live-assistant)).
 
 It answers one question: *what would moving a model dependency to a newer, cheaper or faster version cost?* Every figure is a **modelled projection from observed usage and stated assumptions, never a guaranteed saving**, and nothing here changes routing, models or providers. A migration always needs a person's explicit approval outside AxiomFlo.
 
@@ -17,6 +17,8 @@ It answers one question: *what would moving a model dependency to a newer, cheap
 | Demo catalogue, workflows, agents and default rules | `src/data/upgradeFixtures.ts` |
 | Demo service (same shapes as the API) | `src/services/upgradeAnalysisService.ts` |
 | Guided chat (demo) | `src/services/upgradeChat.ts` |
+| Python port of the engine for Gemini (live) | `backend/axiomflo/reporting/upgrade.py` |
+| Gemini's tools (live) | `backend/axiomflo/tools/upgrade.py` |
 | View | `src/components/upgrade/UpgradeAnalysisView.tsx` |
 
 The web app imports the engine through `src/lib/upgrade.ts`; the root `.dockerignore` lets `server/src/upgrade` (minus tests and server-only files) into the web image for that.
@@ -91,6 +93,21 @@ All routes need a signed-in, active member and are scoped to their company. View
 
 A saved analysis keeps its inputs, the pricing version and source for both models, the scope, when it was calculated, who saved it and their role and teams at the time, and an append-only audit trail. It's never recalculated: a later price change doesn't rewrite it. Estimates are stored apart from usage and reports and never change historical totals. Saves and exports are also written to the company's audit events. No provider keys or credentials appear anywhere in an analysis.
 
+## In the live assistant
+
+Gemini answers upgrade questions with two read-only tools. Neither saves anything, changes routing or switches a model.
+
+| Tool | Does |
+| --- | --- |
+| `list_upgrade_options` | The models this person's calls use, the priced models each could move to (drop-in first), the teams they can analyse, the dates the records cover and the currency. No savings figures. |
+| `estimate_upgrade` | Runs the engine on those records and returns the same summary as the demo chat, ending with the disclaimer, plus a link that opens the tab with the same choices and rules filled in (where it can be saved). |
+
+Gemini asks for anything missing one question at a time, asks "Assuming 100% of eligible calls migrate. Continue?", asks whether the calls are confirmed eligible and which teams must stay, and lists its assumptions for confirmation before it calls `estimate_upgrade` (`backend/axiomflo/agent/instructions.py`). The percentage has no default in the tool, so it always comes from the person. Calls nobody confirmed count as *requires review*, not savings, as in the tab.
+
+**Inputs.** The API adds an `upgrade` block to the usage snapshot it already sends with each question (`buildUpgradeSnapshot` in `server/src/upgrade/realWorkspace.ts`): the catalogue, the member's own scopes and company label, and their records already mapped by the same `toUpgradeRecord` the tab uses. So the agent never reads the database, an Individual User only gets their own records and teams, and inputs made for one person are refused for anyone else. Analyses cover the three months the snapshot holds.
+
+**Same answers as the tab.** `npm run agent:fixtures` writes `backend/fixtures/upgrade-golden.json` from the TypeScript engine: 15 demo cases (every recommendation class) and every model in the sample snapshot. `backend/tests/test_upgrade_parity.py` checks the Python engine gives the same figures and the same summary, word for word.
+
 ## Demo data
 
 The demo catalogue in `src/data/upgradeFixtures.ts` adds illustrative candidates (Gemini Flash 2, Claude Haiku 2, Claude Sonnet 2, a Gemini Pro 2 preview limited to one region and to development and staging, and a Flash-Lite preview with no pricing) and gives the sample records projects, workflows, agents, environments and regions. With the default rules, Sonnet → Sonnet 2 for the whole company over the last 30 days is *recommended with validation* at about $45 a month; Flash → Flash 2 is *not recommended* (immaterial); Pro → Pro 2 preview finds nothing eligible (region); Flash-Lite shows *insufficient data* (no pricing).
@@ -101,3 +118,6 @@ The demo catalogue in `src/data/upgradeFixtures.ts` adds illustrative candidates
 - `server/src/routes/upgradeAnalysis.test.ts`: the five routes, tenancy and team scoping, view-only access, idempotent save and export, audit.
 - `src/services/upgradeChat.test.ts`: the one-question-at-a-time chat, the 100% confirmation, the demo service and links.
 - `src/pages/upgrade.test.tsx`: the page on Acme data, and a view-only login that can download but not save.
+- `backend/tests/test_upgrade_parity.py`: the Python engine matches the TypeScript one on demo and live data.
+- `backend/tests/test_upgrade_tool.py`: Gemini's tools, the 100% check, eligibility, team scoping, other people's inputs refused, figures passing the guardrail.
+- `server/src/routes/assistant.test.ts`: the snapshot's upgrade block is scoped to the member.

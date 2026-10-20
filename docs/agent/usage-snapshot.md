@@ -33,7 +33,16 @@ The agent still re-applies the visibility rules to whatever it is sent, as a sec
   // One GET /api/usage?month=… response per month, oldest first, at most 6 months.
   "usage": [{ "month": "2026-08", "startIso": "…", "endIso": "…", "records": [/* UsageView */], "people": { "uid": { "name": "…", "email": "…" } }, "truncated": false, "skipped": 0 }],
   // GET /api/exchange-rates
-  "exchangeRates": [{ "month": "2026-09", "rate": 1.51, "currency": "AUD" }]
+  "exchangeRates": [{ "month": "2026-09", "rate": 1.51, "currency": "AUD" }],
+  // Upgrade Analysis inputs, built by server/src/upgrade/realWorkspace.ts for this person.
+  // Optional: without it, Gemini sends upgrade questions to the Upgrade Analysis tab.
+  "upgrade": {
+    "version": 1, "today": "2026-10-19", "from": "2026-08-01", "currency": "AUD",
+    "companyLabel": "All teams in …", "scopes": { "team": [{ "id": "…", "label": "…" }] },
+    "catalogue": [/* ModelProfile */], "defaultRules": [], "notes": [],
+    // UpgradeUsageRecord values as columns and rows, to keep the request small.
+    "records": { "columns": ["id", "localDate", "…"], "rows": [["…", "2026-10-02", "…"]] }
+  }
 }
 ```
 

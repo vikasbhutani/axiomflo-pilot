@@ -26,6 +26,7 @@ from ..reporting.service import InsufficientData, Scope, period_bounds, previous
 from ..reporting.finops import build_scorecard, default_workflow_of, price_list_rates
 from ..reporting.suggestions import build_suggestions
 from .runtime import ToolRuntime
+from .upgrade import UPGRADE_TOOL_NAMES, make_upgrade_tools
 
 GROUP_BYS = ("provider", "team", "model")
 NOT_AVAILABLE = "Not available"
@@ -652,6 +653,7 @@ def make_read_only_tools(rt: ToolRuntime) -> list[Callable]:
         list_notification_subscriptions,
         get_savings_suggestions,
         get_finops_scorecard,
+        *make_upgrade_tools(rt),
     ]
 
 
@@ -666,4 +668,5 @@ READ_ONLY_TOOL_NAMES = (
     "list_notification_subscriptions",
     "get_savings_suggestions",
     "get_finops_scorecard",
+    *UPGRADE_TOOL_NAMES,
 )
