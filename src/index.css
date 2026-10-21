@@ -110,6 +110,143 @@
   animation-duration: 250ms;
 }
 
+/* ConnectingLoader: the AxiomFlo mark wires up to one provider at a time, clockwise (4.8s loop, 1.2s per provider). */
+@layer components {
+  .connecting-loader .cl-track {
+    fill: none;
+    stroke: #cbd5e1;
+    stroke-width: 1.5;
+    stroke-dasharray: 2 5;
+    stroke-linecap: round;
+  }
+  .connecting-loader .cl-wire {
+    fill: none;
+    stroke: #1d3a63;
+    stroke-width: 2;
+    stroke-dasharray: 1 1;
+    stroke-dashoffset: 1;
+    stroke-linecap: round;
+    animation: cl-wire 4.8s infinite both;
+    animation-delay: calc(var(--i) * 1.2s);
+  }
+  .connecting-loader .cl-pulse {
+    fill: none;
+    stroke: #0d9488;
+    stroke-width: 3.5;
+    stroke-dasharray: 0.1 1.1;
+    stroke-dashoffset: 0.1;
+    stroke-linecap: round;
+    animation: cl-pulse 4.8s infinite both;
+    animation-delay: calc(var(--i) * 1.2s);
+  }
+  .connecting-loader .cl-node,
+  .connecting-loader .cl-hubring {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  .connecting-loader .cl-node {
+    opacity: 0.5;
+    animation: cl-node 4.8s infinite both;
+    animation-delay: calc(var(--i) * 1.2s);
+  }
+  .connecting-loader .cl-node-bg {
+    fill: #fff;
+    stroke: #e2e8f0;
+    stroke-width: 1.5;
+  }
+  .connecting-loader .cl-node-glow {
+    fill: none;
+    stroke: #0d9488;
+    stroke-width: 2;
+    opacity: 0;
+    animation: cl-glow 4.8s infinite both;
+    animation-delay: calc(var(--i) * 1.2s);
+  }
+  .connecting-loader .cl-hubring {
+    fill: none;
+    stroke: #0d9488;
+    stroke-width: 2;
+    opacity: 0;
+    animation: cl-hub 1.2s cubic-bezier(0.05, 0.7, 0.1, 1) infinite both;
+  }
+}
+/* Connect with emphasized decelerate, release with emphasized accelerate. */
+@keyframes cl-wire {
+  0% {
+    stroke-dashoffset: 1;
+    animation-timing-function: cubic-bezier(0.05, 0.7, 0.1, 1);
+  }
+  8% {
+    stroke-dashoffset: 0;
+  }
+  19% {
+    stroke-dashoffset: 0;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.8, 0.15);
+  }
+  26%,
+  100% {
+    stroke-dashoffset: -1;
+  }
+}
+@keyframes cl-pulse {
+  0%,
+  5% {
+    stroke-dashoffset: 0.1;
+    animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  }
+  15%,
+  100% {
+    stroke-dashoffset: -1;
+  }
+}
+@keyframes cl-node {
+  0%,
+  11% {
+    opacity: 0.5;
+    transform: scale(0.92);
+  }
+  15% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  19%,
+  24% {
+    opacity: 1;
+    transform: scale(1);
+    animation-timing-function: cubic-bezier(0.3, 0, 0.8, 0.15);
+  }
+  32%,
+  100% {
+    opacity: 0.5;
+    transform: scale(0.92);
+  }
+}
+@keyframes cl-glow {
+  0%,
+  12% {
+    opacity: 0;
+  }
+  16%,
+  24% {
+    opacity: 1;
+  }
+  30%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes cl-hub {
+  0% {
+    opacity: 0.7;
+    transform: scale(0.85);
+  }
+  30%,
+  100% {
+    opacity: 0;
+    transform: scale(1.45);
+  }
+}
+
 /* Respect the operating system's "reduce motion" setting. */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -120,6 +257,24 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+  /* The loader holds still with every provider connected. */
+  .connecting-loader * {
+    animation: none !important;
+  }
+  .connecting-loader .cl-wire {
+    stroke-dashoffset: 0;
+    opacity: 0.8;
+  }
+  .connecting-loader .cl-pulse,
+  .connecting-loader .cl-hubring {
+    opacity: 0;
+  }
+  .connecting-loader .cl-node {
+    opacity: 1;
+  }
+  .connecting-loader .cl-node-glow {
+    opacity: 0.6;
   }
   ::view-transition-group(*),
   ::view-transition-old(*),

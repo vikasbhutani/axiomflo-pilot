@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { AlertCircle, Inbox, Loader2 } from 'lucide-react';
+import { AlertCircle, Inbox } from 'lucide-react';
+import { ConnectingLoader } from './ConnectingLoader';
 
 export function Skeleton({ className = '' }: { className?: string }) {
   // A light band sweeps across the placeholder while it waits for content.
@@ -8,8 +9,9 @@ export function Skeleton({ className = '' }: { className?: string }) {
 
 export function LoadingState({ label = 'Loading sample data…' }: { label?: string }) {
   return (
-    <div className="flex items-center justify-center gap-2 py-10 text-sm text-slate-500" role="status">
-      <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> {label}
+    <div className="flex flex-col items-center justify-center gap-3 py-8 text-sm text-slate-500" role="status">
+      <ConnectingLoader className="h-40 w-auto" />
+      {label}
     </div>
   );
 }
